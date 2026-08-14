@@ -42,6 +42,8 @@ EXPECTED_API_PATHS_THROUGH_PHASE_2 = {
     "/api/frameworks",
     "/api/frameworks/{framework_id}",
     "/api/frameworks/{framework_id}/paper-pack",
+    # Phase 3 — local capture and paper batch entry
+    "/api/capture",
 }
 
 
