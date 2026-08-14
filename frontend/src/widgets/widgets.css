@@ -1,0 +1,108 @@
+/*
+ * Widget styling. Every value comes from tokens.css — no component invents a
+ * colour, a size, or a spacing step of its own (§5b).
+ */
+
+.nl-widget {
+  margin: 0 0 var(--nl-space-6);
+}
+
+.nl-widget__title {
+  font-size: var(--nl-text-base);
+  font-weight: var(--nl-weight-medium);
+  line-height: var(--nl-leading-tight);
+  margin-bottom: var(--nl-space-3);
+}
+
+.nl-widget__canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The shape itself: grey, because it is context. The data hue is reserved for
+   the respondent's own mark. */
+.nl-widget__shape {
+  fill: none;
+  stroke: var(--nl-grey);
+  stroke-width: 1.5;
+}
+
+.nl-widget__tick {
+  stroke: var(--nl-grey);
+  stroke-width: 1;
+}
+
+.nl-widget__guide {
+  stroke: var(--nl-grey-line);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+/* The one place the data hue appears in a widget: where the answer is. */
+.nl-widget__marker {
+  fill: var(--nl-data);
+  stroke: var(--nl-surface);
+  stroke-width: 1.5;
+}
+
+.nl-widget__label {
+  font-family: var(--nl-font-ui);
+  /* 12px floor for chart text (§5b). */
+  font-size: var(--nl-text-xs);
+  fill: var(--nl-ink);
+}
+
+.nl-widget__label--small {
+  opacity: var(--nl-quiet-label);
+}
+
+.nl-widget__chips,
+.nl-widget__hint {
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  margin: var(--nl-space-2) 0 0;
+}
+
+.nl-widget__options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nl-widget__option {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-3);
+  /* Constraint 10: tap targets ≥44px. */
+  min-height: var(--nl-tap-target);
+  padding: var(--nl-space-2) var(--nl-space-3);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  background: var(--nl-surface);
+  margin-bottom: var(--nl-space-2);
+  font-size: var(--nl-text-base);
+}
+
+/* Accent earns its keep here and nowhere else: the selected state. */
+.nl-widget__option--selected {
+  border-color: var(--nl-accent);
+  box-shadow: inset 3px 0 0 var(--nl-accent);
+}
+
+.nl-widget__box {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--nl-grey);
+  border-radius: 2px;
+}
+
+.nl-widget__box--round {
+  border-radius: 50%;
+}
+
+.nl-widget__option--selected .nl-widget__box {
+  border-color: var(--nl-accent);
+  background: var(--nl-accent);
+}

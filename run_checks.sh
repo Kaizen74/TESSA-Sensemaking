@@ -26,13 +26,28 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "1/3 Lint (ruff)..."
+echo "1/5 Lint, backend (ruff)..."
 $PYTHON -m ruff check .
 
-echo "2/3 Automated tests (pytest)..."
+echo "2/5 Lint, frontend (eslint)..."
+if [[ -d frontend/node_modules ]]; then
+    (cd frontend && npx eslint .)
+else
+    echo "  skipped — run 'npm install' in frontend/ first"
+fi
+
+echo "3/5 Automated tests (pytest)..."
 $PYTHON -m pytest -q
 
-echo "3/3 Smoke test (server starts and answers)..."
+echo "4/5 Frontend build..."
+if [[ -d frontend/node_modules ]]; then
+    (cd frontend && npm run build --silent >/dev/null)
+    echo "  frontend built"
+else
+    echo "  skipped — run 'npm install' in frontend/ first"
+fi
+
+echo "5/5 Smoke test (server starts and answers)..."
 # A throwaway database, so the smoke test never touches the operator's data.
 export NL_DATABASE_URL="sqlite:///${TMPDIR_SMOKE}/smoke.db"
 $PYTHON -m alembic upgrade head >/dev/null
@@ -57,6 +72,32 @@ case "$body" in
     *'"status":"ok"'*) echo "  /api/health -> $body" ;;
     *)
         echo "  FAIL: unexpected health response: $body"
+        exit 1
+        ;;
+esac
+
+# One real end-to-end path: create a framework, then print its paper pack.
+# This is what catches a frontend/backend contract drift that unit tests miss.
+base="http://127.0.0.1:${SMOKE_PORT}/api/frameworks"
+created="$(curl -sf -X POST "$base" \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"Smoke test","definition":{"triads":[{"id":"t1","title":"What drove this?","corners":["Speed","Care","Cost"]}]}}')" || {
+    echo "  FAIL: could not create a framework"
+    exit 1
+}
+
+framework_id="$(printf '%s' "$created" | $PYTHON -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+echo "  created framework $framework_id"
+
+pack="$(curl -sf "${base}/${framework_id}/paper-pack")" || {
+    echo "  FAIL: paper pack did not render"
+    exit 1
+}
+
+case "$pack" in
+    *"page-break-after: always"*) echo "  paper pack renders with page breaks" ;;
+    *)
+        echo "  FAIL: paper pack is missing its print rules"
         exit 1
         ;;
 esac

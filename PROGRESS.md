@@ -25,7 +25,7 @@ engine/session plumbing, settings), `backend/alembic/versions/001_initial_schema
 Not verified: the `.bat` has been reviewed but not executed — this build ran on
 Linux. First Windows run belongs to the operator.
 
-### [ ] Phase 2 — Studio + widgets + tokens + paper pack
+### [x] Phase 2 — Studio + widgets + tokens + paper pack — **complete 2026-08-14**
 Studio editing surface with live preview; `tokens.css` per §5b; shared widget
 components; framework JSON validation; edit-semantics flow (free edit at zero
 stories; wording-fix vs meaning-change dialog once stories exist; version
@@ -36,8 +36,20 @@ history sidebar); paper-pack print page with print CSS.
   bound); paper-pack page contains every signifier of the version with its exact
   labels and the verbatim anonymity line; print CSS produces one sheet per page
   (assert page-break rules present).
-- Gate: pytest + ruff + eslint 0.
+- Gate: pytest + ruff + eslint 0. **Shown green: 198 passed · ruff "All checks
+  passed" · eslint 0 problems · frontend build · smoke test end-to-end.**
 - Commit: `phase-2: studio, tokens, widgets, paper pack`.
+
+Delivered: `backend/framework_schema.py` (validation for every respondent-facing
+string), `backend/barycentric.py` + `tests/test_barycentric.py` (golden maths),
+`backend/edit_semantics.py`, `backend/routers/frameworks.py` (list/create/fetch
++ the guardrail PUT), `backend/paper_pack.py` + `/paper-pack` endpoint,
+`backend/errors.py`, `frontend/` (Vite + React, eslint, `src/tokens.css`,
+widgets, Studio with live phone preview, version sidebar, edit-kind dialog).
+
+Verified in a real browser at 1440px and 375px: the Studio renders, the preview
+updates, no console errors, no horizontal overflow. Two bugs were found and
+fixed that way — see "Fixed" below.
 
 ### [ ] Phase 3 — Capture wizard (local) + paper batch entry
 Wizard per §5a; paper batch entry mode with Enter-to-advance; provenance
@@ -101,13 +113,14 @@ verify the landscape is the single boldest thing, grayscale screenshot check.
 Green in every phase from introduction onward:
 
 - all prior suites
-- schema / identifier-absence *(live since Phase 1)*
-- edit-semantics state machine
-- stage-gate + no-bypass
-- barycentric maths
-- `patterns_20_anecdotes.json` byte-identical
-- landscape peaks ±0.02
-- surface / contour single-source
+- schema / identifier-absence *(live since Phase 1 — `tests/test_schema_absence.py`)*
+- edit-semantics state machine *(live since Phase 2 — `tests/test_edit_semantics.py`)*
+- stage-gate + no-bypass *(arrives Phase 5–6)*
+- barycentric maths *(live since Phase 2 — `tests/test_barycentric.py`, plus
+  `tests/test_widget_backend_parity.py` holding the JS widget to the same goldens)*
+- `patterns_20_anecdotes.json` byte-identical *(arrives Phase 7)*
+- landscape peaks ±0.02 *(arrives Phase 8)*
+- surface / contour single-source *(arrives Phase 8)*
 
 ---
 
@@ -173,8 +186,65 @@ simpler option was taken unless noted.
     Running `ruff format` on the new revision file fixes it without a lint
     carve-out; do this for every future migration.
 
+### Phase 2
+
+12. **The anonymity statement is editable, with a canonical default.** PRD §1.1
+    lists anonymity text as editable in the Studio, while constraint 9 demands it
+    be literally true of the code. Resolved both ways: `CANONICAL_ANONYMITY_TEXT`
+    in `backend/framework_schema.py` is the default for every new framework and
+    every clause of it is asserted against the live schema in
+    `tests/test_framework_schema.py`; the paper pack prints whatever the version
+    actually says, verbatim. The Studio field carries a hint that only true
+    claims belong there. PRD §9 assumption 12 already puts this class of
+    judgement with the operator.
+13. **A wording fix may not change structure.** Adding, removing or reshaping a
+    signifier would strand significations pointing at the old shape, so
+    `wording_fix` on a live framework refuses a structural change with a 409 that
+    points at "Change meaning" instead. Assumption 12 asks the operator to judge
+    *meaning*; structure is something the app can check, so it does.
+14. **A meaning change leaves the parent untouched.** The PRD does not say what
+    happens to the old version's `is_active`. Simpler option taken: the parent
+    keeps its flag and its stories, and the newest version of a lineage is simply
+    the highest `version`. This avoids inventing `is_active` semantics that
+    Phases 3–4 would then have to honour.
+15. **Version numbers come from the lineage, not the parent.** `_next_version`
+    takes one past the highest version anywhere in the chain, so two meaning
+    changes from the same parent get 2 and 3 rather than colliding on 2.
+16. **`react/prop-types` is off.** React 19 removed runtime `propTypes`
+    entirely, so the rule checks for something the framework ignores. Component
+    contracts are documented in each module header instead. This was the only
+    eslint rule firing across the whole frontend.
+17. **The route guard reads the OpenAPI schema.** `tests/test_health.py`
+    enumerated `app.routes`, but this FastAPI version represents an included
+    router as one object with no `path` — so the Phase 1 guard silently stopped
+    seeing routed endpoints. It now pins the exact allowed path set, and must be
+    widened deliberately by whichever phase adds an endpoint.
+18. **Widget/server maths parity is tested across languages.**
+    `frontend/src/widgets/barycentric.js` mirrors `backend/barycentric.py` so the
+    widget can place a marker without a round trip. Drift would silently corrupt
+    placements, so `tests/test_widget_backend_parity.py` runs both against the
+    same goldens via Node. It skips cleanly where Node is absent.
+19. **Cartesian points carry more precision than weights.** Rounding points to
+    the weights' own 6 decimals capped round-trip accuracy at exactly the
+    precision the weights claim, so a there-and-back trip drifted by 1e-6.
+    Points now keep 9 decimals; the round trip is lossless at 6.
+20. **Playwright is not a project dependency.** It was installed briefly to
+    verify the Studio renders, then removed. The Phase 2 gate is pytest + ruff +
+    eslint; browser tooling belongs with the Phase 9 critique pass and its
+    grayscale screenshot check.
+
 ---
 
 ## Fixed
 
-Bugs found and fixed, newest first. *(none yet)*
+Bugs found and fixed, newest first.
+
+1. **Nav tabs overflowed the screen at 375px** *(Phase 2, found in a real
+   browser)*. Four tab labels plus their "coming soon" notes did not fit on one
+   line, pushing the page 36px wider than the viewport and breaking constraint
+   10's clean-375px bar. Fixed by letting `.nl-nav__list` wrap.
+   `frontend/src/app.css`.
+2. **A 404 on every page load** *(Phase 2, found in a real browser)*. No favicon
+   was declared, so the browser requested `/favicon.ico` and logged a console
+   error. Fixed with an inline SVG data-URI icon, which also keeps the app off
+   the network entirely (constraint 4). `frontend/index.html`.
