@@ -9,8 +9,11 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from backend import __version__
+from backend.routers import frameworks
 
 app = FastAPI(title="Narrative Lens", version=__version__)
+
+app.include_router(frameworks.router)
 
 
 @app.get("/api/health")

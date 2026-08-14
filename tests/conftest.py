@@ -10,10 +10,12 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from backend.db import make_engine
+from backend.db import get_session, make_engine
+from backend.main import app
 from backend.models import Base
 
 
@@ -44,3 +46,23 @@ def session(engine: Engine) -> Iterator[Session]:
     factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
     with factory() as s:
         yield s
+
+
+@pytest.fixture
+def client(engine: Engine) -> Iterator[TestClient]:
+    """API client wired to the test database, never the operator's own."""
+    factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
+
+    def override_get_session() -> Iterator[Session]:
+        db = factory()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_session] = override_get_session
+    try:
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        app.dependency_overrides.clear()
