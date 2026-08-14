@@ -51,13 +51,28 @@ Verified in a real browser at 1440px and 375px: the Studio renders, the preview
 updates, no console errors, no horizontal overflow. Two bugs were found and
 fixed that way — see "Fixed" below.
 
-### [ ] Phase 3 — Capture wizard (local) + paper batch entry
+### [x] Phase 3 — Capture wizard (local) + paper batch entry — **complete 2026-08-14**
 Wizard per §5a; paper batch entry mode with Enter-to-advance; provenance
 stamping incl. `input_method=paper`.
 - Tests: wizard round-trip; draft survives reload; batch entry writes paper
   provenance and loops correctly; p95 < 200ms on submit.
-- Gate: full regression.
+- Gate: full regression. **Shown green: 241 passed · ruff "All checks passed" ·
+  eslint 0 problems · frontend build · smoke test end-to-end. Regression list
+  green: prior suites 111, identifier-absence 20, edit-semantics 26,
+  barycentric 41.**
 - Commit: `phase-3: capture wizard + paper entry`.
+
+Delivered: `backend/capture_schema.py` (placement validation against the exact
+version answered), `backend/routers/capture.py` (`POST /api/capture`, provenance
+stamped in one place), `frontend/src/capture/` (draft module, wizard, paper batch
+entry, capture tab), interactive widgets in `frontend/src/widgets/Widgets.jsx`.
+
+Verified in a real browser at 375px and 1280px: the whole wizard was driven end
+to end — story typed, triad marked by tap, dyad moved by keyboard, MCQ chosen,
+story sent, reflection shown — and the draft was checked against a genuine page
+reload, not a simulated one. Paper entry was driven through two consecutive
+sheets. Data landed with correct provenance and hour-rounded times. One bug was
+found this way; see "Fixed".
 
 ### [ ] Phase 4 — Remote links, kiosk, voice
 Identifier-absence test, token lifecycle, 375px snapshot, voice fallback.
@@ -233,18 +248,67 @@ simpler option was taken unless noted.
     eslint; browser tooling belongs with the Phase 9 critique pass and its
     grayscale screenshot check.
 
+### Phase 3
+
+21. **A directly-captured story is stored `validated`, not queued.** Constraint 1
+    gates *AI-organised* anecdotes and *AI-proposed* significations. A respondent
+    who writes their own story and places their own markers is first-hand
+    testimony with no machine in the loop, so queueing it would ask the operator
+    to approve something no AI ever touched — and would stop the story reaching
+    the live picture §0 promises the respondent. The no-bypass test in Phase 6
+    covers the AI path, which is what that test is for. Significations from
+    capture carry `signified_by=respondent`, `ai_confidence=NULL`, and a
+    `validated_at` stamp.
+22. **`source_type` is `capture` for both the wizard and paper entry.** The PRD
+    does not enumerate the column. Ingestion will use its own value from Phase 5;
+    `entry_mode` and `input_method` already carry the finer distinctions.
+23. **Paper transcription is still `signified_by=respondent`.** The operator
+    types it in, but the interpretation is the respondent's pen mark.
+    `input_method=paper` is what records how it arrived.
+24. **A skipped question stores nothing.** Forcing an answer would put a number
+    in the dataset that nobody meant, and constraint 11 wants patterns computed
+    from what people actually said. The wizard's button reads "Skip" until a
+    placement is made.
+25. **A triad that arrives not summing to 1.0 is normalised, not rejected.** It
+    goes through the same `backend/barycentric.py` clamp the goldens pin down.
+    A placement *outside* the shape — a negative weight, a dyad past its end, a
+    chip off the square — is refused in plain English, because that is a broken
+    submission rather than a rounding artefact.
+26. **Enter saves in paper entry; Ctrl/Cmd+Enter saves from inside the story
+    box.** PRD §1.2 says "Enter advances", but the story field needs real
+    newlines for multi-paragraph transcription. The screen says so in its
+    instructions.
+27. **The respondent group is kept between paper entries.** A pile of returned
+    sheets is usually one group, and re-picking it 30 times is exactly the
+    friction §7.5's four-minute bar is measuring. The story and the placements
+    clear; the group does not.
+28. **Draft persistence takes its storage as an argument.**
+    `frontend/src/capture/draft.js` never reaches for `window.localStorage`
+    itself, so `tests/test_capture_draft.py` exercises the real module in Node.
+    Constraint 9 reaches into the browser too: the storage key names the
+    framework version, never the person, and a test asserts it.
+29. **Voice is deliberately absent.** Constraint 10 requires voice always paired
+    with typing, and PRD §6 puts voice in Phase 4. The typing path is built first
+    so voice can be added beside it rather than instead of it.
+
 ---
 
 ## Fixed
 
 Bugs found and fixed, newest first.
 
-1. **Nav tabs overflowed the screen at 375px** *(Phase 2, found in a real
+1. **A submitted story left its draft behind** *(Phase 3, found in a real
+   browser)*. `submit()` cleared the draft, then navigated — and navigation
+   re-saved it. The next visitor would be offered "pick up where I left off" for
+   a story already sent, and could submit it twice. Fixed with a ref checked
+   inside the save path: React state would not have updated within the same
+   handler that does the submitting. `frontend/src/capture/Wizard.jsx`.
+2. **Nav tabs overflowed the screen at 375px** *(Phase 2, found in a real
    browser)*. Four tab labels plus their "coming soon" notes did not fit on one
    line, pushing the page 36px wider than the viewport and breaking constraint
    10's clean-375px bar. Fixed by letting `.nl-nav__list` wrap.
    `frontend/src/app.css`.
-2. **A 404 on every page load** *(Phase 2, found in a real browser)*. No favicon
+3. **A 404 on every page load** *(Phase 2, found in a real browser)*. No favicon
    was declared, so the browser requested `/favicon.ico` and logged a console
    error. Fixed with an inline SVG data-URI icon, which also keeps the app off
    the network entirely (constraint 4). `frontend/index.html`.

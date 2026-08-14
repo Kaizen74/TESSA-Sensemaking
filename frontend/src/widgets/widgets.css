@@ -20,6 +20,33 @@
   height: auto;
 }
 
+/* An interactive canvas says so: it takes a pointer, shows focus, and does not
+   let a drag select the labels underneath. */
+.nl-widget__canvas--live {
+  cursor: crosshair;
+  touch-action: manipulation;
+  user-select: none;
+  border-radius: var(--nl-radius);
+}
+
+.nl-widget__canvas--live:focus-visible {
+  outline: var(--nl-focus-ring);
+  outline-offset: var(--nl-focus-offset);
+}
+
+.nl-widget__undo {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-3);
+  margin-top: var(--nl-space-2);
+  background: none;
+  border: 0;
+  color: var(--nl-grey);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* The shape itself: grey, because it is context. The data hue is reserved for
    the respondent's own mark. */
 .nl-widget__shape {
@@ -88,6 +115,20 @@
 .nl-widget__option--selected {
   border-color: var(--nl-accent);
   box-shadow: inset 3px 0 0 var(--nl-accent);
+}
+
+/* The tappable version of an option: a real button, full width, 44px tall. */
+.nl-widget__option--live {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  transition: border-color var(--nl-motion-fast) var(--nl-ease);
+}
+
+.nl-widget__option--live:hover {
+  border-color: var(--nl-data);
 }
 
 .nl-widget__box {

@@ -75,4 +75,6 @@ export const api = {
       }),
     }),
   paperPackUrl: (id) => `/api/frameworks/${id}/paper-pack`,
+  capture: (submission) =>
+    request("/api/capture", { method: "POST", body: JSON.stringify(submission) }),
 };

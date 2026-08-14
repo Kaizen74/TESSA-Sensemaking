@@ -1,0 +1,186 @@
+/*
+ * Paper entry is a transcription desk: wide, dense, everything reachable
+ * without scrolling where the screen allows it. Quiet, like the rest of the
+ * admin app.
+ */
+
+.nl-batch {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--nl-space-8);
+}
+
+@media (max-width: 48rem) {
+  .nl-batch {
+    padding: var(--nl-space-4);
+  }
+}
+
+.nl-batch__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--nl-space-4);
+  margin-bottom: var(--nl-space-6);
+}
+
+.nl-batch__title {
+  font-size: var(--nl-text-xl);
+}
+
+.nl-batch__sub {
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+  margin: var(--nl-space-2) 0 0;
+  max-width: 52ch;
+}
+
+.nl-batch__count {
+  display: flex;
+  align-items: baseline;
+  gap: var(--nl-space-2);
+  padding: var(--nl-space-2) var(--nl-space-4);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  background: var(--nl-surface);
+}
+
+.nl-batch__count-value {
+  font-size: var(--nl-text-xl);
+  font-weight: var(--nl-weight-medium);
+}
+
+.nl-batch__count-label {
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+}
+
+.nl-batch__count-last {
+  color: var(--nl-grey);
+}
+
+.nl-batch__label {
+  display: block;
+  font-size: var(--nl-text-sm);
+  font-weight: var(--nl-weight-medium);
+  margin-bottom: var(--nl-space-2);
+}
+
+.nl-batch__textarea {
+  width: 100%;
+  padding: var(--nl-space-3);
+  font-family: inherit;
+  font-size: var(--nl-text-base);
+  line-height: var(--nl-leading-body);
+  color: var(--nl-ink);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  resize: vertical;
+}
+
+.nl-batch__groups {
+  margin-top: var(--nl-space-4);
+}
+
+.nl-batch__group-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nl-space-2);
+}
+
+.nl-batch__group {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-4);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: inherit;
+  cursor: pointer;
+}
+
+.nl-batch__group--selected {
+  border-color: var(--nl-accent);
+  box-shadow: inset 3px 0 0 var(--nl-accent);
+}
+
+.nl-batch__hint {
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  margin: var(--nl-space-2) 0 0;
+}
+
+/* Widgets sit side by side so a whole sheet is visible at once. */
+.nl-batch__widgets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--nl-space-6);
+  margin-top: var(--nl-space-6);
+  padding-top: var(--nl-space-6);
+  border-top: 1px solid var(--nl-grey-line);
+}
+
+.nl-batch__widget {
+  min-width: 0;
+}
+
+.nl-batch__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nl-space-3);
+  margin-top: var(--nl-space-6);
+  padding-top: var(--nl-space-4);
+  border-top: 1px solid var(--nl-grey-line);
+}
+
+.nl-batch__save {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-6);
+  background: var(--nl-data);
+  color: #fff;
+  border: 1px solid var(--nl-data);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-base);
+  font-weight: var(--nl-weight-medium);
+  cursor: pointer;
+}
+
+.nl-batch__save:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.nl-batch__clear {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-4);
+  background: none;
+  border: 0;
+  color: var(--nl-grey);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.nl-batch__error {
+  border-left: 3px solid var(--nl-accent);
+  background: var(--nl-surface);
+  padding: var(--nl-space-3) var(--nl-space-4);
+  margin-bottom: var(--nl-space-4);
+}
+
+.nl-batch__error-message {
+  margin: 0 0 var(--nl-space-2);
+  font-weight: var(--nl-weight-medium);
+}
+
+.nl-batch__error-action {
+  margin: 0;
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+}

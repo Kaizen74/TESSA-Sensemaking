@@ -1,0 +1,171 @@
+/*
+ * Wizard styling, built to constraint 10: clean at 375px, tap targets ≥44px,
+ * visible progress, one thing on screen at a time.
+ */
+
+.nl-wizard {
+  max-width: var(--nl-phone-width);
+  margin: 0 auto;
+  padding: var(--nl-space-4);
+}
+
+.nl-wizard__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-3);
+  margin-bottom: var(--nl-space-6);
+}
+
+.nl-wizard__progress-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--nl-grey-faint);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.nl-wizard__progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--nl-data);
+  transition: width var(--nl-motion-base) var(--nl-ease);
+}
+
+.nl-wizard__progress-text {
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+  white-space: nowrap;
+}
+
+.nl-wizard__screen {
+  display: block;
+}
+
+.nl-wizard__heading {
+  font-size: var(--nl-text-lg);
+  font-weight: var(--nl-weight-medium);
+  margin-bottom: var(--nl-space-4);
+}
+
+.nl-wizard__body,
+.nl-wizard__alt {
+  font-size: var(--nl-text-base);
+  margin: 0 0 var(--nl-space-4);
+}
+
+.nl-wizard__alt {
+  color: var(--nl-grey);
+}
+
+.nl-wizard__promise {
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  margin: 0 0 var(--nl-space-4);
+}
+
+.nl-wizard__anonymity {
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  line-height: var(--nl-leading-body);
+  border-top: 1px solid var(--nl-grey-line);
+  padding-top: var(--nl-space-3);
+  margin: var(--nl-space-6) 0;
+}
+
+.nl-wizard__textarea {
+  width: 100%;
+  min-height: 10rem;
+  padding: var(--nl-space-3);
+  font-family: inherit;
+  /* 16px keeps iOS from zooming the page when the field takes focus. */
+  font-size: var(--nl-text-base);
+  line-height: var(--nl-leading-body);
+  color: var(--nl-ink);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  resize: vertical;
+}
+
+.nl-wizard__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-3);
+  margin-top: var(--nl-space-6);
+}
+
+.nl-wizard__next {
+  flex: 1;
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-4);
+  background: var(--nl-data);
+  color: #fff;
+  border: 1px solid var(--nl-data);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-base);
+  font-weight: var(--nl-weight-medium);
+  cursor: pointer;
+}
+
+.nl-wizard__next:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.nl-wizard__back {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-4);
+  background: none;
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  color: var(--nl-ink);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  cursor: pointer;
+}
+
+.nl-wizard__groups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nl-wizard__group {
+  display: block;
+  width: 100%;
+  text-align: left;
+  min-height: var(--nl-tap-target);
+  padding: var(--nl-space-2) var(--nl-space-3);
+  margin-bottom: var(--nl-space-2);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-base);
+  color: inherit;
+  cursor: pointer;
+}
+
+.nl-wizard__group--selected {
+  border-color: var(--nl-accent);
+  box-shadow: inset 3px 0 0 var(--nl-accent);
+}
+
+.nl-wizard__error {
+  border-left: 3px solid var(--nl-accent);
+  background: var(--nl-surface);
+  padding: var(--nl-space-3) var(--nl-space-4);
+  margin-bottom: var(--nl-space-4);
+}
+
+.nl-wizard__error-message {
+  margin: 0 0 var(--nl-space-2);
+  font-weight: var(--nl-weight-medium);
+}
+
+.nl-wizard__error-action {
+  margin: 0;
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+}

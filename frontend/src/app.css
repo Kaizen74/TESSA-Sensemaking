@@ -32,8 +32,17 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--nl-tap-target);
+  padding: 0;
+  background: none;
+  border: 0;
+  font-family: inherit;
   font-size: var(--nl-text-sm);
   color: var(--nl-grey);
+  cursor: pointer;
+}
+
+.nl-nav__tab[aria-disabled="true"] {
+  cursor: default;
 }
 
 .nl-nav__tab--current {
