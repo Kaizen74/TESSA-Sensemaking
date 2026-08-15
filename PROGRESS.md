@@ -74,10 +74,30 @@ reload, not a simulated one. Paper entry was driven through two consecutive
 sheets. Data landed with correct provenance and hour-rounded times. One bug was
 found this way; see "Fixed".
 
-### [ ] Phase 4 — Remote links, kiosk, voice
+### [x] Phase 4 — Remote links, kiosk, voice — **complete 2026-08-15**
 Identifier-absence test, token lifecycle, 375px snapshot, voice fallback.
-- Gate: full regression.
+- Gate: full regression. **Shown green: 307 passed · ruff "All checks passed" ·
+  eslint 0 problems · frontend build · smoke test end-to-end. Regression list
+  green: prior suites 154, identifier-absence 31 (schema + remote path),
+  edit-semantics 26, barycentric 41.**
 - Commit: `phase-4: remote capture + kiosk + voice`.
+
+Delivered: `backend/routers/capture_links.py` (open/list/revoke + QR PNG),
+`backend/routers/public.py` (token-gated public path), `backend/rate_limit.py`,
+`backend/qr.py`, `backend/settings.py` LAN address resolution, static serving of
+the built frontend in `backend/main.py`, `frontend/src/capture/`
+(`voice.js`, `VoiceButton.jsx`, `PublicCapture.jsx`, `LinkManager.jsx`, kiosk
+mode in `CaptureTab.jsx`).
+
+Verified in a real browser: a link created in the admin UI, its QR poster
+rendered from a real generated PNG, that link opened at `/c/{token}` on a
+375px viewport with no admin chrome, a story driven end to end and stored with
+`entry_mode=link` and the link id; the link then revoked and the closed message
+confirmed on the phone. Kiosk mode driven end to end and confirmed looping back
+to a fresh welcome, stored with `entry_mode=kiosk`. The voice fallback was
+exercised for real — Chromium declares speech support then fails without a
+microphone, which produced the plain-English message and left typing working.
+A sweep of every table for browser-supplied identifiers found none.
 
 ### [ ] Phase 5 — Ingestion + Stage A (mock-first)
 All parsers, stage machine, Mapping screen, deterministic extraction,
@@ -128,7 +148,9 @@ verify the landscape is the single boldest thing, grayscale screenshot check.
 Green in every phase from introduction onward:
 
 - all prior suites
-- schema / identifier-absence *(live since Phase 1 — `tests/test_schema_absence.py`)*
+- schema / identifier-absence *(live since Phase 1 — `tests/test_schema_absence.py`;
+  extended in Phase 4 by `tests/test_public_identifier_absence.py`, which covers
+  the remote request path rather than only the schema)*
 - edit-semantics state machine *(live since Phase 2 — `tests/test_edit_semantics.py`)*
 - stage-gate + no-bypass *(arrives Phase 5–6)*
 - barycentric maths *(live since Phase 2 — `tests/test_barycentric.py`, plus
@@ -290,6 +312,56 @@ simpler option was taken unless noted.
 29. **Voice is deliberately absent.** Constraint 10 requires voice always paired
     with typing, and PRD §6 puts voice in Phase 4. The typing path is built first
     so voice can be added beside it rather than instead of it.
+
+### Phase 4
+
+30. **Rate limiting is keyed by capture-link token, never by requester.** PRD §4
+    asks for public endpoints that are both "rate-limited" and "identifier-free",
+    and the usual key for a rate limit is the client IP — which constraint 9
+    forbids this app from ever knowing. Keying on the token bounds abuse of an
+    open LAN endpoint without singling out any respondent. Counters are in
+    memory only and never persisted.
+31. **The token decides the version, the entry mode and the link id.** The public
+    submission model does not accept `entry_mode` at all and ignores any
+    `framework_id` sent with it, so a respondent's browser cannot retarget its
+    story or claim to have arrived another way. The *local* endpoint does accept
+    `entry_mode`, limited to `admin | kiosk`, because there the caller is the
+    operator's own machine.
+32. **`imported` cannot be claimed by a live capture.** That value belongs to the
+    ingestion pipeline; accepting it from a browser would let AI-derived content
+    pose as first-hand testimony (constraint 1).
+33. **Revoking is one-way.** A link that could be reopened would mean a QR poster
+    taken down from a wall might start working again without anyone intending
+    it. Closed links stay listed rather than disappearing, because hiding one
+    would hide where its stories came from.
+34. **Capture URLs use the machine's LAN/Tailscale address, not loopback.** A QR
+    encoding `127.0.0.1` scans perfectly and then fails on every phone. The
+    address is found by asking the OS which local interface it would route from;
+    no packet is sent and nothing is looked up over the network. A test asserts
+    the URL is not loopback.
+35. **The app now serves the built frontend.** A capture link is only a capture
+    link if a scanned QR reaches the wizard, so `backend/main.py` mounts
+    `frontend/dist` when it exists. Unknown paths fall through to `index.html`
+    so `/c/{token}` survives a reload; unmatched `/api` paths still return the
+    PRD §4 JSON error rather than being handed HTML. This also closes the
+    "launcher starts only the server" gap noted after Phases 1–3.
+36. **A story that used voice at all is stamped `voice`.** Constraint 3 wants the
+    input method recorded; when someone dictates and then edits by hand, the
+    dictation is the part a later reader would want flagged.
+37. **The voice button hides itself where speech is unsupported**, rather than
+    sitting there dead. An offer that cannot be accepted is worse than no offer,
+    and typing is already the working path. Where the browser *claims* support
+    and then fails — which is what headless Chromium does — the §7.12 fallback
+    fires with a plain-English message.
+38. **`qrcode` and `pillow` added.** Pure-Python QR generation plus PNG output.
+    Pillow ships self-contained wheels, so this is not the class of native
+    dependency PRD §9 assumption 11 ruled out when it chose browser printing
+    over a PDF library — and PRD §1.7 needs PNG chart export from Phase 7
+    regardless.
+39. **Kiosk resets after six seconds.** Long enough to read the thank-you, short
+    enough that the next person at the table does not see the last person's
+    answers. The exit control is deliberately small and cornered: whoever is at
+    the keyboard in kiosk mode is a respondent, not the operator.
 
 ---
 

@@ -20,6 +20,7 @@ import { api, ApiError } from "../api.js";
 import { SignifierWidget } from "../widgets/Widgets.jsx";
 import { orderedSignifiers } from "../studio/PhonePreview.jsx";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "./draft.js";
+import { VoiceButton } from "./VoiceButton.jsx";
 import "./wizard.css";
 
 const STEP_WELCOME = "welcome";
@@ -83,7 +84,7 @@ export function toSubmission(definition, values) {
   return submission;
 }
 
-export function Wizard({ framework, onFinished = null }) {
+export function Wizard({ framework, onFinished = null, submit: submitOverride = null }) {
   const definition = framework.definition;
   const settings = definition.capture_settings ?? {};
   const storage = browserStorage();
@@ -98,6 +99,10 @@ export function Wizard({ framework, onFinished = null }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  // Voice, when it is used at all. Provenance must say so (constraint 3), and a
+  // story that mixes both is recorded as voice — that is the part a reader
+  // would want flagged when judging how the words were formed.
+  const [usedVoice, setUsedVoice] = useState(false);
   //: True from the instant a submission succeeds, so no later navigation can
   //  write the draft back. State would lag by a render; this cannot.
   const submittedRef = useRef(false);
@@ -165,13 +170,17 @@ export function Wizard({ framework, onFinished = null }) {
     setBusy(true);
     setError(null);
     try {
-      const submitted = await api.capture({
-        framework_id: framework.id,
+      const payload = {
         text,
-        input_method: "typed",
+        input_method: usedVoice ? "voice" : "typed",
         respondent_group: group,
         significations: toSubmission(definition, values),
-      });
+      };
+      // The remote path posts to a token and lets the server decide the
+      // framework; the local path names it. One wizard, three entry modes.
+      const submitted = submitOverride
+        ? await submitOverride(payload)
+        : await api.capture({ framework_id: framework.id, ...payload });
       submittedRef.current = true;
       clearDraft(storage, framework.id);
       setResult(submitted);
@@ -191,6 +200,7 @@ export function Wizard({ framework, onFinished = null }) {
     setGroup(null);
     setResult(null);
     setError(null);
+    setUsedVoice(false);
     clearDraft(storage, framework.id);
     setIndex(0);
   }
@@ -278,6 +288,16 @@ export function Wizard({ framework, onFinished = null }) {
             }}
             placeholder="In your own words…"
           />
+          {settings.voice_enabled && (
+            <VoiceButton
+              text={text}
+              onText={(next) => {
+                setText(next);
+                persist({ text: next });
+              }}
+              onUsed={() => setUsedVoice(true)}
+            />
+          )}
           <div className="nl-wizard__actions">
             <button type="button" className="nl-wizard__back" onClick={() => go(index - 1)}>
               Back

@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { Studio } from "./studio/Studio.jsx";
 import { CaptureTab } from "./capture/CaptureTab.jsx";
+import { PublicCapture, captureTokenFromPath } from "./capture/PublicCapture.jsx";
 import "./app.css";
 
 const TABS = [
@@ -21,6 +22,13 @@ const TABS = [
 
 export function App() {
   const [current, setCurrent] = useState("studio");
+
+  // A scanned QR lands on /c/{token}. That is a respondent's page, so it gets
+  // the wizard alone — no admin navigation, nothing about the operator's setup.
+  const token = captureTokenFromPath(
+    typeof window === "undefined" ? "" : window.location.pathname,
+  );
+  if (token) return <PublicCapture token={token} />;
 
   return (
     <div className="nl-app">

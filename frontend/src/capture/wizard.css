@@ -87,6 +87,53 @@
   resize: vertical;
 }
 
+/* Voice sits beside the box it writes into, never in place of it. */
+.nl-voice {
+  margin-top: var(--nl-space-3);
+}
+
+.nl-voice__button {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-4);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-ink);
+  cursor: pointer;
+}
+
+.nl-voice__button--live {
+  border-color: var(--nl-accent);
+  box-shadow: inset 3px 0 0 var(--nl-accent);
+}
+
+.nl-voice__note {
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  margin: var(--nl-space-2) 0 0;
+}
+
+.nl-voice__failure {
+  border-left: 3px solid var(--nl-accent);
+  background: var(--nl-surface);
+  padding: var(--nl-space-3);
+  margin-top: var(--nl-space-3);
+}
+
+.nl-voice__failure-message {
+  margin: 0 0 var(--nl-space-1);
+  font-weight: var(--nl-weight-medium);
+  font-size: var(--nl-text-sm);
+}
+
+.nl-voice__failure-action {
+  margin: 0;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+}
+
 .nl-wizard__actions {
   display: flex;
   align-items: center;

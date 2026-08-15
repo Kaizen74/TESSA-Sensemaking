@@ -58,11 +58,26 @@
   font-weight: var(--nl-weight-medium);
 }
 
-.nl-capture__mode--soon {
-  border-style: dashed;
-  cursor: default;
-  display: inline-flex;
-  align-items: center;
+/* Kiosk hides the admin chrome: the next person at the keyboard is a
+   respondent, not the operator. */
+.nl-kiosk {
+  position: relative;
+  min-height: 60vh;
+}
+
+.nl-kiosk__exit {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-3);
+  background: none;
+  border: 0;
+  color: var(--nl-grey);
+  font-family: inherit;
+  font-size: var(--nl-text-xs);
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .nl-capture__empty {

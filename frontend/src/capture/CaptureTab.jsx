@@ -11,10 +11,23 @@ import { useEffect, useState } from "react";
 import { api } from "../api.js";
 import { Wizard } from "./Wizard.jsx";
 import { PaperBatch } from "./PaperBatch.jsx";
+import { LinkManager } from "./LinkManager.jsx";
 import "./capture-tab.css";
 
 const MODE_WIZARD = "wizard";
 const MODE_PAPER = "paper";
+const MODE_LINKS = "links";
+const MODE_KIOSK = "kiosk";
+
+const MODES = [
+  { id: MODE_WIZARD, label: "One at a time" },
+  { id: MODE_PAPER, label: "From paper" },
+  { id: MODE_LINKS, label: "Links & QR" },
+  { id: MODE_KIOSK, label: "Kiosk" },
+];
+
+/** How long the thank-you stays up before the kiosk resets for the next person. */
+const KIOSK_RESET_DELAY_MS = 6000;
 
 export function CaptureTab() {
   const [frameworks, setFrameworks] = useState(null);
@@ -83,43 +96,64 @@ export function CaptureTab() {
         </label>
 
         <div className="nl-capture__modes" role="tablist" aria-label="How to enter stories">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === MODE_WIZARD}
-            className={
-              mode === MODE_WIZARD
-                ? "nl-capture__mode nl-capture__mode--current"
-                : "nl-capture__mode"
-            }
-            onClick={() => setMode(MODE_WIZARD)}
-          >
-            One at a time
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === MODE_PAPER}
-            className={
-              mode === MODE_PAPER
-                ? "nl-capture__mode nl-capture__mode--current"
-                : "nl-capture__mode"
-            }
-            onClick={() => setMode(MODE_PAPER)}
-          >
-            From paper
-          </button>
-          <span className="nl-capture__mode nl-capture__mode--soon" aria-disabled="true">
-            Links &amp; kiosk — coming soon
-          </span>
+          {MODES.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              role="tab"
+              aria-selected={mode === option.id}
+              className={
+                mode === option.id
+                  ? "nl-capture__mode nl-capture__mode--current"
+                  : "nl-capture__mode"
+              }
+              onClick={() => setMode(option.id)}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {mode === MODE_WIZARD ? (
-        <Wizard key={`wizard-${selected.id}`} framework={selected} />
-      ) : (
-        <PaperBatch key={`paper-${selected.id}`} framework={selected} />
-      )}
+      {mode === MODE_WIZARD && <Wizard key={`wizard-${selected.id}`} framework={selected} />}
+      {mode === MODE_PAPER && <PaperBatch key={`paper-${selected.id}`} framework={selected} />}
+      {mode === MODE_LINKS && <LinkManager frameworks={frameworks} />}
+      {mode === MODE_KIOSK && <Kiosk framework={selected} onExit={() => setMode(MODE_WIZARD)} />}
+    </div>
+  );
+}
+
+/**
+ * Kiosk mode (PRD §1.2, §5.2).
+ *
+ * The same wizard, running full-screen on a machine left out at a workshop, and
+ * looping straight back to a fresh welcome after every story. Two things differ
+ * from admin capture: records are stamped ``entry_mode=kiosk``, and the admin
+ * chrome is hidden so the next person does not land in the operator's app.
+ *
+ * Leaving is deliberately slightly awkward — a corner button rather than a
+ * prominent one — because the person at the keyboard is a respondent, not the
+ * operator.
+ */
+function Kiosk({ framework, onExit }) {
+  const [round, setRound] = useState(0);
+
+  return (
+    <div className="nl-kiosk">
+      <Wizard
+        key={`kiosk-${framework.id}-${round}`}
+        framework={framework}
+        submit={(payload) =>
+          api.capture({ framework_id: framework.id, entry_mode: "kiosk", ...payload })
+        }
+        onFinished={() => {
+          // Back to a clean welcome, so nobody sees the last person's answers.
+          window.setTimeout(() => setRound((n) => n + 1), KIOSK_RESET_DELAY_MS);
+        }}
+      />
+      <button type="button" className="nl-kiosk__exit" onClick={onExit}>
+        Leave kiosk mode
+      </button>
     </div>
   );
 }

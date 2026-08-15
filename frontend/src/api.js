@@ -77,4 +77,23 @@ export const api = {
   paperPackUrl: (id) => `/api/frameworks/${id}/paper-pack`,
   capture: (submission) =>
     request("/api/capture", { method: "POST", body: JSON.stringify(submission) }),
+
+  // Capture links (PRD §4). Admin-side, localhost only.
+  listCaptureLinks: () => request("/api/capture-links"),
+  createCaptureLink: (frameworkId, label = null) =>
+    request("/api/capture-links", {
+      method: "POST",
+      body: JSON.stringify({ framework_id: frameworkId, label }),
+    }),
+  revokeCaptureLink: (id) => request(`/api/capture-links/${id}/revoke`, { method: "POST" }),
+  captureLinkQrUrl: (id) => `/api/capture-links/${id}/qr.png`,
+
+  // The respondent's path. The token carries everything — no framework id is
+  // ever sent from here, so a browser cannot retarget its own story.
+  publicFramework: (token) => request(`/api/public/capture/${token}`),
+  publicCapture: (token, submission) =>
+    request(`/api/public/capture/${token}`, {
+      method: "POST",
+      body: JSON.stringify(submission),
+    }),
 };
