@@ -10,6 +10,12 @@ dependencies = [
     "alembic>=1.13",
     # Used directly for definition_json validation, not just via FastAPI.
     "pydantic>=2.0",
+    # QR codes for capture links (PRD §4). Pure Python, rendered locally.
+    "qrcode>=8.0",
+    # PNG output for the QR, and the chart exports PRD §1.7 needs later.
+    # Self-contained wheels — not the kind of native dependency §9 assumption 11
+    # ruled out when it chose browser printing over a PDF library.
+    "pillow>=10.0",
 ]
 
 [project.optional-dependencies]

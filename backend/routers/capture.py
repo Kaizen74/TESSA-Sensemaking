@@ -23,6 +23,7 @@ from backend.capture_schema import (
     SOURCE_TYPE_CAPTURE,
     CaptureError,
     CaptureSubmission,
+    LocalCaptureSubmission,
     validate_significations,
 )
 from backend.db import get_session
@@ -60,12 +61,19 @@ def _auto_title(text: str) -> str:
     return flat[: TITLE_CHARS - 1].rsplit(" ", 1)[0] + "…"
 
 
-@router.post("", response_model=CaptureResult, status_code=201)
-def create_capture(
+def store_capture(
+    session: Session,
+    framework: Framework,
     body: CaptureSubmission,
-    session: Annotated[Session, Depends(get_session)],
+    entry_mode: str,
+    capture_link_id: int | None = None,
 ) -> CaptureResult:
-    """Store one story and its placements.
+    """Store one story and its placements, whatever route it arrived by.
+
+    The three entry modes of PRD §1.2 — admin, link, kiosk — share one wizard,
+    so they share one way of being written down. Provenance (constraint 3) is
+    stamped here and nowhere else, which is what makes every record comparable
+    regardless of how it was collected.
 
     The story is bound to the exact framework version answered, so a later
     meaning change cannot retro-fit new wording onto it.
@@ -77,14 +85,6 @@ def create_capture(
     something no machine ever touched, and would stop a story reaching the live
     picture the respondent was promised.
     """
-    framework = session.get(Framework, body.framework_id)
-    if framework is None:
-        raise errors.not_found(
-            "framework_not_found",
-            f"There is no question set numbered {body.framework_id}.",
-            "Reload the page. If it keeps happening, ask whoever set this up.",
-        )
-
     definition = FrameworkDefinition.model_validate(framework.definition_json)
 
     try:
@@ -107,8 +107,8 @@ def create_capture(
         text=body.text,
         title_auto=_auto_title(body.text),
         source_type=SOURCE_TYPE_CAPTURE,
-        entry_mode="admin",
-        capture_link_id=None,
+        entry_mode=entry_mode,
+        capture_link_id=capture_link_id,
         input_method=body.input_method,
         source_file=None,
         source_locator=None,
@@ -149,3 +149,26 @@ def create_capture(
         reflection_signifier_id=cleaned[0][0] if cleaned else None,
         thankyou_text=definition.capture_settings.thankyou_text,
     )
+
+
+@router.post("", response_model=CaptureResult, status_code=201)
+def create_capture(
+    body: LocalCaptureSubmission,
+    session: Annotated[Session, Depends(get_session)],
+) -> CaptureResult:
+    """Local capture: the admin wizard, paper batch entry, and kiosk.
+
+    All three run on the operator's own machine, so ``entry_mode`` may be stated
+    by the caller. The remote path cannot do that — there the server derives the
+    entry mode from the token, because a respondent's browser must never get to
+    say how its story was collected.
+    """
+    framework = session.get(Framework, body.framework_id)
+    if framework is None:
+        raise errors.not_found(
+            "framework_not_found",
+            f"There is no question set numbered {body.framework_id}.",
+            "Reload the page. If it keeps happening, ask whoever set this up.",
+        )
+
+    return store_capture(session, framework, body, entry_mode=body.entry_mode)

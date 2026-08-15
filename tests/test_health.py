@@ -44,6 +44,11 @@ EXPECTED_API_PATHS_THROUGH_PHASE_2 = {
     "/api/frameworks/{framework_id}/paper-pack",
     # Phase 3 — local capture and paper batch entry
     "/api/capture",
+    # Phase 4 — remote links, kiosk, voice
+    "/api/capture-links",
+    "/api/capture-links/{link_id}/revoke",
+    "/api/capture-links/{link_id}/qr.png",
+    "/api/public/capture/{token}",
 }
 
 

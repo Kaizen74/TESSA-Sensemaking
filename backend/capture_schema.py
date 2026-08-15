@@ -29,9 +29,14 @@ SOURCE_TYPE_CAPTURE = "capture"
 #: records that it came off paper.
 SIGNIFIED_BY_RESPONDENT = "respondent"
 
-#: Input methods this phase accepts. PRD §4: ``/api/capture`` takes typed and
-#: paper. Voice arrives with Phase 4.
-CAPTURE_INPUT_METHODS = ("typed", "paper")
+#: Input methods a live capture may declare. ``imported`` is not among them —
+#: that value belongs to the ingestion pipeline, and letting a browser claim it
+#: would let AI-derived content pose as first-hand testimony (constraint 1).
+CAPTURE_INPUT_METHODS = ("typed", "voice", "paper")
+
+#: Entry modes the *local* endpoint accepts. ``link`` is missing on purpose: it
+#: is derived from the token by the public endpoint, never stated by a caller.
+LOCAL_ENTRY_MODES = ("admin", "kiosk")
 
 MAX_STORY_CHARS = 20_000
 
@@ -54,15 +59,43 @@ class SubmittedSignification(BaseModel):
 
 
 class CaptureSubmission(BaseModel):
-    """A whole capture: one story plus its placements."""
+    """A whole capture: one story plus its placements.
+
+    Note what is *not* here: no id, no device, no timing, nothing a browser
+    could volunteer about who is submitting. ``extra="forbid"`` means a client
+    cannot smuggle one in either, and ``tests/test_capture.py`` proves it.
+    """
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     framework_id: int
     text: Annotated[str, Field(min_length=1, max_length=MAX_STORY_CHARS)]
-    input_method: Literal["typed", "paper"] = "typed"
+    input_method: Literal["typed", "voice", "paper"] = "typed"
     respondent_group: Annotated[str, Field(max_length=200)] | None = None
     significations: list[SubmittedSignification] = Field(default_factory=list)
+
+
+class LocalCaptureSubmission(CaptureSubmission):
+    """A capture from the operator's own machine: admin, paper entry, or kiosk.
+
+    Only the local endpoint lets the caller name its entry mode, because only
+    the local endpoint is the operator. See PROGRESS.md "Decisions".
+    """
+
+    entry_mode: Literal["admin", "kiosk"] = "admin"
+
+
+class PublicCaptureSubmission(CaptureSubmission):
+    """A capture arriving through a capture link.
+
+    ``framework_id`` is not accepted: the token decides which version is being
+    answered, so a respondent's browser cannot point its story at a different
+    question set. The public router supplies it from the link.
+    """
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    framework_id: int | None = None
 
 
 def _check_triad(value: dict, corner_ids: list[str], title: str) -> dict:
