@@ -6,10 +6,20 @@ Every test runs against a throwaway SQLite file, never the operator's
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+
+from backend import ai_client
+
+# Constraint 6: the whole suite runs with zero network. Set before anything
+# imports the client, so no test can reach api.anthropic.com even by mistake.
+# ``setdefault`` leaves an explicit NL_MOCK_AI=0 alone, which is how the live
+# path gets exercised deliberately rather than accidentally.
+os.environ.setdefault(ai_client.MOCK_ENV_VAR, "1")
+
 from fastapi.testclient import TestClient
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker

@@ -16,6 +16,18 @@ dependencies = [
     # Self-contained wheels — not the kind of native dependency §9 assumption 11
     # ruled out when it chose browser printing over a PDF library.
     "pillow>=10.0",
+    # Ingestion parsers (PRD §1.3). All pure-Python or self-contained wheels,
+    # for the same reason as pillow above.
+    "python-docx>=1.1",
+    "pypdf>=4.0",
+    "python-pptx>=1.0",
+    "openpyxl>=3.1",
+    # FastAPI needs this to accept the uploaded file itself.
+    "python-multipart>=0.0.9",
+    # The only network client in the app. Reaches api.anthropic.com and nothing
+    # else, and only on an explicit Analyse click (constraint 4). Never imported
+    # when NL_MOCK_AI=1.
+    "anthropic>=0.40",
 ]
 
 [project.optional-dependencies]

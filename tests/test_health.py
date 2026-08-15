@@ -35,7 +35,7 @@ def test_health_is_fast_enough_for_the_200ms_budget() -> None:
 #: Every API path the app is allowed to expose at the current phase (PRD §6).
 #: Grow this list only when the phase that owns the endpoint is being built —
 #: it is the guard against building ahead of the plan.
-EXPECTED_API_PATHS_THROUGH_PHASE_2 = {
+EXPECTED_API_PATHS = {
     # Phase 1
     "/api/health",
     # Phase 2 — Studio and paper pack
@@ -49,6 +49,12 @@ EXPECTED_API_PATHS_THROUGH_PHASE_2 = {
     "/api/capture-links/{link_id}/revoke",
     "/api/capture-links/{link_id}/qr.png",
     "/api/public/capture/{token}",
+    # Phase 5 — ingestion and Stage A. /propose is Stage B and belongs to
+    # Phase 6; the transition into it is already refused by the stage machine.
+    "/api/import",
+    "/api/import/{job_id}",
+    "/api/import/{job_id}/organise",
+    "/api/import/{job_id}/mapping",
 }
 
 
@@ -61,4 +67,4 @@ def test_no_routes_beyond_the_current_phase() -> None:
     """
     api_paths = {path for path in app.openapi()["paths"] if path.startswith("/api")}
 
-    assert api_paths == EXPECTED_API_PATHS_THROUGH_PHASE_2
+    assert api_paths == EXPECTED_API_PATHS

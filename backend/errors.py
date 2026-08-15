@@ -35,3 +35,8 @@ def bad_request(code: str, message: str, action: str) -> AppError:
 
 def conflict(code: str, message: str, action: str) -> AppError:
     return AppError(409, code, message, action)
+
+
+def upstream(code: str, message: str, action: str) -> AppError:
+    """Something outside the app misbehaved — currently only the AI service."""
+    return AppError(502, code, message, action)
