@@ -196,6 +196,44 @@
   font-size: var(--nl-text-sm);
 }
 
+/* A bar-only wrapper, so the queue below it starts its own page. */
+.nl-import--bar {
+  padding-bottom: 0;
+}
+
+.nl-import__views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nl-space-2);
+  margin-bottom: var(--nl-space-6);
+}
+
+.nl-import__view {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-4);
+  background: none;
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  cursor: pointer;
+}
+
+.nl-import__view--current {
+  color: var(--nl-ink);
+  background: var(--nl-surface);
+  border-color: var(--nl-accent);
+  font-weight: var(--nl-weight-medium);
+}
+
+.nl-import__choose {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--nl-space-3);
+}
+
 /* ---- Constraint 2: amber flags, identical routing ---- */
 
 .nl-amber {
@@ -390,4 +428,108 @@
   max-width: 70ch;
   font-size: var(--nl-text-sm);
   line-height: var(--nl-leading-body);
+}
+
+/* ---- The validation queue: one story, and a judgement about it ---- */
+
+.nl-verify {
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  background: var(--nl-surface);
+  padding: var(--nl-space-4);
+}
+
+.nl-verify__progress {
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  margin: 0 0 var(--nl-space-4);
+}
+
+.nl-verify__progress strong {
+  font-family: var(--nl-font-data);
+  color: var(--nl-ink);
+}
+
+.nl-verify__story {
+  padding-bottom: var(--nl-space-4);
+  border-bottom: 1px solid var(--nl-grey-line);
+  margin-bottom: var(--nl-space-4);
+}
+
+/* The story is what the judgement is about, so it reads like prose rather than
+   like a field on a form. */
+.nl-verify__text {
+  margin: 0;
+  max-width: 70ch;
+  font-size: var(--nl-text-base);
+  line-height: var(--nl-leading-body);
+  white-space: pre-wrap;
+}
+
+.nl-verify__provenance {
+  margin: var(--nl-space-3) 0 0;
+  font-family: var(--nl-font-data);
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+  overflow-wrap: anywhere;
+}
+
+.nl-verify__placements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nl-space-6);
+}
+
+.nl-verify__signifier {
+  flex: 1 1 18rem;
+  min-width: 0;
+  max-width: 26rem;
+}
+
+/* The confidence sits above the widget's own question, at label weight, so the
+   question stays the thing you read first. */
+.nl-verify__signifier > :first-child {
+  display: inline-block;
+  margin-bottom: var(--nl-space-1);
+}
+
+.nl-verify__confidence,
+.nl-verify__nothing {
+  font-family: var(--nl-font-data);
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+}
+
+.nl-verify__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nl-space-2);
+  margin-top: var(--nl-space-6);
+  padding-top: var(--nl-space-4);
+  border-top: 1px solid var(--nl-grey-line);
+}
+
+.nl-verify__button {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-4);
+  background: var(--nl-paper);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-ink);
+  cursor: pointer;
+}
+
+/* Setting a story aside is a real choice but not the usual one, so it recedes
+   rather than sitting at the same weight as keeping it. */
+.nl-verify__button--quiet {
+  border-color: transparent;
+  color: var(--nl-grey);
+  text-decoration: underline;
+}
+
+.nl-verify__button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

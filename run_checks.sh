@@ -166,5 +166,60 @@ print(f"  csv through the machine: {counted} rows, all accounted for")
     exit 1
 }
 
+# Stage B, and the door it has to wait behind. The whole of constraint 1 in one
+# sequence: mark up, find the stories waiting rather than counted, say yes to
+# one, and watch that be the only thing that changes.
+marked="$(curl -sf -X POST "${imports}/${job_id}/propose" \
+    -H 'Content-Type: application/json' -d "{\"framework_id\": ${framework_id}}")" || {
+    echo "  FAIL: Stage B did not run"
+    exit 1
+}
+printf '%s' "$marked" | grep -q '"stage":"proposed"' || {
+    echo "  FAIL: the file did not reach the proposed stage"
+    exit 1
+}
+
+queue_url="http://127.0.0.1:${SMOKE_PORT}/api/queue"
+waiting="$(curl -sf "$queue_url")" || {
+    echo "  FAIL: the validation queue did not answer"
+    exit 1
+}
+
+story_id="$(printf '%s' "$waiting" | $PYTHON -c '
+import json, sys
+
+view = json.load(sys.stdin)
+assert view["counts"]["validated"] == 0, view["counts"]
+assert view["counts"]["pending"] == 2, view["counts"]
+for item in view["items"]:
+    assert item["status"] == "pending_validation", item["status"]
+    assert item["significations"], "Stage B proposed nothing"
+    for placement in item["significations"]:
+        assert placement["signified_by"] == "ai", placement
+        assert placement["validated_at"] is None, placement
+print(view["items"][0]["anecdote_id"])
+')" || {
+    echo "  FAIL: Stage B put something into the data without asking"
+    exit 1
+}
+echo "  stage B queued 2 stories, none of them data yet"
+
+curl -sf -X PUT "${queue_url}/${story_id}" \
+    -H 'Content-Type: application/json' -d '{"action":"accept"}' >/dev/null || {
+    echo "  FAIL: the story could not be accepted"
+    exit 1
+}
+
+curl -sf "$queue_url" | $PYTHON -c '
+import json, sys
+
+counts = json.load(sys.stdin)["counts"]
+assert counts == {"pending": 1, "validated": 1, "rejected": 0}, counts
+print("  saying yes to one story validated exactly that one")
+' || {
+    echo "  FAIL: the queue decision did not land as expected"
+    exit 1
+}
+
 echo
 echo "ALL CHECKS PASSED"

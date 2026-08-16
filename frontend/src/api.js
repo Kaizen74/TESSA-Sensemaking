@@ -102,6 +102,17 @@ export const api = {
   organiseImport: (id) => request(`/api/import/${id}/organise`, { method: "POST" }),
   confirmMapping: (id, body) =>
     request(`/api/import/${id}/mapping`, { method: "POST", body: JSON.stringify(body) }),
+  proposeImport: (id, frameworkId) =>
+    request(`/api/import/${id}/propose`, {
+      method: "POST",
+      body: JSON.stringify({ framework_id: frameworkId }),
+    }),
+
+  // The validation queue — the only way an AI-proposed placement becomes data.
+  readQueue: (jobId = null) =>
+    request(jobId === null ? "/api/queue" : `/api/queue?job_id=${jobId}`),
+  decideStory: (anecdoteId, body) =>
+    request(`/api/queue/${anecdoteId}`, { method: "PUT", body: JSON.stringify(body) }),
 
   // The respondent's path. The token carries everything — no framework id is
   // ever sent from here, so a browser cannot retarget its own story.

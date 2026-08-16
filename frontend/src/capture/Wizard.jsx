@@ -20,8 +20,14 @@ import { api, ApiError } from "../api.js";
 import { SignifierWidget } from "../widgets/Widgets.jsx";
 import { orderedSignifiers } from "../studio/PhonePreview.jsx";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "./draft.js";
+// The two placement converters live in a plain module so Node can load them for
+// the cross-language shape test. Re-exported because this is where callers have
+// always found them.
+import { fromStored, toSubmission } from "./placements.js";
 import { VoiceButton } from "./VoiceButton.jsx";
 import "./wizard.css";
+
+export { fromStored, toSubmission };
 
 const STEP_WELCOME = "welcome";
 const STEP_STORY = "story";
@@ -52,36 +58,6 @@ export function buildSteps(definition) {
   }
   steps.push({ kind: STEP_DONE });
   return steps;
-}
-
-/** Placements in the shape the server expects. */
-export function toSubmission(definition, values) {
-  const submission = [];
-  orderedSignifiers(definition).forEach(({ kind, signifier }) => {
-    const value = values[signifier.id];
-    if (value === undefined || value === null) return;
-
-    if (kind === "triad") {
-      const [a, b, c] = value;
-      submission.push({
-        signifier_id: signifier.id,
-        value: {
-          [signifier.corners[0]]: a,
-          [signifier.corners[1]]: b,
-          [signifier.corners[2]]: c,
-        },
-      });
-    } else if (kind === "dyad") {
-      submission.push({ signifier_id: signifier.id, value: { value } });
-    } else if (kind === "stones") {
-      if (value.length === 0) return;
-      submission.push({ signifier_id: signifier.id, value: { placements: value } });
-    } else if (kind === "mcq") {
-      if ((value.selected ?? []).length === 0) return;
-      submission.push({ signifier_id: signifier.id, value });
-    }
-  });
-  return submission;
 }
 
 export function Wizard({ framework, onFinished = null, submit: submitOverride = null }) {

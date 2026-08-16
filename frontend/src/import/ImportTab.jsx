@@ -1,32 +1,40 @@
 /*
- * The Import & Validate tab (PRD §5.3) — the staged pipeline and the Mapping
- * screen. The validation queue is the other half of this tab and arrives with
- * Phase 6, so it is named here rather than hidden.
+ * The Import & Validate tab (PRD §5.3) — the staged pipeline, the Mapping
+ * screen, and the validation queue.
  *
  * The screen is built around the one thing constraint 1 insists on: the app
  * proposes, the operator decides. So Organise is a button the operator presses,
- * what it found is shown before anything is acted on, and the Confirm button
- * says what it will do. The stage machine on the server refuses steps taken out
- * of turn, which means this screen never has to guess what is allowed — it
- * offers the next step, and a refusal comes back as a sentence to show.
+ * what it found is shown before anything is acted on, the Confirm button says
+ * what it will do, and every marked-up story waits in the queue for a person.
+ * The stage machine on the server refuses steps taken out of turn, which means
+ * this screen never has to guess what is allowed — it offers the next step, and
+ * a refusal comes back as a sentence to show.
  */
 
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../api.js";
 import { MappingScreen } from "./MappingScreen.jsx";
+import { ValidationQueue } from "./ValidationQueue.jsx";
 import "./import-tab.css";
 
 const ACCEPTED = ".docx,.txt,.md,.pdf,.pptx,.xlsx,.csv,.vtt,.srt";
 
+const VIEW_FILES = "files";
+const VIEW_QUEUE = "queue";
+
 export function ImportTab() {
+  const [view, setView] = useState(VIEW_FILES);
   const [jobs, setJobs] = useState(null);
+  const [waiting, setWaiting] = useState(0);
   const [openId, setOpenId] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
-      setJobs(await api.listImports());
+      const [rows, queue] = await Promise.all([api.listImports(), api.readQueue()]);
+      setJobs(rows);
+      setWaiting(queue.counts.pending);
       setError(null);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught : null);
@@ -64,8 +72,45 @@ export function ImportTab() {
     );
   }
 
+  const tabs = (
+    <div className="nl-import__views" role="tablist" aria-label="Import and validate">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={view === VIEW_FILES}
+        className={
+          view === VIEW_FILES ? "nl-import__view nl-import__view--current" : "nl-import__view"
+        }
+        onClick={() => setView(VIEW_FILES)}
+      >
+        Files
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={view === VIEW_QUEUE}
+        className={
+          view === VIEW_QUEUE ? "nl-import__view nl-import__view--current" : "nl-import__view"
+        }
+        onClick={() => setView(VIEW_QUEUE)}
+      >
+        Waiting for you{waiting > 0 && ` (${waiting})`}
+      </button>
+    </div>
+  );
+
+  if (view === VIEW_QUEUE) {
+    return (
+      <div>
+        <div className="nl-import nl-import--bar">{tabs}</div>
+        <ValidationQueue />
+      </div>
+    );
+  }
+
   return (
     <div className="nl-import">
+      {tabs}
       <header className="nl-import__head">
         <h2 className="nl-import__title">Import & Validate</h2>
         <p className="nl-import__sub">
@@ -113,6 +158,11 @@ export function ImportTab() {
                   {job.stage_label}
                   {job.segments_found !== null && ` · ${storyCount(job.segments_found)} found`}
                 </p>
+                {job.queue && job.queue.pending > 0 && (
+                  <p className="nl-job__meta">
+                    {job.queue.pending} waiting for you to check
+                  </p>
+                )}
                 {job.error_message && <p className="nl-job__problem">{job.error_message}</p>}
               </div>
               <button
@@ -128,9 +178,9 @@ export function ImportTab() {
       )}
 
       <p className="nl-import__soon">
-        Once a file is confirmed, the next step marks the stories up and puts
-        them in the validation queue. That part arrives with the next stage of
-        the build.
+        Every imported story passes through <strong>Waiting for you</strong>
+        before it counts. Nothing the AI suggests reaches your patterns until you
+        have looked at it.
       </p>
     </div>
   );
@@ -150,11 +200,80 @@ function ErrorNote({ error }) {
 }
 
 /**
+ * Choosing which question set the file's stories are being read through.
+ *
+ * The operator has to say: a file of stories carries no idea of which triads it
+ * belongs to, and picking one for them would bind stories to wording nobody
+ * chose. The wording matters, so the version is named on the button.
+ */
+function MarkUpStep({ job, busy, onPropose }) {
+  const [frameworks, setFrameworks] = useState(null);
+  const [chosen, setChosen] = useState(null);
+
+  useEffect(() => {
+    api
+      .listFrameworks()
+      .then((rows) => {
+        setFrameworks(rows);
+        setChosen(rows[0]?.id ?? null);
+      })
+      .catch(() => setFrameworks([]));
+  }, []);
+
+  if (frameworks === null) return <p className="nl-import__empty">Loading…</p>;
+
+  if (frameworks.length === 0) {
+    return (
+      <p className="nl-import__step-text">
+        There are no question sets yet. Make one in the <strong>Studio</strong>,
+        then come back — the AI needs the questions before it can suggest where
+        these stories sit.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <p className="nl-import__step-text">
+        {storyCount(job.confirmation.candidate_count)} ready. The next step asks
+        the AI where each one sits on your questions. Every suggestion then waits
+        for you to check it — nothing goes into the data on its own.
+      </p>
+      <div className="nl-import__choose">
+        <label className="nl-sheet__field">
+          <span className="nl-sheet__field-label">Read these against</span>
+          <select
+            className="nl-sheet__select"
+            value={chosen ?? ""}
+            onChange={(event) => setChosen(Number(event.target.value))}
+          >
+            {frameworks.map((framework) => (
+              <option key={framework.id} value={framework.id}>
+                {framework.name} — v{framework.version}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="nl-import__primary"
+          disabled={busy || chosen === null}
+          onClick={() => onPropose(chosen)}
+        >
+          {busy ? "Working…" : "Mark up these stories"}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/**
  * One file, and whatever it is waiting on.
  *
- * Three states matter to the operator: it has been read and wants organising;
- * it has been organised and wants checking; it has been checked and is done for
- * now. Each shows the one thing to do next and nothing else.
+ * Four states matter to the operator: it has been read and wants organising; it
+ * has been organised and wants checking; it has been checked and wants marking
+ * up; and its stories are in the queue. Each shows the one thing to do next and
+ * nothing else.
  */
 function ImportDetail({ jobId, onClose }) {
   const [job, setJob] = useState(null);
@@ -239,12 +358,18 @@ function ImportDetail({ jobId, onClose }) {
             <section className="nl-import__step">
               <h3 className="nl-import__section">What you confirmed</h3>
               <Reconciliation value={job.confirmation.reconciliation} />
-              <p className="nl-import__step-text">
-                {storyCount(job.confirmation.candidate_count)} ready for marking
-                up. That step, and the validation queue it feeds, arrive with the
-                next stage of the build.
-              </p>
+              <MarkUpStep
+                job={job}
+                busy={busy}
+                onPropose={(frameworkId) =>
+                  run(() => api.proposeImport(job.id, frameworkId))
+                }
+              />
             </section>
+          )}
+
+          {(job.stage === "proposed" || job.stage === "done") && (
+            <ValidationQueue jobId={job.id} />
           )}
         </>
       )}

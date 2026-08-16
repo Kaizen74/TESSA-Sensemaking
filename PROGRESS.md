@@ -127,10 +127,32 @@ passage unticked, and the narrative tally read (2 + 1 = 3). The low-confidence
 passage carried its amber flag. No horizontal overflow at either width after one
 fix; see "Fixed".
 
-### [ ] Phase 6 — Stage B + validation queue (mock-first)
+### [x] Phase 6 — Stage B + validation queue (mock-first) — **complete 2026-08-16**
 Includes the no-bypass test.
-- Gate: full suite, `NL_MOCK_AI=1`.
+- Gate: full suite, `NL_MOCK_AI=1`. **Shown green: 493 passed · ruff "All checks
+  passed" · eslint 0 problems · frontend build · smoke test end-to-end including
+  Stage B and a queue decision over HTTP. Regression list green: prior suites
+  316, identifier-absence 31, edit-semantics 26, stage gate + no-bypass 29,
+  barycentric 38, Stage B + queue 53.**
 - Commit: `phase-6: proposals + validation queue`.
+
+Delivered: `backend/propose.py` (Stage B chunked at twenty, every proposal held
+to the framework by the same validator a respondent's submission passes
+through), `backend/dataset.py` (the single definition of what counts as data),
+`POST /api/import/{id}/propose` with its 409 gate, `backend/routers/queue.py`
+(`GET /api/queue`, `PUT /api/queue/{anecdote_id}` — accept · correct · reject),
+`frontend/src/import/ValidationQueue.jsx`, `frontend/src/capture/placements.js`,
+`tests/test_no_bypass.py`, `tests/test_stage_b.py`, `tests/test_queue.py`,
+`tests/test_placement_shape_parity.py`, `tests/queue_fixtures.py`.
+
+Verified in a real browser at 1280px and 950px and at 375px: a workbook driven
+from upload through organise, mapping, and mark-up into the queue; the AI's
+placements read off real widgets with their confidence figures; one story
+corrected on the interactive widgets, one accepted, one set aside; the progress
+line following each decision; and the file reaching "finished" as the queue
+emptied. A sweep of the database afterwards confirmed the corrected placement
+stored as `analyst` with no confidence, and the untouched ones still `ai` with
+theirs. Three bugs were found this way — see "Fixed".
 
 ### [ ] Phase 7 — Live AI + supporting charts + exports
 Real Claude for both stages; supporting charts built to §5b grammar (sorted
@@ -174,9 +196,9 @@ Green in every phase from introduction onward:
   extended in Phase 4 by `tests/test_public_identifier_absence.py`, which covers
   the remote request path rather than only the schema)*
 - edit-semantics state machine *(live since Phase 2 — `tests/test_edit_semantics.py`)*
-- stage-gate + no-bypass *(stage gate live since Phase 5 —
-  `tests/test_stage_gate.py`, which tests the transition table as well as the
-  HTTP 409; the no-bypass half arrives with Phase 6's validation queue)*
+- stage-gate + no-bypass *(both live — `tests/test_stage_gate.py` since Phase 5
+  for the transition table and its HTTP 409; `tests/test_no_bypass.py` since
+  Phase 6, testing the promise behaviourally and structurally)*
 - barycentric maths *(live since Phase 2 — `tests/test_barycentric.py`, plus
   `tests/test_widget_backend_parity.py` holding the JS widget to the same goldens)*
 - `patterns_20_anecdotes.json` byte-identical *(arrives Phase 7)*
@@ -449,34 +471,94 @@ simpler option was taken unless noted.
     `ai_client.py` is the only module in `backend/` that so much as names the
     service.
 
+### Phase 6
+
+52. **`backend/dataset.py` is the single definition of "in the data".** The
+    no-bypass promise cannot be tested if it is spread across a dozen `.where()`
+    clauses, so `only_validated()` states it once and everything downstream reads
+    through it. `tests/test_no_bypass.py` then tests the promise structurally as
+    well as behaviourally: exactly two modules may write `validated` — capture,
+    where no AI was involved, and the queue, where a person just said yes.
+53. **Accepting keeps `signified_by="ai"`.** The honest record is that a model
+    placed the marker and a person agreed with it; restamping it as the
+    analyst's would read, later, as though a human had made the judgement from
+    scratch. What accepting adds is `validated_at`.
+54. **Correcting restamps per placement, not per story.** A placement the
+    operator left exactly as proposed keeps `ai` and its confidence; one they
+    moved becomes `analyst` with no confidence. Restamping the whole story would
+    overstate their involvement in the parts they agreed with.
+55. **A rejected story keeps its placements and never gets `validated_at`.** It
+    stays on disk so the import remains auditable, and `only_validated` excludes
+    it — "not data" and "deleted" are different things.
+56. **Stage B names the framework in the request; the operator picks it.** A file
+    of stories carries no idea which triads it should be read through, and
+    guessing would bind stories to wording nobody chose. The anecdote is then
+    bound to that exact version, as a captured story is.
+57. **Imported stories are `entry_mode=admin`, `source_type=import`.** The three
+    entry modes are about how a *respondent* met the wizard; a file was brought
+    in by the operator at their own machine. `source_type` is what distinguishes
+    a file from first-hand testimony, and `input_method=imported` says the rest.
+58. **A file reaches `done` when its queue empties, not when Stage B ends.** The
+    last transition of the stage machine is therefore reachable only by a person
+    working through the queue — which is the same guarantee as constraint 1,
+    stated as the shape of the machine.
+59. **There is no "accept all".** A bulk approve is the operator not looking, and
+    constraint 1 asks for explicit human validation rather than a fast way past
+    it. Three buttons per story, and no fourth.
+60. **The two placement converters live in `capture/placements.js`, not in
+    `Wizard.jsx`.** Plain JavaScript with no JSX, so Node can load them and
+    `tests/test_placement_shape_parity.py` can take a value the Python side
+    actually produced all the way to the widget shape and back. That test exists
+    because the trip home was missing and the queue crashed on it; see "Fixed".
+
 ---
 
 ## Fixed
 
 Bugs found and fixed, newest first.
 
-1. **The reconciliation table pushed the phone sideways** *(Phase 5, found in a
+1. **The validation queue crashed on every stored triad** *(Phase 6, found in a
+   real browser)*. The widgets take a triad as three ordered numbers; the server
+   stores it keyed by corner label. The wizard had a converter one way
+   (`toSubmission`) and none the other, so the queue handed a widget the database
+   shape, its maths tried to destructure an object as an array, and React took
+   the whole screen down — a blank page, not an error. Fixed by adding
+   `fromStored` beside `toSubmission`, moving both into plain-JS
+   `frontend/src/capture/placements.js`, and adding
+   `tests/test_placement_shape_parity.py`, which runs a value the Python side
+   actually produced through Node to the widget shape and back. Confirmed the
+   test fails if the bug is reintroduced.
+2. **`.nl-check` was already the Studio's checkbox row** *(Phase 6, found in a
+   real browser)*. Global CSS, two files, one class name — the queue card
+   inherited `display: flex` from `studio.css` and laid the story, the widgets
+   and the buttons out as three columns. Renamed the queue's classes to
+   `nl-verify*`. `frontend/src/import/import-tab.css`.
+3. **Every question was printed twice in the queue** *(Phase 6, found in a real
+   browser)*. The widget draws its own caption, and the queue added a heading
+   above it. Removed the heading and left the confidence figure in its place.
+   `frontend/src/import/ValidationQueue.jsx`.
+4. **The reconciliation table pushed the phone sideways** *(Phase 5, found in a
    real browser)*. `.nl-tally` had a `min-width` of 22rem, which with the page's
    own padding came to 384px — 9px past constraint 10's clean-375px bar. Fixed
    with `min-width: min(22rem, 100%)`, so the figures still get their own column
    on a laptop and the phone still does not scroll sideways.
    `frontend/src/import/import-tab.css`.
-2. **"Patterns— coming soon" ran together in the nav** *(Phase 2, found in a real
+5. **"Patterns— coming soon" ran together in the nav** *(Phase 2, found in a real
    browser while checking Phase 5)*. The leading space of an inline element is
    collapsed, so the label ran straight into the dash. Fixed with a
    non-breaking space. `frontend/src/App.jsx`.
-3. **A submitted story left its draft behind** *(Phase 3, found in a real
+6. **A submitted story left its draft behind** *(Phase 3, found in a real
    browser)*. `submit()` cleared the draft, then navigated — and navigation
    re-saved it. The next visitor would be offered "pick up where I left off" for
    a story already sent, and could submit it twice. Fixed with a ref checked
    inside the save path: React state would not have updated within the same
    handler that does the submitting. `frontend/src/capture/Wizard.jsx`.
-4. **Nav tabs overflowed the screen at 375px** *(Phase 2, found in a real
+7. **Nav tabs overflowed the screen at 375px** *(Phase 2, found in a real
    browser)*. Four tab labels plus their "coming soon" notes did not fit on one
    line, pushing the page 36px wider than the viewport and breaking constraint
    10's clean-375px bar. Fixed by letting `.nl-nav__list` wrap.
    `frontend/src/app.css`.
-5. **A 404 on every page load** *(Phase 2, found in a real browser)*. No favicon
+8. **A 404 on every page load** *(Phase 2, found in a real browser)*. No favicon
    was declared, so the browser requested `/favicon.ico` and logged a console
    error. Fixed with an inline SVG data-URI icon, which also keeps the app off
    the network entirely (constraint 4). `frontend/index.html`.
