@@ -49,12 +49,15 @@ EXPECTED_API_PATHS = {
     "/api/capture-links/{link_id}/revoke",
     "/api/capture-links/{link_id}/qr.png",
     "/api/public/capture/{token}",
-    # Phase 5 — ingestion and Stage A. /propose is Stage B and belongs to
-    # Phase 6; the transition into it is already refused by the stage machine.
+    # Phase 5 — ingestion and Stage A
     "/api/import",
     "/api/import/{job_id}",
     "/api/import/{job_id}/organise",
     "/api/import/{job_id}/mapping",
+    # Phase 6 — Stage B and the validation queue
+    "/api/import/{job_id}/propose",
+    "/api/queue",
+    "/api/queue/{anecdote_id}",
 }
 
 

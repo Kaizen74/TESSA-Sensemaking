@@ -26,6 +26,7 @@ from backend.capture_schema import (
     LocalCaptureSubmission,
     validate_significations,
 )
+from backend.dataset import STATUS_VALIDATED
 from backend.db import get_session
 from backend.framework_schema import FrameworkDefinition
 from backend.models import Anecdote, Framework, Signification, hour_rounded_now, utcnow
@@ -116,7 +117,7 @@ def store_capture(
         respondent_group=body.respondent_group,
         # Constraint 9: hour-rounded, written only by this helper.
         created_at_hour=hour_rounded_now(),
-        status="validated",
+        status=STATUS_VALIDATED,
     )
     session.add(anecdote)
     session.flush()

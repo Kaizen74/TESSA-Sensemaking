@@ -1,10 +1,10 @@
 """Ingestion endpoints (PRD §4) — the staged import machine.
 
-``/api/import`` → ``/organise`` → ``/mapping``, each step refusing to run out of
-turn (:mod:`backend.stage_machine`). ``/propose`` is Stage B and arrives with
-Phase 6; the edge it will hang off is already in the transition table and
-already refused, so nothing can reach the validation queue by calling the
-endpoints in a different order.
+``/api/import`` → ``/organise`` → ``/mapping`` → ``/propose``, each step refusing
+to run out of turn (:mod:`backend.stage_machine`). The gate between ``/mapping``
+and ``/propose`` is the one constraint 1 is about: Stage B cannot run on a file
+whose Stage A output a person has not confirmed, and asking for it returns 409
+rather than quietly doing the confirmation first.
 
 The division of labour is the point of this module:
 
@@ -16,9 +16,10 @@ The division of labour is the point of this module:
 * **Mapping confirms.** The operator's confirmation is checked against the file,
   the rows are then read deterministically, and the reconciliation is computed
   and returned for display (constraint 12).
-
-No anecdote is created anywhere in this file. Candidates sit on the import job
-until Stage B and the validation queue, which is Phase 6.
+* **Propose marks up.** Stage B suggests where each story sits, and the stories
+  are written as anecdotes that are ``pending_validation`` — in the queue, not
+  in the data. The last stage, ``done``, is reached only by a person working
+  through that queue (:mod:`backend.routers.queue`).
 """
 
 from __future__ import annotations
@@ -34,6 +35,7 @@ from sqlalchemy.orm import Session
 
 from backend import errors, stage_machine
 from backend.ai_client import AiError
+from backend.dataset import STATUS_PENDING
 from backend.db import get_session
 from backend.extraction import (
     ConfirmedExtraction,
@@ -42,7 +44,8 @@ from backend.extraction import (
     SheetMapping,
     confirm,
 )
-from backend.models import ImportJob
+from backend.framework_schema import FrameworkDefinition
+from backend.models import Anecdote, Framework, ImportJob, Signification, hour_rounded_now
 from backend.organise import (
     NarrativeSegment,
     OrganiseError,
@@ -51,6 +54,14 @@ from backend.organise import (
     organise,
 )
 from backend.parsers import FILE_CLASSES, NormalisedDocument, ParseError, classify, parse
+from backend.propose import (
+    SIGNIFIED_BY_AI,
+    SOURCE_TYPE_IMPORT,
+    ProposeError,
+    propose,
+)
+from backend.routers.queue import QueueCounts
+from backend.routers.queue import counts as queue_counts
 
 router = APIRouter(prefix="/api/import", tags=["import"])
 
@@ -102,6 +113,22 @@ class ImportJobDetail(ImportJobSummary):
     sheets: list[SheetView] = []
     organisation: OrganiseResult | None = None
     confirmation: ConfirmationView | None = None
+    #: How this file's stories are getting on in the validation queue. Zeroes
+    #: until Stage B has run, and the only figures the Import screen quotes.
+    queue: QueueCounts | None = None
+
+
+class ProposeRequest(BaseModel):
+    """Which question set the file's stories are being marked up against.
+
+    The operator states it: a file of stories carries no idea of which triads it
+    should be read through, and guessing would bind stories to wording their
+    tellers never saw.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    framework_id: int
 
 
 class MappingConfirmation(BaseModel):
@@ -155,7 +182,7 @@ def _stored_confirmation(job: ImportJob) -> ConfirmedExtraction | None:
     return None if payload is None else ConfirmedExtraction.model_validate(payload)
 
 
-def _detail(job: ImportJob) -> ImportJobDetail:
+def _detail(session: Session, job: ImportJob) -> ImportJobDetail:
     document = _stored_document(job)
     confirmation = _stored_confirmation(job)
     return ImportJobDetail(
@@ -179,6 +206,7 @@ def _detail(job: ImportJob) -> ImportJobDetail:
             sheets=confirmation.sheets,
             accepted=confirmation.accepted,
         ),
+        queue=queue_counts(session, job.id),
     )
 
 
@@ -205,7 +233,7 @@ def get_import(
     job_id: int, session: Annotated[Session, Depends(get_session)]
 ) -> ImportJobDetail:
     """One file: where it has got to, and whatever it is waiting on."""
-    return _detail(_load(session, job_id))
+    return _detail(session, _load(session, job_id))
 
 
 @router.post("", response_model=ImportJobDetail, status_code=201)
@@ -246,7 +274,7 @@ async def create_import(
     )
     session.add(job)
     session.commit()
-    return _detail(job)
+    return _detail(session, job)
 
 
 @router.post("/{job_id}/organise", response_model=ImportJobDetail)
@@ -277,7 +305,7 @@ def organise_import(
     job.error_message = None
     stage_machine.advance(job, stage_machine.STAGE_ORGANISED)
     session.commit()
-    return _detail(job)
+    return _detail(session, job)
 
 
 @router.post("/{job_id}/mapping", response_model=ImportJobDetail)
@@ -313,13 +341,109 @@ def confirm_mapping(
     job.error_message = None
     stage_machine.advance(job, stage_machine.STAGE_MAPPING_CONFIRMED)
     session.commit()
-    return _detail(job)
+    return _detail(session, job)
+
+
+@router.post("/{job_id}/propose", response_model=ImportJobDetail)
+def propose_import(
+    job_id: int,
+    body: ProposeRequest,
+    session: Annotated[Session, Depends(get_session)],
+) -> ImportJobDetail:
+    """Stage B. Marks the file's stories up and puts them in the queue.
+
+    The gate on the first line is acceptance criterion 7: a file whose Stage A
+    output has not been confirmed by a person cannot be marked up, and asking
+    for it returns 409 rather than confirming on the operator's behalf.
+
+    What is written here is deliberately not data. Every anecdote is
+    ``pending_validation``, every signification is ``signified_by="ai"`` with no
+    ``validated_at``, and only the queue can change either (constraint 1).
+    """
+    job = _load(session, job_id)
+    stage_machine.require_stage(job, stage_machine.STAGE_MAPPING_CONFIRMED)
+
+    framework = session.get(Framework, body.framework_id)
+    if framework is None:
+        raise errors.not_found(
+            "framework_not_found",
+            f"There is no question set numbered {body.framework_id}.",
+            "Pick a question set from the list and try again.",
+        )
+
+    confirmation = _stored_confirmation(job)
+    candidates = [] if confirmation is None else confirmation.candidates
+    if not candidates:
+        raise errors.bad_request(
+            "nothing_to_mark_up",
+            f"You kept no stories from '{job.filename}', so there is nothing to "
+            "mark up.",
+            "Import the file again and keep at least one story, or import a "
+            "different file.",
+        )
+
+    definition = FrameworkDefinition.model_validate(framework.definition_json)
+    try:
+        proposals = propose(definition, [candidate.text for candidate in candidates])
+    except AiError as exc:
+        stage_machine.record_error(job, exc.message)
+        session.commit()
+        raise errors.upstream(exc.code, exc.message, exc.action) from exc
+    except ProposeError as exc:
+        stage_machine.record_error(job, exc.message)
+        session.commit()
+        raise errors.upstream(exc.code, exc.message, exc.action) from exc
+
+    by_index = {proposal.index: proposal for proposal in proposals}
+    for index, candidate in enumerate(candidates):
+        anecdote = Anecdote(
+            # Bound to the exact version being marked up against, so a later
+            # meaning change cannot retro-fit new wording onto it.
+            framework_id=framework.id,
+            text=candidate.text,
+            title_auto=candidate.title,
+            # Constraint 3: the whole provenance, stamped in one place.
+            source_type=SOURCE_TYPE_IMPORT,
+            entry_mode="admin",
+            capture_link_id=None,
+            input_method="imported",
+            source_file=job.filename,
+            source_locator=candidate.source_locator,
+            import_job_id=job.id,
+            respondent_group=candidate.respondent_group,
+            created_at_hour=hour_rounded_now(),
+            # Constraint 1: in the queue, not in the data.
+            status=STATUS_PENDING,
+        )
+        session.add(anecdote)
+        session.flush()
+
+        for placement in by_index[index].placements:
+            session.add(
+                Signification(
+                    anecdote_id=anecdote.id,
+                    signifier_id=placement.signifier_id,
+                    signifier_type=placement.signifier_type,
+                    value_json=placement.value,
+                    ai_confidence=placement.confidence,
+                    signified_by=SIGNIFIED_BY_AI,
+                    # Nobody has validated this yet, and saying otherwise would
+                    # be the app validating on the operator's behalf.
+                    validated_at=None,
+                )
+            )
+
+    job.error_message = None
+    stage_machine.advance(job, stage_machine.STAGE_PROPOSED)
+    session.commit()
+    return _detail(session, job)
 
 
 __all__ = [
     "ImportJobDetail",
     "ImportJobSummary",
     "MappingConfirmation",
+    "ProposeRequest",
     "SheetProposal",
     "router",
 ]

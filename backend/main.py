@@ -16,7 +16,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend import __version__, settings
-from backend.routers import capture, capture_links, frameworks, imports, public
+from backend.routers import capture, capture_links, frameworks, imports, public, queue
 
 app = FastAPI(title="Narrative Lens", version=__version__)
 
@@ -24,6 +24,7 @@ app.include_router(frameworks.router)
 app.include_router(capture.router)
 app.include_router(capture_links.router)
 app.include_router(imports.router)
+app.include_router(queue.router)
 app.include_router(public.router)
 
 
