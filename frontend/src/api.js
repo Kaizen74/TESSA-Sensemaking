@@ -88,6 +88,21 @@ export const api = {
   revokeCaptureLink: (id) => request(`/api/capture-links/${id}/revoke`, { method: "POST" }),
   captureLinkQrUrl: (id) => `/api/capture-links/${id}/qr.png`,
 
+  // Ingestion (PRD §4). The stage machine refuses steps taken out of turn, so
+  // the screen never has to guess what is allowed — it asks and reads the 409.
+  listImports: () => request("/api/import"),
+  getImport: (id) => request(`/api/import/${id}`),
+  uploadImport: (file) => {
+    const form = new FormData();
+    form.append("file", file);
+    // No Content-Type of our own: the browser has to set the multipart
+    // boundary, and naming the type here would leave the boundary off.
+    return request("/api/import", { method: "POST", body: form, headers: {} });
+  },
+  organiseImport: (id) => request(`/api/import/${id}/organise`, { method: "POST" }),
+  confirmMapping: (id, body) =>
+    request(`/api/import/${id}/mapping`, { method: "POST", body: JSON.stringify(body) }),
+
   // The respondent's path. The token carries everything — no framework id is
   // ever sent from here, so a browser cannot retarget its own story.
   publicFramework: (token) => request(`/api/public/capture/${token}`),

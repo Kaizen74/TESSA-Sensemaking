@@ -1,22 +1,23 @@
 /*
  * The admin app shell.
  *
- * PRD §5 gives it four tabs. Phase 2 built the Studio and Phase 3 adds Capture;
- * the remaining two arrive with the phases that own them, and are shown as
- * not-yet-built rather than hidden, so the operator can see where the app is
- * going.
+ * PRD §5 gives it four tabs. Phase 2 built the Studio, Phase 3 Capture, and
+ * Phase 5 the import half of Import & Validate; Patterns arrives with the phase
+ * that owns it, and is shown as not-yet-built rather than hidden, so the
+ * operator can see where the app is going.
  */
 
 import { useState } from "react";
 import { Studio } from "./studio/Studio.jsx";
 import { CaptureTab } from "./capture/CaptureTab.jsx";
 import { PublicCapture, captureTokenFromPath } from "./capture/PublicCapture.jsx";
+import { ImportTab } from "./import/ImportTab.jsx";
 import "./app.css";
 
 const TABS = [
   { id: "studio", label: "Studio", ready: true },
   { id: "capture", label: "Capture & Links", ready: true },
-  { id: "import", label: "Import & Validate", ready: false },
+  { id: "import", label: "Import & Validate", ready: true },
   { id: "patterns", label: "Patterns", ready: false },
 ];
 
@@ -53,14 +54,18 @@ export function App() {
               <li key={tab.id}>
                 <span className="nl-nav__tab" aria-disabled="true">
                   {tab.label}
-                  <span className="nl-nav__soon"> — coming soon</span>
+                  {/* Non-breaking: the leading space of an inline element is
+                      collapsed, which ran the label into the dash. */}
+                  <span className="nl-nav__soon">&nbsp;— coming soon</span>
                 </span>
               </li>
             ),
           )}
         </ul>
       </nav>
-      {current === "studio" ? <Studio /> : <CaptureTab />}
+      {current === "studio" && <Studio />}
+      {current === "capture" && <CaptureTab />}
+      {current === "import" && <ImportTab />}
     </div>
   );
 }

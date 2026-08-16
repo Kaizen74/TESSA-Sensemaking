@@ -1,52 +1,50 @@
 # Narrative Lens — Latest
 
-**Updated:** 2026-08-15
-**Phase:** 4 of 9 complete — Remote links, kiosk, voice
-**Status:** green (307 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+**Updated:** 2026-08-16
+**Phase:** 5 of 9 complete — Ingestion + Stage A
+**Status:** green (428 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
 
 ---
 
 ## Where things stand
 
-Stories can now come in from other people's phones. All three ways of
-collecting a story work, and they all run through the same wizard.
+Stories no longer have to be typed into Narrative Lens to get into it. You can
+hand it a file that already has stories in it, and it will read the file, show
+you what it found, and wait.
 
-- **QR links.** Open a link against a question set, give it a label like
-  "Hangar noticeboard", and print its QR poster. Someone scans it, the wizard
-  opens on their phone, and their story arrives stamped as having come from that
-  link. The poster prints black-on-white with the address written underneath for
-  anyone whose camera will not cooperate.
-- **Closing a link really closes it.** Take the poster down, close the link, and
-  anyone who scans the old code is told plainly that it has closed and who to
-  ask for a current one. Closing is permanent by design — a link that could
-  reopen would be a poster that starts working again by accident. The stories it
-  already collected stay exactly where they are.
-- **Kiosk mode** runs the same wizard full-screen on a machine left out at a
-  workshop, and loops back to a fresh welcome a few seconds after each story so
-  nobody sees the last person's answers.
-- **Voice sits beside typing, never instead of it.** Dictated words are added to
-  whatever is already in the box, so someone can type a paragraph and then speak
-  a sentence and keep both. When the microphone is blocked or the browser cannot
-  listen, a plain sentence says so and points at the keyboard, which is still
-  right there.
-- **The app now serves its own front end**, so a phone on your Tailscale network
-  reaches the wizard at the same address as everything else. That closes the gap
-  noted after the earlier phases.
+- **Nine kinds of file.** Word, plain text, Markdown, PDF, PowerPoint, Excel,
+  CSV, and `.vtt` or `.srt` transcripts. Anything else is turned away at the
+  door with a sentence saying what to save it as instead.
+- **Every passage keeps its address.** "page 3, paragraph 2", "slide 4 notes",
+  "cue 7", "Responses row 5" — so when you want to check a story against the
+  original, the app tells you exactly where to look.
+- **The AI suggests; you decide.** Organise is a button you press. For written
+  text it suggests where one person's account ends and the next begins, and you
+  untick anything that is a heading or half of someone else's story. For a
+  spreadsheet it suggests which column holds the story and which sheets are
+  lookup tables to skip — and you can overrule any of it. Nothing goes into the
+  data until you confirm.
+- **The rows add up, and you can see them add up.** Confirm a spreadsheet and
+  the screen shows the arithmetic: rows with a story, rows where the story cell
+  was empty, rows on sheets you skipped, and the file's own total. If those ever
+  failed to balance the import would stop rather than show you a figure it could
+  not stand behind.
+- **The order cannot be skipped.** You cannot confirm a mapping for a file that
+  has not been organised, and you cannot organise the same file twice. Trying
+  gets a plain refusal saying where the file has actually got to.
+- **Less-certain suggestions are flagged amber** and treated exactly the same as
+  the confident ones — they go on the same list and wait for the same yes.
 
-**The anonymity guarantee now covers the network, not just the database.** Until
-this phase every story was typed on your own laptop. Now they arrive from
-strangers' phones, which send identifying headers with every request. There is a
-test suite that fires a full set of those headers at the public endpoints and
-then sweeps every column of every table looking for them. Two further tests go
-beyond behaviour to structure: no public handler is allowed to accept a request
-object at all, and the module may not even mention header access — so a future
-edit cannot quietly start reading them.
+**All of it runs with no internet at all in the tests.** There is one file in
+the whole app that can reach the AI service, and a test that fails if a second
+one ever starts to. When the service is unreachable the file simply stays where
+it was, with a note, so Organise can be clicked again later.
 
-**Checked in a real browser:** a link created, its QR poster rendered from a real
-generated image, that link opened on a 375px screen with no admin navigation
-anywhere, a story driven end to end, the link revoked, and the closed message
-confirmed on the phone. Kiosk driven end to end and confirmed looping back.
-The voice fallback fired for real.
+**Checked in a real browser** at laptop and phone width: an unreadable file
+refused, a two-sheet workbook driven through upload → organise → mapping →
+confirmation with its reconciliation read on screen, and a text file organised,
+trimmed by one passage, and confirmed. Two small layout bugs were found that way
+and fixed — see PROGRESS.md "Fixed".
 
 **Still not verified:** the `.bat` launcher has never run on Windows, because
 this build runs on Linux. It also does not yet build the frontend — you need to
@@ -54,11 +52,14 @@ run `npm run build` in `frontend/` once before the app can serve it.
 
 ## Next step
 
-**Phase 5 — Ingestion + Stage A (mock-first).** See `PROGRESS.md` for the gate.
-It adds the file parsers (docx, txt, md, pdf, pptx, xlsx, csv, vtt), the staged
-import machine with its 409 stage gate, and the column-mapping screen with exact
-row reconciliation. Its gate is the full suite green with `NL_MOCK_AI=1` — no
-network at all.
+**Phase 6 — Stage B + validation queue (mock-first).** See `PROGRESS.md` for the
+gate. It adds `/propose` — the AI suggesting where each story sits on your
+triads and dyads — and the validation queue where you approve or correct every
+one of those suggestions before it reaches the data. It also adds the no-bypass
+test. Its gate is the full suite green with `NL_MOCK_AI=1`.
+
+The edge Stage B will hang off is already in the stage machine and already
+refused, so Phase 6 attaches a handler to a door that is already locked.
 
 ## How to resume
 
@@ -67,7 +68,7 @@ network at all.
 2. Run `./run_checks.sh` to confirm the base is green **before** changing
    anything. If it is red, fix that first and say so — never build new work on a
    red base.
-3. Build Phase 5 exactly per PRD §6, including its tests and gate.
+3. Build Phase 6 exactly per PRD §6, including its tests and gate.
 4. Run the full regression list, show the gate output, commit with the phase's
    commit message, and update `PROGRESS.md` and `LATEST.md`.
 
@@ -89,6 +90,7 @@ uses its own port and its own throwaway database.
 | Collect from phones | **Capture & Links** → "Links & QR" → open a link → **QR poster** → print it |
 | Stop collecting from a poster | **Links & QR** → **Close link** (permanent) |
 | Run a workshop machine | **Capture & Links** → "Kiosk" |
+| Bring in a file of stories | **Import & Validate** → choose a file → **Organise** → check it → **Confirm** |
 | Print a paper pack | Studio → **Paper pack for version 1**, then Print → Save as PDF |
 | Check everything still works | Run `./run_checks.sh` — you want `ALL CHECKS PASSED` |
 | Stop the app | Close the small "Narrative Lens server" window |

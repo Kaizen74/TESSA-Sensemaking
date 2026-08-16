@@ -13,7 +13,8 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from backend import ai_client, organise as stage_a
+from backend import ai_client
+from backend import organise as stage_a
 from backend.ai_client import AiError
 from backend.models import ImportJob
 from backend.organise import OrganiseError, organise

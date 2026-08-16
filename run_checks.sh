@@ -12,6 +12,10 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+# Constraint 6: the gate runs with zero network. Nothing here may reach
+# api.anthropic.com — the AI stages run against their mocks.
+export NL_MOCK_AI=1
+
 PYTHON="${PYTHON:-python3}"
 SMOKE_PORT="${NL_SMOKE_PORT:-8757}"
 TMPDIR_SMOKE="$(mktemp -d)"
@@ -101,6 +105,66 @@ case "$pack" in
         exit 1
         ;;
 esac
+
+# One real file all the way through the import machine, over HTTP. This is the
+# path acceptance criterion 7 names, and it is where a contract drift between
+# the Mapping screen and the server would show up.
+imports="http://127.0.0.1:${SMOKE_PORT}/api/import"
+cat > "${TMPDIR_SMOKE}/smoke.csv" <<'CSV'
+Team,Story
+Ops,"We were three hours from the deadline when the parts finally arrived."
+Deck,"The checklist assumed you had both hands free, which on a wet deck you never do."
+Support,""
+CSV
+
+uploaded="$(curl -sf -X POST "$imports" -F "file=@${TMPDIR_SMOKE}/smoke.csv")" || {
+    echo "  FAIL: could not import a CSV"
+    exit 1
+}
+job_id="$(printf '%s' "$uploaded" | $PYTHON -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+
+# The stage gate: confirming before organising must be refused, not ignored.
+gate="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${imports}/${job_id}/mapping" \
+    -H 'Content-Type: application/json' -d '{"sheets":[]}')"
+if [[ "$gate" != "409" ]]; then
+    echo "  FAIL: the stage gate let a mapping through before Organise (got $gate)"
+    exit 1
+fi
+echo "  stage gate refuses a mapping before Organise"
+
+organised="$(curl -sf -X POST "${imports}/${job_id}/organise")" || {
+    echo "  FAIL: Stage A did not run"
+    exit 1
+}
+mapping_body="$(printf '%s' "$organised" | $PYTHON -c '
+import json, sys
+
+keys = ("sheet", "role", "story_column", "respondent_group_column", "title_column")
+sheets = json.load(sys.stdin)["organisation"]["sheets"]
+print(json.dumps({"sheets": [{k: s[k] for k in keys} for s in sheets]}))
+')"
+
+confirmed="$(curl -sf -X POST "${imports}/${job_id}/mapping" \
+    -H 'Content-Type: application/json' -d "$mapping_body")" || {
+    echo "  FAIL: the mapping could not be confirmed"
+    exit 1
+}
+
+printf '%s' "$confirmed" | $PYTHON -c '
+import json, sys
+
+job = json.load(sys.stdin)
+tally = job["confirmation"]["reconciliation"]
+counted = sum(line["count"] for line in tally["lines"])
+assert job["stage"] == "mapping_confirmed", job["stage"]
+assert tally["balanced"] is True, tally
+assert counted == tally["total"] == 3, tally
+assert job["confirmation"]["candidate_count"] == 2, job["confirmation"]
+print(f"  csv through the machine: {counted} rows, all accounted for")
+' || {
+    echo "  FAIL: the reconciliation did not add up"
+    exit 1
+}
 
 echo
 echo "ALL CHECKS PASSED"

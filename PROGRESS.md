@@ -99,11 +99,33 @@ exercised for real — Chromium declares speech support then fails without a
 microphone, which produced the plain-English message and left typing working.
 A sweep of every table for browser-supplied identifiers found none.
 
-### [ ] Phase 5 — Ingestion + Stage A (mock-first)
+### [x] Phase 5 — Ingestion + Stage A (mock-first) — **complete 2026-08-16**
 All parsers, stage machine, Mapping screen, deterministic extraction,
 reconciliation arithmetic, stage-gate 409 test.
-- Gate: full suite green with `NL_MOCK_AI=1`.
+- Gate: full suite green with `NL_MOCK_AI=1`. **Shown green: 428 passed · ruff
+  "All checks passed" · eslint 0 problems · frontend build · smoke test
+  end-to-end including a CSV driven through the whole machine over HTTP.
+  Regression list green: prior suites 212, identifier-absence 31,
+  edit-semantics 26, stage gate 17, barycentric 38, ingestion + Stage A 104.**
 - Commit: `phase-5: multi-format ingestion + organise stage`.
+
+Delivered: `backend/parsers.py` (all nine extensions into one normalised
+document with locators), `backend/ai_client.py` (the one client — mocks, strict
+JSON, one repair-retry, plain-English failure), `backend/stage_machine.py` (the
+six-stage table and its 409 gate), `backend/organise.py` (Stage A per file
+class, with the proposal checked against the file), `backend/extraction.py`
+(confirmation, deterministic post-confirmation extraction, exact
+reconciliation), `backend/routers/imports.py`, `frontend/src/import/`
+(staged pipeline, Mapping screen, passage checklist, reconciliation table),
+`tests/ingest_fixtures.py` (a real file per format, built in memory).
+
+Verified in a real browser at 1280px and 375px: an unreadable file refused with
+a plain sentence, a two-sheet workbook uploaded, organised, its mapping screen
+driven — column pickers, sample rows, ignored sheet — confirmed, and its
+reconciliation read on screen (3 + 1 + 2 = 6). A text file organised, one
+passage unticked, and the narrative tally read (2 + 1 = 3). The low-confidence
+passage carried its amber flag. No horizontal overflow at either width after one
+fix; see "Fixed".
 
 ### [ ] Phase 6 — Stage B + validation queue (mock-first)
 Includes the no-bypass test.
@@ -152,7 +174,9 @@ Green in every phase from introduction onward:
   extended in Phase 4 by `tests/test_public_identifier_absence.py`, which covers
   the remote request path rather than only the schema)*
 - edit-semantics state machine *(live since Phase 2 — `tests/test_edit_semantics.py`)*
-- stage-gate + no-bypass *(arrives Phase 5–6)*
+- stage-gate + no-bypass *(stage gate live since Phase 5 —
+  `tests/test_stage_gate.py`, which tests the transition table as well as the
+  HTTP 409; the no-bypass half arrives with Phase 6's validation queue)*
 - barycentric maths *(live since Phase 2 — `tests/test_barycentric.py`, plus
   `tests/test_widget_backend_parity.py` holding the JS widget to the same goldens)*
 - `patterns_20_anecdotes.json` byte-identical *(arrives Phase 7)*
@@ -363,24 +387,96 @@ simpler option was taken unless noted.
     answers. The exit control is deliberately small and cornered: whoever is at
     the keyboard in kiosk mode is a respondent, not the operator.
 
+### Phase 5
+
+40. **`/propose` is Phase 6; its gate is enforced from Phase 5.** PRD §6 puts
+    the stage machine and the 409 stage-gate test in Phase 5 but Stage B in
+    Phase 6, and acceptance criterion 7's "`/propose` is impossible before
+    confirmation" is a whole-project criterion. Building a `/propose` endpoint
+    now with nothing behind it would be a stub, and the session rule forbids
+    building ahead. So the *transition table* is complete now — including the
+    `mapping_confirmed → proposed` edge Phase 6 will hang Stage B on — and
+    `tests/test_stage_gate.py` states the guarantee as a property of the table:
+    with `mapping_confirmed` removed, `proposed` is unreachable from every
+    earlier stage. The HTTP route arrives with the handler that needs it.
+41. **Parsing happens at upload, Stage A at Organise.** The PRD names an
+    `uploaded` stage before `organised`; the simplest thing that distinguishes
+    them is that reading the file is deterministic and offline while organising
+    it is not. So an unreadable file is refused while the operator is still
+    looking at the file picker, no copy of the original has to be kept, and the
+    AI is only ever shown the parsed text — never the document.
+42. **Stage A's proposal is checked against the file before it is shown.** A
+    locator, sheet, or column the file does not have stops the import with a
+    plain-English message rather than being silently dropped or offered to the
+    operator. The confirmation endpoint re-checks the operator's own mapping
+    against the file independently, so the guarantee does not rest on Stage A
+    behaving.
+43. **Stage A output lives on the import job, not in `anecdotes`.** Constraint 1
+    says no AI-organised anecdote enters the dataset without validation, so
+    nothing in Phase 5 writes to `anecdotes` at all. `normalised_json` holds
+    `{document, stage_a}` and `column_mapping_json` holds
+    `{sheets|accepted, reconciliation, candidates}` — both existing columns, no
+    schema change (constraint 5).
+44. **A recoverable AI failure leaves the job where it was.** `failed` is
+    terminal in the transition table, so parking a job there because the network
+    blinked would force a re-upload. The reason is written to `error_message`
+    and the stage is untouched, so Organise can simply be clicked again.
+45. **`/mapping` is the one confirmation door for both file classes.** Tables
+    send a column mapping; prose sends the list of passages the operator kept.
+    Sending the wrong shape is refused rather than treated as "accept
+    everything" — one endpoint, one human yes, whatever the file was.
+46. **Spreadsheet candidates carry no confidence.** No model read those cells;
+    Stage A only named the column. An empty confidence is honest where a
+    fabricated 1.0 would not be, and constraint 2's amber rule then applies only
+    where a model actually made a judgement.
+47. **The reconciliation is a display object that must balance.** Constraint 12
+    asks for exact row reconciliation, shown — so it is computed as labelled
+    lines plus a total, and a tally whose lines do not sum to the file's own row
+    count stops the import instead of being displayed.
+48. **A docx is prose; its tables are not read.** A table of responses belongs in
+    the tabular path, where it gets a confirmed column mapping and exact row
+    reconciliation. Reading Word tables as loose paragraphs would smuggle table
+    data past constraint 12.
+49. **Five parser dependencies added** — `python-docx`, `pypdf`, `python-pptx`,
+    `openpyxl`, `python-multipart` — plus `anthropic` for the live path. All
+    self-contained wheels, none of the native class §9 assumption 11 ruled out.
+    The test suite writes its own PDF by hand rather than adding a PDF *writer*.
+50. **`tests/` is now a package.** One `__init__.py`, so the shared file fixtures
+    can be imported by name rather than by sys.path luck.
+51. **The gate exports `NL_MOCK_AI=1`, and so does `conftest.py`.** Constraint 6
+    wants zero network in the suite; setting it in both places means neither a
+    bare `pytest` nor `./run_checks.sh` can reach out. A structural test asserts
+    `ai_client.py` is the only module in `backend/` that so much as names the
+    service.
+
 ---
 
 ## Fixed
 
 Bugs found and fixed, newest first.
 
-1. **A submitted story left its draft behind** *(Phase 3, found in a real
+1. **The reconciliation table pushed the phone sideways** *(Phase 5, found in a
+   real browser)*. `.nl-tally` had a `min-width` of 22rem, which with the page's
+   own padding came to 384px — 9px past constraint 10's clean-375px bar. Fixed
+   with `min-width: min(22rem, 100%)`, so the figures still get their own column
+   on a laptop and the phone still does not scroll sideways.
+   `frontend/src/import/import-tab.css`.
+2. **"Patterns— coming soon" ran together in the nav** *(Phase 2, found in a real
+   browser while checking Phase 5)*. The leading space of an inline element is
+   collapsed, so the label ran straight into the dash. Fixed with a
+   non-breaking space. `frontend/src/App.jsx`.
+3. **A submitted story left its draft behind** *(Phase 3, found in a real
    browser)*. `submit()` cleared the draft, then navigated — and navigation
    re-saved it. The next visitor would be offered "pick up where I left off" for
    a story already sent, and could submit it twice. Fixed with a ref checked
    inside the save path: React state would not have updated within the same
    handler that does the submitting. `frontend/src/capture/Wizard.jsx`.
-2. **Nav tabs overflowed the screen at 375px** *(Phase 2, found in a real
+4. **Nav tabs overflowed the screen at 375px** *(Phase 2, found in a real
    browser)*. Four tab labels plus their "coming soon" notes did not fit on one
    line, pushing the page 36px wider than the viewport and breaking constraint
    10's clean-375px bar. Fixed by letting `.nl-nav__list` wrap.
    `frontend/src/app.css`.
-3. **A 404 on every page load** *(Phase 2, found in a real browser)*. No favicon
+5. **A 404 on every page load** *(Phase 2, found in a real browser)*. No favicon
    was declared, so the browser requested `/favicon.ico` and logged a console
    error. Fixed with an inline SVG data-URI icon, which also keeps the app off
    the network entirely (constraint 4). `frontend/index.html`.
