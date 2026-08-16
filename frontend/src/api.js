@@ -57,6 +57,18 @@ async function request(path, options = {}) {
   return body;
 }
 
+/** Query string from a plain object, skipping anything unset. */
+function queryString(params) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== null && value !== undefined && value !== "" && value !== false) {
+      search.set(key, String(value));
+    }
+  }
+  const rendered = search.toString();
+  return rendered ? `?${rendered}` : "";
+}
+
 export const api = {
   listFrameworks: () => request("/api/frameworks"),
   getFramework: (id) => request(`/api/frameworks/${id}`),
@@ -113,6 +125,15 @@ export const api = {
     request(jobId === null ? "/api/queue" : `/api/queue?job_id=${jobId}`),
   decideStory: (anecdoteId, body) =>
     request(`/api/queue/${anecdoteId}`, { method: "PUT", body: JSON.stringify(body) }),
+
+  // Patterns and exports (PRD §4). Every figure here is counted locally from
+  // validated stories — no AI is involved on this path at all (constraint 11).
+  getPatterns: (frameworkId, params = {}) =>
+    request(`/api/patterns/${frameworkId}${queryString(params)}`),
+  exportCsvUrl: (frameworkId, params = {}) =>
+    `/api/export/csv${queryString({ framework_id: frameworkId, ...params })}`,
+  exportBriefUrl: (frameworkId, params = {}) =>
+    `/api/export/brief${queryString({ framework_id: frameworkId, ...params })}`,
 
   // The respondent's path. The token carries everything — no framework id is
   // ever sent from here, so a browser cannot retarget its own story.

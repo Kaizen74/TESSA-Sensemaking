@@ -1,10 +1,9 @@
 /*
  * The admin app shell.
  *
- * PRD §5 gives it four tabs. Phase 2 built the Studio, Phase 3 Capture, and
- * Phase 5 the import half of Import & Validate; Patterns arrives with the phase
- * that owns it, and is shown as not-yet-built rather than hidden, so the
- * operator can see where the app is going.
+ * PRD §5 gives it four tabs, and from Phase 7 all four are built: the Studio,
+ * Capture & Links, Import & Validate, and Patterns. Patterns opens on its
+ * supporting charts for now; the Landscape becomes its default view in Phase 8.
  */
 
 import { useState } from "react";
@@ -12,13 +11,14 @@ import { Studio } from "./studio/Studio.jsx";
 import { CaptureTab } from "./capture/CaptureTab.jsx";
 import { PublicCapture, captureTokenFromPath } from "./capture/PublicCapture.jsx";
 import { ImportTab } from "./import/ImportTab.jsx";
+import { PatternsTab } from "./patterns/Patterns.jsx";
 import "./app.css";
 
 const TABS = [
   { id: "studio", label: "Studio", ready: true },
   { id: "capture", label: "Capture & Links", ready: true },
   { id: "import", label: "Import & Validate", ready: true },
-  { id: "patterns", label: "Patterns", ready: false },
+  { id: "patterns", label: "Patterns", ready: true },
 ];
 
 export function App() {
@@ -66,6 +66,7 @@ export function App() {
       {current === "studio" && <Studio />}
       {current === "capture" && <CaptureTab />}
       {current === "import" && <ImportTab />}
+      {current === "patterns" && <PatternsTab />}
     </div>
   );
 }

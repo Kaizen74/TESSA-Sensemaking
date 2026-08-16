@@ -154,7 +154,7 @@ emptied. A sweep of the database afterwards confirmed the corrected placement
 stored as `analyst` with no confidence, and the untouched ones still `ai` with
 theirs. Three bugs were found this way — see "Fixed".
 
-### [ ] Phase 7 — Live AI + supporting charts + exports
+### [x] Phase 7 — Live AI + supporting charts + exports — **complete 2026-08-16**
 Real Claude for both stages; supporting charts built to §5b grammar (sorted
 horizontal bars, direct labels, quiet weight); filters; version-chip behaviour;
 CSV + Pattern Brief with finding-style headlines.
@@ -162,8 +162,28 @@ CSV + Pattern Brief with finding-style headlines.
   flag; 2D aggregation vs golden `patterns_20_anecdotes.json` (byte-identical
   thereafter); a chart-grammar test asserting categorical endpoints return
   value-sorted data.
-- Gate: full suite + golden, ruff + eslint 0.
+- Gate: full suite + golden, ruff + eslint 0. **Shown green: 552 passed · ruff
+  "All checks passed" · eslint 0 problems · frontend build · smoke test
+  end-to-end including patterns, CSV and brief over HTTP. Regression list green:
+  prior suites 369, identifier-absence 31, edit-semantics 26, stage gate +
+  no-bypass 29, barycentric 38, golden 5, patterns + exports + live AI 54.**
 - Commit: `phase-7: live AI + supporting charts`.
+
+Delivered: `backend/patterns.py` (deterministic local aggregation),
+`backend/routers/patterns.py` (`GET /api/patterns/{id}` with filters and the
+version-mixing guard), `backend/exports.py` + `backend/routers/exports.py`
+(`/api/export/csv`, `/api/export/brief`), `frontend/src/patterns/` (the Patterns
+tab, the §5b supporting charts, the filter rail, the version chip, the export
+links), `tests/golden/patterns_20_anecdotes.json` with
+`tests/patterns_fixtures.py` and `tests/regenerate_golden.py`,
+`tests/test_live_ai.py` (the real SDK call shape and offline degradation).
+
+Verified in a real browser at 1280px and 375px, on both framework versions: the
+charts render from twenty stories, every categorical view arrives sorted by
+value, a filter narrows all of them together, clearing it restores them, the
+version chip stays hidden until mixing is ticked and then names both versions
+with their counts, and both export links carry the current filters. Three
+chart-clipping bugs were found this way — see "Fixed".
 
 ### [ ] Phase 8 — Landscape suite (primary view)
 KDE endpoint serving surface + contour twin; landscape as the Patterns default
@@ -201,7 +221,9 @@ Green in every phase from introduction onward:
   Phase 6, testing the promise behaviourally and structurally)*
 - barycentric maths *(live since Phase 2 — `tests/test_barycentric.py`, plus
   `tests/test_widget_backend_parity.py` holding the JS widget to the same goldens)*
-- `patterns_20_anecdotes.json` byte-identical *(arrives Phase 7)*
+- `patterns_20_anecdotes.json` byte-identical *(live since Phase 7 —
+  `tests/test_patterns_golden.py`; regenerate deliberately with
+  `python -m tests.regenerate_golden`, never automatically)*
 - landscape peaks ±0.02 *(arrives Phase 8)*
 - surface / contour single-source *(arrives Phase 8)*
 
@@ -511,13 +533,76 @@ simpler option was taken unless noted.
     actually produced all the way to the widget shape and back. That test exists
     because the trip home was missing and the queue crashed on it; see "Fixed".
 
+### Phase 7
+
+61. **The §5b sort is served, not drawn.** Every categorical view returns its
+    bars already ordered by value, with ties broken alphabetically so the order
+    cannot wobble between runs. A chart therefore cannot be drawn unsorted by
+    forgetting to sort it, and the grammar rule is testable against the API
+    rather than only against a screenshot.
+62. **An option nobody chose still gets a bar.** A zero is a finding; dropping
+    it would quietly redraw the question the operator asked.
+63. **Shares are of the stories that answered, not of the view.** A skipped
+    question is not a zero — nobody said nothing on purpose — so each chart
+    carries its own `answered` count as the denominator.
+64. **One version by default; `mixed=true` to span the lineage.** PRD §4 forbids
+    *silent* mixing rather than mixing, so the endpoint answers for exactly one
+    framework version unless asked, and a mixed answer carries the per-version
+    counts the chip needs. The questions drawn are always the version the
+    operator is looking at.
+65. **`load_rows` is shared by patterns and both exports.** A downloaded CSV is
+    exactly the rows the charts were drawn from — same version scope, same
+    filters. An export covering a different set than the screen above it would
+    be worse than no export.
+66. **The CSV is one row per story.** `signified_by` lists every distinct value
+    across that story's placements — `ai|analyst` after a partial correction,
+    which is the case the column exists for — and `lowest_ai_confidence` carries
+    the weakest thing anyone agreed to. One row per placement would repeat every
+    story text; per-placement columns would double the width for a rare case.
+67. **Brief headlines are written separately from brief bullets.** A bullet
+    starts by naming the question, which is right in a list and wrong as a
+    title: "On *What drove this?*, stories pull towards Speed" reads as a topic
+    with a finding attached. The headline templates lead with what was found
+    (constraint 13f).
+68. **The brief refuses to find a pattern in fewer than three stories**, and says
+    so instead. It also records the filters it was taken under and warns when a
+    view mixes versions — a brief that did not say what it excluded would
+    mislead.
+69. **The golden is regenerated by a separate command.** `python -m
+    tests.regenerate_golden`, never automatically on failure: a golden that
+    rewrites itself when it disagrees is a comment, not a test.
+70. **The golden fixture cycles its provenance fields at different periods.**
+    Cycling group, input method and entry mode together made them perfectly
+    correlated, so every filter was really the same filter and combining two
+    narrowed nothing. Caught by the first test that combined two filters.
+71. **The live path is tested against a fake `anthropic` module.** Injected into
+    `sys.modules`, so the suite still runs with zero network while checking the
+    request that actually goes out: the pinned model, temperature 0, the system
+    prompt, and the repair turn's message list.
+72. **Triads are not drawn in Phase 7.** PRD §1.5 lists the supporting charts as
+    demographics and MCQ bars, dyads as strip + histogram, and stones as a 2D
+    scatter; triads belong to the Landscape, which is Phase 8. The endpoint
+    returns triad points — they are 2D aggregation and part of the golden — but
+    the screen leaves that space to the phase that owns it.
+
 ---
 
 ## Fixed
 
 Bugs found and fixed, newest first.
 
-1. **The validation queue crashed on every stored triad** *(Phase 6, found in a
+1. **Chart labels were clipped away wherever they ran long** *(Phase 7, found in
+   a real browser)*. Three separate cases of the same mistake: bar values wide
+   enough to read "20 · 100%" ran past the viewBox and were cut to "20 · 10";
+   a stones axis label like "Fraught" set horizontally beside the square ran off
+   the right edge; and a median of exactly 0.00 or 1.00 put its centred label
+   outside the plot entirely. SVG clips silently rather than wrapping, so each
+   one lost information without any sign that it had. Fixed by measuring the
+   value column against its widest case, setting the vertical axis along itself,
+   and clamping the median label inside the plot. Confirmed by walking every
+   chart on both framework versions at 1280px and 375px and asserting no text
+   box escapes its own SVG. `frontend/src/patterns/Charts.jsx`.
+2. **The validation queue crashed on every stored triad** *(Phase 6, found in a
    real browser)*. The widgets take a triad as three ordered numbers; the server
    stores it keyed by corner label. The wizard had a converter one way
    (`toSubmission`) and none the other, so the queue handed a widget the database
@@ -528,37 +613,37 @@ Bugs found and fixed, newest first.
    `tests/test_placement_shape_parity.py`, which runs a value the Python side
    actually produced through Node to the widget shape and back. Confirmed the
    test fails if the bug is reintroduced.
-2. **`.nl-check` was already the Studio's checkbox row** *(Phase 6, found in a
+3. **`.nl-check` was already the Studio's checkbox row** *(Phase 6, found in a
    real browser)*. Global CSS, two files, one class name — the queue card
    inherited `display: flex` from `studio.css` and laid the story, the widgets
    and the buttons out as three columns. Renamed the queue's classes to
    `nl-verify*`. `frontend/src/import/import-tab.css`.
-3. **Every question was printed twice in the queue** *(Phase 6, found in a real
+4. **Every question was printed twice in the queue** *(Phase 6, found in a real
    browser)*. The widget draws its own caption, and the queue added a heading
    above it. Removed the heading and left the confidence figure in its place.
    `frontend/src/import/ValidationQueue.jsx`.
-4. **The reconciliation table pushed the phone sideways** *(Phase 5, found in a
+5. **The reconciliation table pushed the phone sideways** *(Phase 5, found in a
    real browser)*. `.nl-tally` had a `min-width` of 22rem, which with the page's
    own padding came to 384px — 9px past constraint 10's clean-375px bar. Fixed
    with `min-width: min(22rem, 100%)`, so the figures still get their own column
    on a laptop and the phone still does not scroll sideways.
    `frontend/src/import/import-tab.css`.
-5. **"Patterns— coming soon" ran together in the nav** *(Phase 2, found in a real
+6. **"Patterns— coming soon" ran together in the nav** *(Phase 2, found in a real
    browser while checking Phase 5)*. The leading space of an inline element is
    collapsed, so the label ran straight into the dash. Fixed with a
    non-breaking space. `frontend/src/App.jsx`.
-6. **A submitted story left its draft behind** *(Phase 3, found in a real
+7. **A submitted story left its draft behind** *(Phase 3, found in a real
    browser)*. `submit()` cleared the draft, then navigated — and navigation
    re-saved it. The next visitor would be offered "pick up where I left off" for
    a story already sent, and could submit it twice. Fixed with a ref checked
    inside the save path: React state would not have updated within the same
    handler that does the submitting. `frontend/src/capture/Wizard.jsx`.
-7. **Nav tabs overflowed the screen at 375px** *(Phase 2, found in a real
+8. **Nav tabs overflowed the screen at 375px** *(Phase 2, found in a real
    browser)*. Four tab labels plus their "coming soon" notes did not fit on one
    line, pushing the page 36px wider than the viewport and breaking constraint
    10's clean-375px bar. Fixed by letting `.nl-nav__list` wrap.
    `frontend/src/app.css`.
-8. **A 404 on every page load** *(Phase 2, found in a real browser)*. No favicon
+9. **A 404 on every page load** *(Phase 2, found in a real browser)*. No favicon
    was declared, so the browser requested `/favicon.ico` and logged a console
    error. Fixed with an inline SVG data-URI icon, which also keeps the app off
    the network entirely (constraint 4). `frontend/index.html`.

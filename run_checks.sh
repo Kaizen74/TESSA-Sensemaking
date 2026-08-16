@@ -221,5 +221,51 @@ print("  saying yes to one story validated exactly that one")
     exit 1
 }
 
+# The read side: patterns counted from validated stories only, and the two
+# exports that have to agree with what is on screen.
+patterns="$(curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/patterns/${framework_id}")" || {
+    echo "  FAIL: the patterns endpoint did not answer"
+    exit 1
+}
+
+printf '%s' "$patterns" | $PYTHON -c '
+import json, sys
+
+view = json.load(sys.stdin)
+assert view["total"] == 1, view["total"]          # only the accepted story
+assert view["mixed"] is False, view
+for chart in view["mcqs"] + view["demographics"]:
+    counts = [bar["count"] for bar in chart["bars"]]
+    assert counts == sorted(counts, reverse=True), chart["id"]
+print("  patterns count only validated stories, bars sorted by value")
+' || {
+    echo "  FAIL: the patterns endpoint broke its own grammar"
+    exit 1
+}
+
+csv_out="$(curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/export/csv?framework_id=${framework_id}")" || {
+    echo "  FAIL: the CSV export did not answer"
+    exit 1
+}
+case "$csv_out" in
+    *"input_method"*"source_locator"*) echo "  csv export carries full provenance" ;;
+    *)
+        echo "  FAIL: the CSV export is missing provenance columns"
+        exit 1
+        ;;
+esac
+
+brief_out="$(curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/export/brief?framework_id=${framework_id}")" || {
+    echo "  FAIL: the Pattern Brief did not answer"
+    exit 1
+}
+case "$brief_out" in
+    *"not evidence of what caused what"*) echo "  pattern brief renders with its caveats" ;;
+    *)
+        echo "  FAIL: the Pattern Brief is missing its caveats"
+        exit 1
+        ;;
+esac
+
 echo
 echo "ALL CHECKS PASSED"

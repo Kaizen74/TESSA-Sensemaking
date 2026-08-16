@@ -1,49 +1,53 @@
 # Narrative Lens — Latest
 
 **Updated:** 2026-08-16
-**Phase:** 6 of 9 complete — Stage B + validation queue
-**Status:** green (493 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+**Phase:** 7 of 9 complete — Live AI, supporting charts, exports
+**Status:** green (552 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
 
 ---
 
 ## Where things stand
 
-The import pipeline now runs end to end. A file of stories goes in, the AI
-suggests where each story sits on your questions, and every one of those
-suggestions waits for you before it counts as data.
+The app now reads as well as collects. There is a **Patterns** tab, and it shows
+you what the stories you have validated actually add up to.
 
-- **The AI marks up, you decide.** After you confirm what a file contains, one
-  button asks the AI where each story sits on your triads, dyads, stones and
-  multiple-choice questions. It reads twenty stories at a time.
-- **Nothing it suggests is your data yet.** Every marked-up story lands in
-  **Waiting for you**, and stays there until you say so — however sure the
-  suggestion looked. There is no "accept all", on purpose.
-- **You see what it saw.** Each story is shown whole, with the suggestions drawn
-  on the same triangles and sliders a respondent would have used, and how sure
-  the AI was next to each one. Less certain than 70% is flagged amber; it waits
-  in exactly the same queue either way.
-- **Three answers, and the record says which you gave.** *That looks right*
-  keeps the placements and notes that you agreed. *Change the answers* hands you
-  the same widgets to move yourself — and only the markers you actually move are
-  recorded as your judgement; the ones you leave keep saying the AI made them.
-  *Not a usable story* sets it aside; it stays on file so the import can be
-  audited, and it never counts.
-- **A file finishes when its queue empties**, not when the AI stops. That is the
-  last step of the pipeline, and only a person can reach it.
+- **Charts you can check by eye.** Every breakdown is horizontal bars sorted
+  biggest first, labelled where the bar ends, starting at zero. Dyads show every
+  mark on the line and the distribution they make. Stones show every chip on its
+  canvas. Nothing depends on colour, so it all still reads printed in grey.
+- **A slim filter rail.** Narrow to one group, one way of writing a story down,
+  or one place it came from, and every chart on the page narrows with it.
+- **Two versions are never quietly pooled.** If you changed the meaning of a
+  question, the old stories answered the old wording — so they stay separate
+  until you tick the box that says otherwise, and then a chip tells you which
+  versions you are looking at and how many stories each contributed.
+- **Two exports, matching what is on screen.** A CSV of the stories with their
+  full provenance — where each came from, who placed the markers, when it was
+  validated, which version it answered — and a **Pattern Brief** in plain
+  markdown. The brief's headline is a finding ("Stories pull towards Speed on
+  'What drove this?'"), never a topic, and every sentence in it is arithmetic you
+  could redo by hand.
+- **Nothing on this page came from AI.** The figures are counted locally by
+  ordinary code, and a test fails if any AI module ever becomes reachable from
+  the pattern path.
 
-**The promise that nothing slips past you is now tested two ways.** A file is
-driven through both AI stages and the data is then swept: nothing is in it. Every
-other endpoint is tried against those waiting stories and none of them moves one.
-And structurally, there are exactly two places in the whole app that can mark a
-story as data — typing one in yourself, and this queue — with a test that fails
-if a third ever appears.
+**The AI now has a real path to Claude, and a tested one.** Both stages call the
+service with the model and settings the spec pins, ask for strict JSON, and get
+exactly one repair attempt if the reply cannot be read before failing in a
+sentence. And being offline is an ordinary state: with no connection, Analyse
+says so plainly while capture, patterns, exports and paper packs all keep
+working.
 
-**Checked in a real browser** at laptop and phone width: a workbook driven from
-upload all the way into the queue, one story corrected on the live widgets, one
-accepted, one set aside, and the file reaching "finished" as the queue emptied.
-A look in the database afterwards confirmed the corrected marker stored as
-yours and the untouched ones still the AI's. Three bugs were found this way and
-fixed — see PROGRESS.md "Fixed".
+**The first golden baseline is in.** Twenty stories with placements fixed by
+arithmetic produce an aggregate stored character for character in
+`tests/golden/patterns_20_anecdotes.json`. From now on any change to a rounding
+rule, a sort, or a histogram bin fails that test and shows exactly what moved.
+
+**Checked in a real browser** at laptop and phone width, on both framework
+versions: the charts, the sorting, a filter narrowing everything at once, the
+version chip appearing only when asked for, and both export links carrying the
+current filters. Three label-clipping bugs were found this way and fixed — see
+PROGRESS.md "Fixed".
 
 **Still not verified:** the `.bat` launcher has never run on Windows, because
 this build runs on Linux. It also does not yet build the frontend — you need to
@@ -51,13 +55,15 @@ run `npm run build` in `frontend/` once before the app can serve it.
 
 ## Next step
 
-**Phase 7 — Live AI + supporting charts + exports.** See `PROGRESS.md` for the
-gate. It switches both AI stages from their practice data to the real Claude
-service, builds the supporting charts to the §5b grammar (sorted horizontal
-bars, direct labels, quiet weight), adds the filters and the version chip, and
-produces the CSV export and the Pattern Brief. It also introduces the first
-golden baseline, `patterns_20_anecdotes.json`, which must stay byte-identical
-from then on.
+**Phase 8 — Landscape suite (primary view).** See `PROGRESS.md` for the gate.
+This is the big one: the Narrative Landscape as the Patterns tab's default view
+— rotatable density terrain per triad with directly-labelled peaks, its 2D
+contour twin from the identical grid, region→stories drill, filter split, the 3D
+Explorer, the k-means overlay, analyst notes, and PNG snapshot defaulting to the
+contour. It adds the second golden: landscape peaks stable to ±0.02.
+
+The supporting charts built this phase are deliberately quiet so the landscape
+can be the one bold thing on the page when it arrives above them.
 
 ## How to resume
 
@@ -66,15 +72,17 @@ from then on.
 2. Run `./run_checks.sh` to confirm the base is green **before** changing
    anything. If it is red, fix that first and say so — never build new work on a
    red base.
-3. Build Phase 7 exactly per PRD §6, including its tests and gate.
+3. Build Phase 8 exactly per PRD §6, including its tests and gate.
 4. Run the full regression list, show the gate output, commit with the phase's
    commit message, and update `PROGRESS.md` and `LATEST.md`.
 
-**Two traps worth knowing.** If you start the server by hand to poke at the app,
-kill the old one first and check the port is actually free — a stale server once
-quietly served an out-of-date app, which looked exactly like a broken feature.
-And the CSS is global: before naming a new class, check the name is not already
-taken in another stylesheet. That cost an afternoon in Phase 6.
+**Three traps worth knowing.** If you start the server by hand to poke at the
+app, kill the old one first and check the port is actually free — a stale server
+once quietly served an out-of-date app, which looked exactly like a broken
+feature. The CSS is global: before naming a new class, check the name is not
+already taken in another stylesheet. And SVG clips text silently rather than
+wrapping it, so any label that can run long needs measuring against its widest
+case, not its usual one.
 
 ## Running it yourself
 
@@ -90,6 +98,9 @@ taken in another stylesheet. That cost an afternoon in Phase 6.
 | Run a workshop machine | **Capture & Links** → "Kiosk" |
 | Bring in a file of stories | **Import & Validate** → choose a file → **Organise** → check it → **Confirm** → **Mark up these stories** |
 | Check what the AI suggested | **Import & Validate** → **Waiting for you** |
+| See what the stories add up to | The **Patterns** tab |
+| Get the data out | Patterns → **Download the stories (CSV)** |
+| Get a written summary | Patterns → **Download the Pattern Brief** |
 | Print a paper pack | Studio → **Paper pack for version 1**, then Print → Save as PDF |
 | Check everything still works | Run `./run_checks.sh` — you want `ALL CHECKS PASSED` |
 | Stop the app | Close the small "Narrative Lens server" window |
