@@ -22,6 +22,7 @@ from backend.routers import (
     exports,
     frameworks,
     imports,
+    landscape,
     patterns,
     public,
     queue,
@@ -35,6 +36,7 @@ app.include_router(capture_links.router)
 app.include_router(imports.router)
 app.include_router(queue.router)
 app.include_router(patterns.router)
+app.include_router(landscape.router)
 app.include_router(exports.router)
 app.include_router(public.router)
 

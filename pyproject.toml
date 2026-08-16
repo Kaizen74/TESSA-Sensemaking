@@ -28,6 +28,12 @@ dependencies = [
     # else, and only on an explicit Analyse click (constraint 4). Never imported
     # when NL_MOCK_AI=1.
     "anthropic>=0.40",
+    # The landscape's density estimate (PRD §4: scipy gaussian_kde, Scott
+    # bandwidth). numpy comes with it. Both ship self-contained wheels for
+    # Windows, so this is not the native-dependency class §9 assumption 11 ruled
+    # out when it chose browser printing over a PDF library.
+    "scipy>=1.11",
+    "numpy>=1.26",
 ]
 
 [project.optional-dependencies]

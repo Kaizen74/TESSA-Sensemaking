@@ -335,6 +335,40 @@ def _demographics(anecdotes: list[Anecdote]) -> list[CategoryChart]:
     return charts
 
 
+def placements_by_signifier(
+    anecdotes: list[Anecdote], significations: list[Signification]
+) -> dict[str, list[tuple[int, dict]]]:
+    """Placements grouped by the question they answer, for the stories given."""
+    keep = {anecdote.id for anecdote in anecdotes}
+    grouped: dict[str, list[tuple[int, dict]]] = {}
+    for placement in significations:
+        if placement.anecdote_id in keep:
+            grouped.setdefault(placement.signifier_id, []).append(
+                (placement.anecdote_id, placement.value_json)
+            )
+    return grouped
+
+
+def one_triad(
+    definition: FrameworkDefinition,
+    anecdotes: list[Anecdote],
+    significations: list[Signification],
+    triad_id: str,
+) -> TriadChart | None:
+    """Just one triangle's points, without computing every other chart.
+
+    The landscape needs one triad and nothing else. Running the full aggregate
+    for it would build every bar, histogram and scatter on the framework as
+    well — free at twenty stories, and the difference between meeting and
+    missing PRD §4's 200ms budget at a thousand.
+    """
+    triad = next((entry for entry in definition.triads if entry.id == triad_id), None)
+    if triad is None:
+        return None
+    grouped = placements_by_signifier(anecdotes, significations)
+    return _triad_chart(triad, grouped.get(triad_id, []), len(anecdotes))
+
+
 def aggregate(
     definition: FrameworkDefinition,
     anecdotes: list[Anecdote],
@@ -353,14 +387,7 @@ def aggregate(
     this function has no opinion about which stories count — only about what the
     ones it was given add up to.
     """
-    keep = {anecdote.id for anecdote in anecdotes}
-    by_signifier: dict[str, list[tuple[int, dict]]] = {}
-    for placement in significations:
-        if placement.anecdote_id in keep:
-            by_signifier.setdefault(placement.signifier_id, []).append(
-                (placement.anecdote_id, placement.value_json)
-            )
-
+    by_signifier = placements_by_signifier(anecdotes, significations)
     total = len(anecdotes)
     return PatternSet(
         framework_id=framework_id,

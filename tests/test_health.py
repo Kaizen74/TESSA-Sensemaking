@@ -63,6 +63,10 @@ EXPECTED_API_PATHS = {
     "/api/patterns/{framework_id}",
     "/api/export/csv",
     "/api/export/brief",
+    # Phase 8 — the landscape suite
+    "/api/landscape/{framework_id}/{triad_id}",
+    "/api/explorer/{framework_id}",
+    "/api/clusters/{framework_id}",
 }
 
 
