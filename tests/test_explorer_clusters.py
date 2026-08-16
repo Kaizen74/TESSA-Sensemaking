@@ -10,11 +10,10 @@ about why they are near each other.
 
 from __future__ import annotations
 
-import time
-
 from fastapi.testclient import TestClient
 
 from backend.clusters import CLUSTER_CAVEAT, SEED
+from tests.conftest import median_ms
 from tests.patterns_fixtures import GOLDEN_DEFINITION, build_golden_dataset
 from tests.queue_fixtures import make_framework, proposed_import
 
@@ -245,8 +244,8 @@ def test_k_is_held_inside_a_range_that_means_something(client: TestClient) -> No
 def test_clusters_are_inside_the_200ms_budget(client: TestClient) -> None:
     framework = build_golden_dataset(client)
 
-    start = time.perf_counter()
-    client.get(f"/api/clusters/{framework['id']}", params={"k": 3})
-    elapsed_ms = (time.perf_counter() - start) * 1000
+    elapsed_ms = median_ms(
+        lambda: client.get(f"/api/clusters/{framework['id']}", params={"k": 3})
+    )
 
-    assert elapsed_ms < 200
+    assert elapsed_ms < 200, f"{elapsed_ms:.0f}ms"

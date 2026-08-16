@@ -135,6 +135,15 @@ export const api = {
   exportBriefUrl: (frameworkId, params = {}) =>
     `/api/export/brief${queryString({ framework_id: frameworkId, ...params })}`,
 
+  // The landscape suite. The surface and its contour twin arrive in one
+  // response, because they must be the same landscape (constraint 13b).
+  getLandscape: (frameworkId, triadId, params = {}) =>
+    request(`/api/landscape/${frameworkId}/${triadId}${queryString(params)}`),
+  getExplorer: (frameworkId, params = {}) =>
+    request(`/api/explorer/${frameworkId}${queryString(params)}`),
+  getClusters: (frameworkId, params = {}) =>
+    request(`/api/clusters/${frameworkId}${queryString(params)}`),
+
   // The respondent's path. The token carries everything — no framework id is
   // ever sent from here, so a browser cannot retarget its own story.
   publicFramework: (token) => request(`/api/public/capture/${token}`),

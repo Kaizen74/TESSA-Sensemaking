@@ -33,8 +33,7 @@
   max-width: 60ch;
 }
 
-/* Rail and charts side by side on a laptop; stacked on a phone, rail first,
-   because choosing what you are looking at comes before looking at it. */
+/* Rail beside the view on a laptop. */
 .nl-patterns__body {
   display: flex;
   flex-wrap: wrap;
@@ -45,6 +44,19 @@
 .nl-patterns__main {
   flex: 1 1 32rem;
   min-width: 0;
+}
+
+/* Stacked on a phone — and the landscape goes first.
+   Constraint 13a makes the terrain the visual anchor of the page. With the rail
+   first in source order it stacks above the view, which on a 375px screen put
+   the landscape more than a thousand pixels down: an anchor nobody sees without
+   scrolling past a column of dropdowns. The order is swapped rather than the
+   markup, so the rail still comes first for a screen reader and for the
+   keyboard, where "choose what you are looking at" genuinely does come first. */
+@media (max-width: 60rem) {
+  .nl-patterns__main {
+    order: -1;
+  }
 }
 
 .nl-patterns__count {
@@ -268,4 +280,296 @@
 
 .nl-chart__share {
   fill: var(--nl-grey);
+}
+
+/* ---- The landscape: the one bold element on the page (constraint 13a) ---- */
+
+.nl-land {
+  margin-bottom: var(--nl-space-6);
+}
+
+.nl-land__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nl-space-3);
+  margin-bottom: var(--nl-space-3);
+}
+
+.nl-land__toggle {
+  display: flex;
+  gap: var(--nl-space-2);
+}
+
+.nl-land__mode,
+.nl-land__reset {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-3);
+  background: none;
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  cursor: pointer;
+}
+
+.nl-land__mode--current {
+  color: var(--nl-ink);
+  background: var(--nl-surface);
+  border-color: var(--nl-accent);
+  font-weight: var(--nl-weight-medium);
+}
+
+.nl-land__panels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nl-space-6);
+}
+
+.nl-land__panels--split .nl-land__panel {
+  flex: 1 1 20rem;
+}
+
+.nl-land__panel {
+  flex: 1 1 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+.nl-land__panel-name {
+  font-size: var(--nl-text-base);
+  font-weight: var(--nl-weight-medium);
+  margin-bottom: var(--nl-space-2);
+}
+
+/* Grab-to-turn, and a visible focus ring for the keyboard path. */
+.nl-land__canvas {
+  display: block;
+  touch-action: none;
+  cursor: grab;
+  border-radius: var(--nl-radius);
+}
+
+.nl-land__canvas:active {
+  cursor: grabbing;
+}
+
+.nl-land__canvas:focus-visible {
+  outline: var(--nl-focus-ring);
+  outline-offset: var(--nl-focus-offset);
+}
+
+.nl-land__contour {
+  display: block;
+  width: 100%;
+  max-width: 30rem;
+  height: auto;
+}
+
+.nl-land__triangle {
+  fill: none;
+  stroke: var(--nl-grey-line);
+  stroke-width: 1;
+}
+
+/* The contour reads by line weight rather than by colour, so it survives being
+   printed in grey — and printed is what a contour is for. */
+.nl-land__isoline {
+  stroke: var(--nl-data);
+  fill: none;
+  stroke-linecap: round;
+}
+
+.nl-land__dot {
+  fill: var(--nl-ink);
+  fill-opacity: 0.45;
+}
+
+.nl-land__peak-mark {
+  fill: none;
+  stroke: var(--nl-accent);
+  stroke-width: 2;
+}
+
+.nl-land__peak-label {
+  font-family: var(--nl-font-data);
+  font-size: 15px;
+  fill: var(--nl-ink);
+  font-weight: var(--nl-weight-bold);
+  cursor: pointer;
+}
+
+.nl-land__corner {
+  font-family: var(--nl-font-ui);
+  font-size: 14px;
+  fill: var(--nl-ink);
+}
+
+.nl-land__peaks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nl-space-2);
+  margin-top: var(--nl-space-3);
+}
+
+.nl-land__peaks-title {
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+}
+
+.nl-land__peak {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-3);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-ink);
+  cursor: pointer;
+}
+
+.nl-land__peak strong {
+  font-family: var(--nl-font-data);
+}
+
+.nl-land__thin-note {
+  max-width: 44ch;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+}
+
+/* ---- Sub-navigation and the triad picker ---- */
+
+.nl-patterns__views,
+.nl-patterns__triads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nl-space-2);
+  margin-bottom: var(--nl-space-4);
+}
+
+/* ---- Region drill ---- */
+
+.nl-region {
+  border: var(--nl-border);
+  border-left: 3px solid var(--nl-accent);
+  border-radius: var(--nl-radius);
+  background: var(--nl-surface);
+  padding: var(--nl-space-4);
+  margin-bottom: var(--nl-space-6);
+}
+
+.nl-region__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nl-space-3);
+}
+
+.nl-region__title {
+  margin: 0;
+  font-size: var(--nl-text-base);
+}
+
+.nl-region__close {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-3);
+  background: none;
+  border: 0;
+  color: var(--nl-grey);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.nl-region__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nl-space-2);
+  list-style: none;
+  margin: var(--nl-space-3) 0;
+  padding: 0;
+}
+
+.nl-region__id {
+  font-family: var(--nl-font-data);
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  padding: var(--nl-space-1) var(--nl-space-2);
+}
+
+.nl-region__note {
+  margin: 0;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  max-width: 60ch;
+}
+
+/* ---- Analyst notes (constraint 12) ---- */
+
+.nl-notes {
+  border-top: 1px solid var(--nl-grey-line);
+  padding-top: var(--nl-space-4);
+  margin-top: var(--nl-space-6);
+}
+
+.nl-notes__summary {
+  font-size: var(--nl-text-sm);
+  font-weight: var(--nl-weight-medium);
+  cursor: pointer;
+  min-height: var(--nl-tap-target);
+  display: flex;
+  align-items: center;
+}
+
+.nl-notes__body p {
+  max-width: 66ch;
+  font-size: var(--nl-text-sm);
+  line-height: var(--nl-leading-body);
+  color: var(--nl-grey);
+}
+
+/* ---- Explorer ---- */
+
+.nl-explorer__axes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--nl-space-3);
+  margin-bottom: var(--nl-space-4);
+}
+
+.nl-explorer__axis {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.nl-explorer__count {
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+}
+
+.nl-explorer__clusters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nl-space-4);
+  border-top: 1px solid var(--nl-grey-line);
+  padding-top: var(--nl-space-4);
+}
+
+.nl-explorer__caveat {
+  flex: 1 1 20rem;
+  margin: 0;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  max-width: 60ch;
 }

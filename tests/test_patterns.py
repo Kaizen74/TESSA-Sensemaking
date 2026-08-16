@@ -9,10 +9,9 @@ without someone asking for it.
 
 from __future__ import annotations
 
-import time
-
 from fastapi.testclient import TestClient
 
+from tests.conftest import median_ms
 from tests.patterns_fixtures import GOLDEN_DEFINITION, build_golden_dataset
 from tests.queue_fixtures import make_framework, proposed_import
 
@@ -334,11 +333,9 @@ def test_patterns_are_inside_the_200ms_budget(client: TestClient) -> None:
     """PRD §4: 200ms for non-AI endpoints."""
     framework = build_golden_dataset(client)
 
-    start = time.perf_counter()
-    client.get(f"/api/patterns/{framework['id']}")
-    elapsed_ms = (time.perf_counter() - start) * 1000
+    elapsed_ms = median_ms(lambda: client.get(f"/api/patterns/{framework['id']}"))
 
-    assert elapsed_ms < 200
+    assert elapsed_ms < 200, f"{elapsed_ms:.0f}ms"
 
 
 def test_no_ai_module_is_reachable_from_the_pattern_path() -> None:

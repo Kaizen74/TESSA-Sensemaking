@@ -1,24 +1,37 @@
 /*
- * The Patterns tab (PRD §5.4) — Phase 7's half of it.
+ * The Patterns tab (PRD §5.4) — landscape-first.
  *
- * PRD §6 builds this in two passes. This one adds the supporting charts, the
- * filter rail, the version chip and the exports. The Landscape — the hero of
- * the view and the one bold element on the page (constraint 13a) — arrives with
- * Phase 8, and the layout leaves the top of the page to it rather than filling
- * the space with something that would then have to be demoted.
+ * It opens on the Landscape. That is the whole point of §5.4 and of constraint
+ * 13a: the terrain is the visual anchor, the filter rail is slim beside it, and
+ * the supporting charts sit in a quiet band a click away. A first-time viewer
+ * should be able to say what they are looking at and where the stories cluster
+ * without touching anything (§5b's ten-second test).
  *
- * Two things this screen must never do, both from constraint 11: draw anything
- * a language model produced, and pool two framework versions without being
- * asked. The first is handled by there being no AI on this path at all; the
- * second is a checkbox, and the chip that appears when it is ticked.
+ * Four sub-views, in the order §5.4 lists them: Landscape (default), Supporting
+ * charts, 3D Explorer, and the stories a region holds. Everything reads the
+ * same scope — one framework version unless mixing is asked for, and whatever
+ * filters the rail has set — so no two views on this page can disagree about
+ * which stories they are about.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../api.js";
 import { BarChart, DyadChart, StonesChart } from "./Charts.jsx";
+import { ExplorerView } from "./Explorer.jsx";
+import { LandscapeView } from "./Landscape.jsx";
+import { snapshotFilename, saveContourSnapshot } from "./snapshot.js";
 import "./patterns.css";
 
-/** The provenance fields the rail can filter on, in the order it shows them. */
+const VIEW_LANDSCAPE = "landscape";
+const VIEW_CHARTS = "charts";
+const VIEW_EXPLORER = "explorer";
+
+const SUB_VIEWS = [
+  { id: VIEW_LANDSCAPE, label: "Landscape" },
+  { id: VIEW_CHARTS, label: "Supporting charts" },
+  { id: VIEW_EXPLORER, label: "3D Explorer" },
+];
+
 const FILTERS = [
   { id: "respondent_group", label: "Who told it" },
   { id: "input_method", label: "How it was written" },
@@ -50,7 +63,16 @@ export function PatternsTab() {
   const [selectedId, setSelectedId] = useState(null);
   const [filters, setFilters] = useState({});
   const [mixed, setMixed] = useState(false);
+  const [splitBy, setSplitBy] = useState("");
+  const [subView, setSubView] = useState(VIEW_LANDSCAPE);
+  const [triadId, setTriadId] = useState(null);
   const [view, setView] = useState(null);
+  const [land, setLand] = useState(null);
+  const [explorer, setExplorer] = useState(null);
+  const [clusters, setClusters] = useState(null);
+  const [k, setK] = useState(3);
+  const [showClusters, setShowClusters] = useState(false);
+  const [region, setRegion] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -65,7 +87,7 @@ export function PatternsTab() {
 
   const params = useMemo(() => ({ ...filters, mixed }), [filters, mixed]);
 
-  const load = useCallback(async () => {
+  const loadPatterns = useCallback(async () => {
     if (selectedId === null) return;
     try {
       setView(await api.getPatterns(selectedId, params));
@@ -76,8 +98,56 @@ export function PatternsTab() {
   }, [selectedId, params]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    loadPatterns();
+  }, [loadPatterns]);
+
+  // The triad the landscape is about. Defaults to the first, which is what
+  // §5b's "zero clicks to a meaningful default" asks for.
+  const triads = view?.triads ?? [];
+  const currentTriad = triadId ?? triads[0]?.id ?? null;
+
+  useEffect(() => {
+    setTriadId(null);
+    setRegion(null);
+  }, [selectedId]);
+
+  const loadLandscape = useCallback(async () => {
+    if (selectedId === null || !currentTriad) {
+      setLand(null);
+      return;
+    }
+    try {
+      setLand(
+        await api.getLandscape(selectedId, currentTriad, {
+          ...params,
+          ...(splitBy ? { split_by: splitBy } : {}),
+        }),
+      );
+      setError(null);
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught : null);
+    }
+  }, [selectedId, currentTriad, params, splitBy]);
+
+  useEffect(() => {
+    if (subView === VIEW_LANDSCAPE) loadLandscape();
+  }, [subView, loadLandscape]);
+
+  useEffect(() => {
+    if (subView !== VIEW_EXPLORER || selectedId === null) return;
+    api
+      .getExplorer(selectedId, params)
+      .then(setExplorer)
+      .catch((caught) => setError(caught instanceof ApiError ? caught : null));
+  }, [subView, selectedId, params]);
+
+  useEffect(() => {
+    if (subView !== VIEW_EXPLORER || !showClusters || selectedId === null) return;
+    api
+      .getClusters(selectedId, { ...params, k })
+      .then(setClusters)
+      .catch((caught) => setError(caught instanceof ApiError ? caught : null));
+  }, [subView, showClusters, selectedId, params, k]);
 
   if (error && view === null) {
     return (
@@ -123,8 +193,6 @@ export function PatternsTab() {
       {error && <ErrorNote error={error} />}
 
       <div className="nl-patterns__body">
-        {/* The slim rail of §5b's hero layout. It stays slim when the landscape
-            arrives above it in Phase 8. */}
         <aside className="nl-rail" aria-label="Filters">
           <label className="nl-rail__field">
             <span className="nl-rail__label">Question set</span>
@@ -135,6 +203,7 @@ export function PatternsTab() {
                 setSelectedId(Number(event.target.value));
                 setFilters({});
                 setMixed(false);
+                setSplitBy("");
               }}
             >
               {frameworks.map((row) => (
@@ -170,6 +239,24 @@ export function PatternsTab() {
             </label>
           ))}
 
+          {subView === VIEW_LANDSCAPE && (
+            <label className="nl-rail__field">
+              <span className="nl-rail__label">Side by side</span>
+              <select
+                className="nl-rail__select"
+                value={splitBy}
+                onChange={(event) => setSplitBy(event.target.value)}
+              >
+                <option value="">One landscape</option>
+                {FILTERS.map((filter) => (
+                  <option key={filter.id} value={filter.id}>
+                    Split by {filter.label.toLowerCase()}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
           {family.length > 1 && (
             <label className="nl-rail__check">
               <input
@@ -185,11 +272,7 @@ export function PatternsTab() {
           )}
 
           {Object.keys(filters).length > 0 && (
-            <button
-              type="button"
-              className="nl-rail__clear"
-              onClick={() => setFilters({})}
-            >
+            <button type="button" className="nl-rail__clear" onClick={() => setFilters({})}>
               Clear filters
             </button>
           )}
@@ -201,10 +284,39 @@ export function PatternsTab() {
             <a className="nl-rail__download" href={api.exportBriefUrl(selected.id, params)}>
               Download the Pattern Brief
             </a>
+            {subView === VIEW_LANDSCAPE && land?.panels?.[0]?.has_surface && (
+              <button
+                type="button"
+                className="nl-rail__clear"
+                onClick={() =>
+                  saveContourSnapshot(land.panels[0], snapshotFilename(land, selected))
+                }
+              >
+                Save the contour as a picture
+              </button>
+            )}
           </div>
         </aside>
 
         <div className="nl-patterns__main">
+          <nav className="nl-patterns__views" aria-label="Ways of looking">
+            {SUB_VIEWS.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                className={
+                  subView === entry.id
+                    ? "nl-import__view nl-import__view--current"
+                    : "nl-import__view"
+                }
+                aria-current={subView === entry.id ? "true" : undefined}
+                onClick={() => setSubView(entry.id)}
+              >
+                {entry.label}
+              </button>
+            ))}
+          </nav>
+
           <p className="nl-patterns__count">
             <strong>{view.total}</strong> {view.total === 1 ? "story" : "stories"} in this
             view
@@ -220,35 +332,93 @@ export function PatternsTab() {
             </p>
           ) : (
             <>
-              <section className="nl-patterns__band">
-                <h3 className="nl-patterns__band-title">What people said</h3>
-                <div className="nl-patterns__grid">
-                  {view.dyads.map((chart) => (
-                    <DyadChart key={chart.id} chart={chart} />
-                  ))}
-                  {view.mcqs.map((chart) => (
-                    <BarChart key={chart.id} chart={chart} />
-                  ))}
-                  {view.stones && <StonesChart chart={view.stones} />}
-                </div>
-              </section>
+              {subView === VIEW_LANDSCAPE && (
+                <>
+                  {triads.length === 0 ? (
+                    <p className="nl-patterns__empty">
+                      A landscape is drawn from a triangle, and this question set
+                      has none. Add one in the <strong>Studio</strong>.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="nl-patterns__triads">
+                        {triads.map((triad) => (
+                          <button
+                            key={triad.id}
+                            type="button"
+                            className={
+                              triad.id === currentTriad
+                                ? "nl-import__view nl-import__view--current"
+                                : "nl-import__view"
+                            }
+                            onClick={() => {
+                              setTriadId(triad.id);
+                              setRegion(null);
+                            }}
+                          >
+                            {triad.title}
+                          </button>
+                        ))}
+                      </div>
+                      {land ? (
+                        <LandscapeView view={land} onRegion={setRegion} />
+                      ) : (
+                        <p className="nl-patterns__empty">Drawing the landscape…</p>
+                      )}
+                      {region && (
+                        <RegionDrawer
+                          region={region}
+                          view={view}
+                          onClose={() => setRegion(null)}
+                        />
+                      )}
+                      <AnalystNotes count={view.total} />
+                    </>
+                  )}
+                </>
+              )}
 
-              <section className="nl-patterns__band">
-                <h3 className="nl-patterns__band-title">Who told these stories</h3>
-                <div className="nl-patterns__grid">
-                  {view.demographics.map((chart) => (
-                    <BarChart key={chart.id} chart={chart} />
-                  ))}
-                </div>
-              </section>
+              {subView === VIEW_CHARTS && (
+                <>
+                  <section className="nl-patterns__band">
+                    <h3 className="nl-patterns__band-title">What people said</h3>
+                    <div className="nl-patterns__grid">
+                      {view.dyads.map((chart) => (
+                        <DyadChart key={chart.id} chart={chart} />
+                      ))}
+                      {view.mcqs.map((chart) => (
+                        <BarChart key={chart.id} chart={chart} />
+                      ))}
+                      {view.stones && <StonesChart chart={view.stones} />}
+                    </div>
+                  </section>
+
+                  <section className="nl-patterns__band">
+                    <h3 className="nl-patterns__band-title">Who told these stories</h3>
+                    <div className="nl-patterns__grid">
+                      {view.demographics.map((chart) => (
+                        <BarChart key={chart.id} chart={chart} />
+                      ))}
+                    </div>
+                  </section>
+                </>
+              )}
+
+              {subView === VIEW_EXPLORER &&
+                (explorer ? (
+                  <ExplorerView
+                    explorer={explorer}
+                    clusters={clusters}
+                    k={k}
+                    onK={setK}
+                    showClusters={showClusters}
+                    onShowClusters={setShowClusters}
+                  />
+                ) : (
+                  <p className="nl-patterns__empty">Loading…</p>
+                ))}
             </>
           )}
-
-          <p className="nl-patterns__soon">
-            The Narrative Landscape — the terrain that shows where stories cluster
-            on each triangle — arrives with the next stage of the build, and will
-            sit above these charts as the main view.
-          </p>
         </div>
       </div>
     </div>
@@ -256,11 +426,72 @@ export function PatternsTab() {
 }
 
 /**
- * The values each filter can actually take, read off the unfiltered charts.
+ * The stories under a peak or a region (§1.5: region → stories).
  *
- * Taken from the data rather than from a fixed list, so the rail never offers a
- * choice that would empty the screen.
+ * The ids come from the landscape's own grid cells, so this list is exactly
+ * what is under that hill — not a re-query that might round differently.
  */
+function RegionDrawer({ region, view, onClose }) {
+  const ids = new Set(region.anecdote_ids ?? []);
+  return (
+    <aside className="nl-region" aria-label="Stories in this region">
+      <div className="nl-region__head">
+        <h3 className="nl-region__title">
+          {region.count} {region.count === 1 ? "story" : "stories"} near{" "}
+          {region.nearest_corner}
+        </h3>
+        <button type="button" className="nl-region__close" onClick={onClose}>
+          Close
+        </button>
+      </div>
+      <ul className="nl-region__list">
+        {[...ids].map((id) => (
+          <li key={id} className="nl-region__story">
+            <span className="nl-region__id">#{id}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="nl-region__note">
+        These are the {ids.size} stories whose marks sit under that peak, out of{" "}
+        {view.total} in this view. Open the CSV to read them in full.
+      </p>
+    </aside>
+  );
+}
+
+/** The analyst notes panel (§1.5, constraint 12). */
+function AnalystNotes({ count }) {
+  return (
+    <details className="nl-notes">
+      <summary className="nl-notes__summary">How to read a landscape</summary>
+      <div className="nl-notes__body">
+        <p>
+          The height is how thickly stories lie, not how important they are. A
+          tall hill means many people put their mark in the same place; it says
+          nothing about whether they were right.
+        </p>
+        <p>
+          <strong>Triangles are closure-constrained.</strong> The three weights
+          must add to one, so a rise on one corner is a fall on another. That is
+          arithmetic, not a finding — read the shape of the whole, and be careful
+          about reading any single corner on its own.
+        </p>
+        <p>
+          <strong>This is exploratory.</strong> A cluster shows you where to look
+          next and which stories to read. It is not evidence that anything caused
+          anything, and {count} {count === 1 ? "story" : "stories"} is a set of
+          accounts rather than a sample of a population.
+        </p>
+        <p>
+          The contour twin is the same landscape seen from directly above. Use it
+          when you want to measure rather than to look — and it is what a saved
+          picture gives you, because a contour can be read off a printed page.
+        </p>
+      </div>
+    </details>
+  );
+}
+
 function optionsFrom(view) {
   const options = {};
   for (const chart of view?.demographics ?? []) {
@@ -269,7 +500,6 @@ function optionsFrom(view) {
   return options;
 }
 
-/** The version chip (§5.4): shown whenever a view spans framework versions. */
 function VersionChip({ versions }) {
   return (
     <p className="nl-version-chip" role="note">

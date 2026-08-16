@@ -185,7 +185,7 @@ version chip stays hidden until mixing is ticked and then names both versions
 with their counts, and both export links carry the current filters. Three
 chart-clipping bugs were found this way — see "Fixed".
 
-### [ ] Phase 8 — Landscape suite (primary view)
+### [x] Phase 8 — Landscape suite (primary view) — **complete 2026-08-16**
 KDE endpoint serving surface + contour twin; landscape as the Patterns default
 with the §5b hero layout; directly-labelled peaks; region→stories drill; filter
 split; 3D Explorer; k-means overlay; analyst notes; snapshot (contour default).
@@ -193,10 +193,37 @@ split; 3D Explorer; k-means overlay; analyst notes; snapshot (contour default).
   query exact; contour twin derives from the identical grid as the surface
   (single-source test); default route lands on Landscape; cluster determinism;
   interactive at 1,000 points.
-- Gate: full regression incl. both goldens.
+- Gate: full regression incl. both goldens. **Shown green: 617 passed · ruff
+  "All checks passed" · eslint 0 problems · frontend build · smoke test
+  end-to-end including the landscape's single-source grid and the cluster
+  caveat. Regression list green: prior suites 423, identifier-absence 31,
+  edit-semantics 26, stage gate + no-bypass 29, barycentric 38, golden 1
+  (byte-identical) 5, golden 2 (peaks ±0.02) 4, landscape suite 58, whole-app
+  integration 3.**
 - Commit: `phase-8: landscape-first patterns`.
 
-### [ ] Phase 9 — Closing the loop + operator hardening + critique pass
+Delivered: `backend/landscape.py` (scipy gaussian_kde, Scott bandwidth, 64×64
+grid, peaks with their stories, per-cell ids, contour levels off the same grid),
+`backend/clusters.py` (the Explorer's dimensions and deterministic k-means at
+seed 42), `backend/routers/landscape.py` (`/api/landscape/{id}/{triad}`,
+`/api/explorer/{id}`, `/api/clusters/{id}`, filter split on a shared density
+scale), `frontend/src/patterns/terrain.js` (projection, marching-squares
+contours, the cividis ramp), `Landscape.jsx`, `Explorer.jsx`, `snapshot.js`, the
+restructured landscape-first `Patterns.jsx` with sub-navigation, region drawer
+and analyst notes, `tests/golden/landscape_peaks.json`,
+`tests/test_landscape.py`, `tests/test_landscape_golden.py`,
+`tests/test_explorer_clusters.py`, `tests/test_terrain_maths.py`, and
+`tests/test_whole_app.py`.
+
+Verified in a real browser at 1440px and 375px: Patterns opens on the Landscape;
+the terrain paints and turns under the mouse and the arrow keys; the camera
+resets; peaks are labelled directly (4 near Speed · 4 near Care · 4 near Cost)
+and clicking one lists exactly its four stories; the contour twin draws 557
+isolines and all twenty dots from the same grid; a split by respondent group
+gives three panels on one scale; the second triad redraws; the Explorer plots
+three chosen axes with the cluster overlay and its caveat; and the snapshot
+downloads as `hangar-v1-…-contour-stories-cluster-near-my-team.png`. Three
+label-clipping and layout bugs were found this way — see "Fixed".
 "What We Heard" with <5 suppression; plain-English error pass; empty states;
 README-for-Eric (incl. "printing a paper pack" and "reading a landscape"
 one-pagers); critique pass per the design skill: remove one element per view,
@@ -224,8 +251,11 @@ Green in every phase from introduction onward:
 - `patterns_20_anecdotes.json` byte-identical *(live since Phase 7 —
   `tests/test_patterns_golden.py`; regenerate deliberately with
   `python -m tests.regenerate_golden`, never automatically)*
-- landscape peaks ±0.02 *(arrives Phase 8)*
-- surface / contour single-source *(arrives Phase 8)*
+- landscape peaks ±0.02 *(live since Phase 8 — `tests/test_landscape_golden.py`)*
+- surface / contour single-source *(live since Phase 8 —
+  `tests/test_landscape.py`)*
+- whole-app integration *(added Phase 8 — `tests/test_whole_app.py`, one run
+  through every feature in the order an operator uses them)*
 
 ---
 
@@ -585,13 +615,71 @@ simpler option was taken unless noted.
     returns triad points — they are 2D aggregation and part of the golden — but
     the screen leaves that space to the phase that owns it.
 
+### Phase 8
+
+73. **No 3D library.** The terrain is 4,096 quads projected by hand onto a
+    canvas and sorted back to front. A WebGL engine would be hundreds of
+    kilobytes for a workload this size, and one driver away from a blank
+    rectangle on the single laptop that matters (constraint 4, constraint 7).
+    The projection lives in plain JS so Node can test it.
+74. **One grid, handed out once.** `compute()` produces a single density array;
+    the surface reads it, the contour's levels are shares of its own maximum,
+    and both travel in one response. The twin is not a second calculation that
+    agrees — it is the first calculation seen from above (constraint 13b).
+75. **Split panels share a density scale.** Two terrains drawn to their own
+    maxima look equally tall however many stories each holds, which defeats the
+    comparison a split exists for. Each panel keeps its own `max_density`
+    alongside the shared `scale_density`.
+76. **A hill with no stories under it is not a peak.** Smoothing invents ridges
+    between clusters; a peak has to have marks beneath it or it is an artefact.
+    Peak counts are stories near the peak, not density values — "nine stories
+    sit here" is checkable, "0.83" is not.
+77. **Too few or too alike gives no surface, and says so.** Fewer than three
+    distinct placements has no area for a density estimate, so the view shows
+    the marks as they are rather than a smooth hill over four points.
+78. **k-means uses only dimensions every story answered.** Filling a gap with a
+    mean would invent an answer; dropping the story would silently shrink the
+    picture. Centres are returned in the reader's own units.
+79. **MCQs are not Explorer axes.** Plotting a category on an axis would invent
+    an order the operator never wrote.
+80. **The landscape uses `one_triad`, not the whole aggregate.** Building every
+    bar and histogram to draw one triangle was the difference between meeting
+    and missing PRD §4's 200ms at a thousand stories.
+81. **Budgets are measured as a median of repeated calls.** A single sample on a
+    shared machine measures the neighbours, not the app; a first call also pays
+    for caches it never pays for again. `tests/conftest.py::median_ms` is now
+    the one way this suite times an endpoint. Two flaky budget assertions were
+    converted to it after one failed at 268ms against a true median of 122ms.
+82. **The story browser is not in Phase 8.** PRD §6's Phase 8 list ends at the
+    region drill, and §1 scope item 6 (full-text search, tag, star) is never
+    assigned a phase. The region drawer covers "the stories beneath it"; the
+    browser is left for Phase 9 or a v2 decision rather than smuggled in here.
+
 ---
 
 ## Fixed
 
 Bugs found and fixed, newest first.
 
-1. **Chart labels were clipped away wherever they ran long** *(Phase 7, found in
+1. **The landscape was buried under the filter rail on a phone** *(Phase 8,
+   found in a real browser)*. The rail comes first in source order, which is
+   right for a screen reader and for the keyboard — but stacked on a 375px
+   screen it put the terrain 1,264px down the page. Constraint 13a makes the
+   landscape the visual anchor, and an anchor nobody sees without scrolling past
+   a column of dropdowns is not one. Fixed with `order: -1` on the main column
+   under 60rem, so the picture leads visually while the rail still leads for
+   assistive technology. `frontend/src/patterns/patterns.css`.
+2. **Corner labels were clipped off both landscape views** *(Phase 8, found in a
+   real browser)*. On the terrain, "Cost" ran past the canvas edge and was cut
+   to "ost" — and which side each corner lands on changes as the view rotates,
+   so a fixed alignment cannot be right. On the contour, "Speed" arrived as
+   "peed" because the base labels were anchored outwards from their corners.
+   Fixed by aligning terrain labels from where they actually landed and clamping
+   them inside the canvas, and by anchoring the contour's base labels inwards.
+   Confirmed by asserting no ink touches the canvas border and no text box
+   escapes its SVG, at both widths and after a large rotation.
+   `frontend/src/patterns/Landscape.jsx`.
+3. **Chart labels were clipped away wherever they ran long** *(Phase 7, found in
    a real browser)*. Three separate cases of the same mistake: bar values wide
    enough to read "20 · 100%" ran past the viewBox and were cut to "20 · 10";
    a stones axis label like "Fraught" set horizontally beside the square ran off
@@ -602,7 +690,7 @@ Bugs found and fixed, newest first.
    and clamping the median label inside the plot. Confirmed by walking every
    chart on both framework versions at 1280px and 375px and asserting no text
    box escapes its own SVG. `frontend/src/patterns/Charts.jsx`.
-2. **The validation queue crashed on every stored triad** *(Phase 6, found in a
+4. **The validation queue crashed on every stored triad** *(Phase 6, found in a
    real browser)*. The widgets take a triad as three ordered numbers; the server
    stores it keyed by corner label. The wizard had a converter one way
    (`toSubmission`) and none the other, so the queue handed a widget the database
@@ -613,37 +701,37 @@ Bugs found and fixed, newest first.
    `tests/test_placement_shape_parity.py`, which runs a value the Python side
    actually produced through Node to the widget shape and back. Confirmed the
    test fails if the bug is reintroduced.
-3. **`.nl-check` was already the Studio's checkbox row** *(Phase 6, found in a
+5. **`.nl-check` was already the Studio's checkbox row** *(Phase 6, found in a
    real browser)*. Global CSS, two files, one class name — the queue card
    inherited `display: flex` from `studio.css` and laid the story, the widgets
    and the buttons out as three columns. Renamed the queue's classes to
    `nl-verify*`. `frontend/src/import/import-tab.css`.
-4. **Every question was printed twice in the queue** *(Phase 6, found in a real
+6. **Every question was printed twice in the queue** *(Phase 6, found in a real
    browser)*. The widget draws its own caption, and the queue added a heading
    above it. Removed the heading and left the confidence figure in its place.
    `frontend/src/import/ValidationQueue.jsx`.
-5. **The reconciliation table pushed the phone sideways** *(Phase 5, found in a
+7. **The reconciliation table pushed the phone sideways** *(Phase 5, found in a
    real browser)*. `.nl-tally` had a `min-width` of 22rem, which with the page's
    own padding came to 384px — 9px past constraint 10's clean-375px bar. Fixed
    with `min-width: min(22rem, 100%)`, so the figures still get their own column
    on a laptop and the phone still does not scroll sideways.
    `frontend/src/import/import-tab.css`.
-6. **"Patterns— coming soon" ran together in the nav** *(Phase 2, found in a real
+8. **"Patterns— coming soon" ran together in the nav** *(Phase 2, found in a real
    browser while checking Phase 5)*. The leading space of an inline element is
    collapsed, so the label ran straight into the dash. Fixed with a
    non-breaking space. `frontend/src/App.jsx`.
-7. **A submitted story left its draft behind** *(Phase 3, found in a real
+9. **A submitted story left its draft behind** *(Phase 3, found in a real
    browser)*. `submit()` cleared the draft, then navigated — and navigation
    re-saved it. The next visitor would be offered "pick up where I left off" for
    a story already sent, and could submit it twice. Fixed with a ref checked
    inside the save path: React state would not have updated within the same
    handler that does the submitting. `frontend/src/capture/Wizard.jsx`.
-8. **Nav tabs overflowed the screen at 375px** *(Phase 2, found in a real
+10. **Nav tabs overflowed the screen at 375px** *(Phase 2, found in a real
    browser)*. Four tab labels plus their "coming soon" notes did not fit on one
    line, pushing the page 36px wider than the viewport and breaking constraint
    10's clean-375px bar. Fixed by letting `.nl-nav__list` wrap.
    `frontend/src/app.css`.
-9. **A 404 on every page load** *(Phase 2, found in a real browser)*. No favicon
+11. **A 404 on every page load** *(Phase 2, found in a real browser)*. No favicon
    was declared, so the browser requested `/favicon.ico` and logged a console
    error. Fixed with an inline SVG data-URI icon, which also keeps the app off
    the network entirely (constraint 4). `frontend/index.html`.

@@ -1,16 +1,16 @@
 # Graph Report - TESSA-Sensemaking  (2026-08-16)
 
 ## Corpus Check
-- 120 files · ~100,082 words
+- 133 files · ~115,818 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1910 nodes · 4628 edges · 102 communities (88 shown, 14 thin omitted)
-- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 432 edges (avg confidence: 0.5)
+- 2133 nodes · 5222 edges · 97 communities (87 shown, 10 thin omitted)
+- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 460 edges (avg confidence: 0.5)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4a0c023a`
+- Built from commit: `d023d74a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -25,36 +25,36 @@
 - _create
 - request_json
 - test_public_identifier_absence.py
-- imports.py
+- ImportJob
 - package.json
 - validate_definition
-- NormalisedDocument
-- test_stage_gate.py
+- organise
+- build_golden_dataset
 - parsers.py
 - _run_node
-- NarrativeSegment
+- imports.py
 - backend/patterns.py
 - CaptureLink
 - parse
 - What You Must Do When Invoked
-- Signification
-- test_organise_stage_a.py
-- public.py
+- _framework
+- TriadChart
+- capture.py
 - TestClient
 - PRD: Narrative Lens — Local Narrative Sense-Making App
-- Phases
-- CaptureError
+- Decisions
+- test_explorer_clusters.py
 - App.jsx
 - test_capture_draft.py
 - Widgets.jsx
 - test_schema_absence.py
-- paper_pack.py
-- ConfirmationView
+- render_paper_pack
+- test_terrain_maths.py
 - Anecdote
 - test_patterns.py
 - StonesAxis
-- ingest_fixtures.py
-- build_golden_dataset
+- test_capture_links.py
+- test_exports.py
 - voice.js
 - ImportTab.jsx
 - models.py
@@ -69,7 +69,7 @@
 - Web Design & Data Visualization
 - queue.py
 - backend/exports.py
-- SubmittedSignification
+- regenerate_golden.py
 - Design System Reference — 2026
 - test_health.py
 - test_live_ai.py
@@ -96,61 +96,56 @@
 - edit_semantics.py
 - ValidationQueue.jsx
 - propose.py
-- export_brief
+- routers/landscape.py
 - Patterns.jsx
-- .estimated_minutes
-- ai_client.py
-- .exceeds_screen_warning
-- .signifier_count
-- _live_text
-- AiError
+- _story
+- conftest.py
+- test_landscape_golden.py
+- TestTokenDecidesEverything
+- TestLinkProvenance
+- _backend_modules
 - env.py
 - RateLimiter
-- _calls
-- xlsx_bytes
 - patterns_fixtures.py
-- _FakeAnthropic
 - field_validator
-- chunks
-- public_base_url
-- .signifier_ids_must_be_unique
+- db.py
 
 ## God Nodes (most connected - your core abstractions)
-1. `FrameworkDefinition` - 109 edges
-2. `Anecdote` - 98 edges
-3. `Signification` - 64 edges
-4. `Framework` - 60 edges
-5. `ImportJob` - 49 edges
-6. `parse()` - 41 edges
-7. `NormalisedDocument` - 38 edges
-8. `_framework()` - 37 edges
-9. `get_session()` - 36 edges
-10. `make_framework()` - 36 edges
+1. `FrameworkDefinition` - 123 edges
+2. `Anecdote` - 111 edges
+3. `Signification` - 77 edges
+4. `build_golden_dataset()` - 71 edges
+5. `Framework` - 60 edges
+6. `make_framework()` - 50 edges
+7. `ImportJob` - 49 edges
+8. `parse()` - 41 edges
+9. `get_session()` - 40 edges
+10. `NormalisedDocument` - 38 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Shape` --uses--> `AiError`  [INFERRED]
   tests/test_ai_client.py → backend/ai_client.py
-- `_FakeAnthropic` --uses--> `AiError`  [INFERRED]
-  tests/test_live_ai.py → backend/ai_client.py
-- `_FakeMessages` --uses--> `AiError`  [INFERRED]
-  tests/test_live_ai.py → backend/ai_client.py
-- `_Response` --uses--> `AiError`  [INFERRED]
-  tests/test_live_ai.py → backend/ai_client.py
 - `TestAnonymityStatementIsTrueOfTheCode` --uses--> `FrameworkDefinition`  [INFERRED]
+  tests/test_framework_schema.py → backend/framework_schema.py
+- `TestDefaults` --uses--> `FrameworkDefinition`  [INFERRED]
+  tests/test_framework_schema.py → backend/framework_schema.py
+- `TestDyadValidation` --uses--> `FrameworkDefinition`  [INFERRED]
+  tests/test_framework_schema.py → backend/framework_schema.py
+- `TestIdRules` --uses--> `FrameworkDefinition`  [INFERRED]
   tests/test_framework_schema.py → backend/framework_schema.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (102 total, 14 thin omitted)
+## Communities (97 total, 10 thin omitted)
 
 ### Community 0 - "BarycentricError"
 Cohesion: 0.05
 Nodes (47): BarycentricError, from_value_json(), is_inside(), normalise(), ValueError, Triad barycentric maths. A triad answer is a point inside an equilateral…, Whether three weights sum to 1.0 within :data:`SUM_TOLERANCE`., Whether the weights describe a point in or on the triangle. (+39 more)
 
 ### Community 1 - "TestClient"
-Cohesion: 0.08
-Nodes (31): qr_png_bytes(), QR codes for capture links (PRD §4, §1.8). A QR is how a phone gets to the…, Return a PNG of ``payload`` as QR, as raw bytes. Error correction is set to M…, _framework(), _link(), TestClient, Capture links and the public capture path (PRD §6 Phase 4). The tests the PRD…, PRD §6 Phase 4: token lifecycle. §7.6: revoked links close. (+23 more)
+Cohesion: 0.16
+Nodes (10): _framework(), _link(), TestClient, PRD §6 Phase 4: token lifecycle. §7.6: revoked links close., The heart of §7.6: a taken-down QR poster cannot keep collecting., Hiding the link would hide where its stories came from., A respondent's browser is told the questions and nothing more., A QR pointing at 127.0.0.1 works on the laptop and fails on a phone. (+2 more)
 
 ### Community 2 - "TestClient"
 Cohesion: 0.09
@@ -158,35 +153,35 @@ Nodes (24): _framework(), TestClient, Local capture (PRD §6 Phase 3). The tests
 
 ### Community 3 - "Framework"
 Cohesion: 0.12
-Nodes (38): is_structural_change(), Whether the edit changes the framework's shape rather than its words., Framework, A version of the question set respondents see. ``parent_framework_id`` links…, _anecdote_count(), _apply_meaning_change(), _apply_wording_fix(), create_framework() (+30 more)
+Nodes (41): get_session(), Session, FastAPI dependency yielding a session that always closes., is_structural_change(), Whether the edit changes the framework's shape rather than its words., Framework, A version of the question set respondents see. ``parent_framework_id`` links…, _anecdote_count() (+33 more)
 
 ### Community 4 - "make_engine"
-Cohesion: 0.06
-Nodes (46): _connect_args(), make_engine(), SQLite needs ``check_same_thread=False`` to serve requests from a pool., Build an engine, enabling SQLite foreign-key enforcement. SQLite ignores…, Config, Engine, client(), db_path() (+38 more)
+Cohesion: 0.18
+Nodes (18): make_engine(), Build an engine, enabling SQLite foreign-key enforcement. SQLite ignores…, Config, Engine, alembic_config(), fixture, Alembic migration 001 — up, down, and agreement with the models. Constraint 5…, The two columns v1.3 added to frameworks reach the database. (+10 more)
 
 ### Community 5 - "TestClient"
 Cohesion: 0.10
 Nodes (23): _create_full(), _pack_html(), TestClient, The printable paper pack (PRD §6 Phase 2 tests, §5b print grammar). Two…, PRD §1.2a: the story card carries respondent-group tick boxes., The pack renders the version's current wording, not a cached copy., Constraint 9: the anonymity statement is printed verbatim on the card., Whatever this version says is what the card prints — no substitution. (+15 more)
 
 ### Community 6 - "test_import_pipeline.py"
-Cohesion: 0.15
-Nodes (46): txt_bytes(), _confirm(), _confirmation_body(), _organise(), parametrize, Session, TestClient, The staged import machine end to end, over HTTP, with zero network. Acceptance… (+38 more)
+Cohesion: 0.08
+Nodes (65): csv_bytes(), pdf_bytes(), _pdf_escape(), Real files, in memory, one per format Narrative Lens claims to read. Acceptance…, A one-page PDF with each paragraph as its own text run. Written by hand:…, A two-sheet workbook: one of responses, one lookup table to ignore. The…, txt_bytes(), vtt_bytes() (+57 more)
 
 ### Community 7 - "_create"
 Cohesion: 0.14
 Nodes (23): _add_story(), _create(), _definition(), Session, TestClient, The wording-fix vs meaning-change state machine (PRD §6, constraint 13g). This…, Constraint 7: the operator must be able to act on the message., A wording fix patches in place and appends to the edit log. (+15 more)
 
 ### Community 8 - "request_json"
-Cohesion: 0.11
-Nodes (25): Any, Ask for one JSON object of the given shape, or fail in plain English. In mock…, request_json(), live(), BaseModel, fixture, MonkeyPatch, The one AI client, and the four promises constraint 6 makes about it. (+17 more)
+Cohesion: 0.08
+Nodes (34): _fenced_json(), mock_enabled(), _parse(), Any, Parse one reply strictly, or raise the reason it could not be parsed., Ask for one JSON object of the given shape, or fail in plain English. In mock…, Whether this process runs with mocks instead of the network. Read on every call…, Return *raw* with one surrounding markdown fence removed, if present. Strict… (+26 more)
 
 ### Community 9 - "test_public_identifier_absence.py"
-Cohesion: 0.12
-Nodes (22): Clear every counter. Tests call this between cases., reset_all(), _clear_limits(), fixture, Rate limiters are process-wide; keep cases independent., _clear_limits(), _framework(), _link() (+14 more)
+Cohesion: 0.17
+Nodes (15): _framework(), _link(), TestClient, Constraint 9 on the remote path (PRD §6 Phase 4: identifier-absence test).…, Sweep every column of every table, not just the ones we expect., Structural guards: not "it doesn't today", but "it has no way to"., Taking a ``Request`` would put every header within arm's reach., A grep-level guard against a future edit reaching for client data. (+7 more)
 
-### Community 10 - "imports.py"
-Cohesion: 0.11
-Nodes (42): Something outside the app misbehaved — currently only the AI service., upstream(), ImportJob, One uploaded file moving through the two-stage ingestion machine., confirm_mapping(), create_import(), _detail(), get_import() (+34 more)
+### Community 10 - "ImportJob"
+Cohesion: 0.07
+Nodes (55): conflict(), ImportJob, One uploaded file moving through the two-stage ingestion machine., confirm_mapping(), create_import(), _detail(), get_import(), list_imports() (+47 more)
 
 ### Community 11 - "package.json"
 Cohesion: 0.06
@@ -194,55 +189,55 @@ Nodes (30): eslint, @eslint/js, eslint-plugin-react, eslint-plugin-react-hooks, 
 
 ### Community 12 - "validate_definition"
 Cohesion: 0.06
-Nodes (21): default_definition(), Parse and validate a raw ``definition_json`` payload., A minimal, valid definition — what a brand-new framework starts from., validate_definition(), Validation of ``definition_json`` and the anonymity statement it carries., Significations key on the id alone, so one namespace covers all kinds., A typo in the Studio should fail loudly, not vanish silently., Constraint 10: ≤4 minutes typical. (+13 more)
+Nodes (24): default_definition(), Parse and validate a raw ``definition_json`` payload., A minimal, valid definition — what a brand-new framework starts from., validate_definition(), Base, Declarative base carrying the shared naming convention., DeclarativeBase, Validation of ``definition_json`` and the anonymity statement it carries. (+16 more)
 
-### Community 13 - "NormalisedDocument"
-Cohesion: 0.12
-Nodes (31): _check_narrative(), _check_tabular(), _hinted_column(), _mock_narrative(), _mock_tabular(), _narrative_prompt(), NarrativeOrganisation, organise() (+23 more)
+### Community 13 - "organise"
+Cohesion: 0.09
+Nodes (41): _check_narrative(), _check_tabular(), _hinted_column(), _mock_narrative(), _mock_tabular(), _narrative_prompt(), NarrativeOrganisation, organise() (+33 more)
 
-### Community 14 - "test_stage_gate.py"
-Cohesion: 0.12
-Nodes (18): Whether ``target`` can be reached from ``start`` by any number of steps. Used…, reachable(), _job(), parametrize, The stage machine and its 409 gate (constraints 1 and 12). Two levels are…, Constraint 7: a refusal the operator can act on, with no jargon in it., ``failed`` is terminal, so a blinking network must not land there., A stage with no row would be a dead end nothing could describe. (+10 more)
+### Community 14 - "build_golden_dataset"
+Cohesion: 0.10
+Nodes (49): Every story inside a rectangle of grid cells, and no others. The region drill…, stories_in_region(), build_golden_dataset(), TestClient, Create the framework and its twenty stories. Returns the framework., _capture(), _landscape(), _panel() (+41 more)
 
 ### Community 15 - "parsers.py"
-Cohesion: 0.14
-Nodes (23): Block, _blocks_from_text(), _clean_row(), _decode(), _parse_captions(), _parse_csv(), _parse_docx(), _parse_pdf() (+15 more)
+Cohesion: 0.11
+Nodes (31): Block, _blocks_from_text(), classify(), _clean_row(), _decode(), _parse_captions(), _parse_csv(), _parse_docx() (+23 more)
 
 ### Community 16 - "_run_node"
 Cohesion: 0.11
 Nodes (14): parametrize, Voice fallback (PRD §6 Phase 4, §7.12, constraint 10). Constraint 10 says voice…, The UI calls stop() on unmount whether or not voice ever started., Stopping on purpose is not a failure and must not show a warning., Constraint 10: voice always paired with typing., Interim results would rewrite a respondent's words as they speak., §7.12: voice fails plain-English with a working fallback., Constraint 7: no jargon a respondent cannot act on. (+6 more)
 
-### Community 17 - "NarrativeSegment"
-Cohesion: 0.19
-Nodes (25): _balance(), Candidate, confirm(), confirm_narrative(), confirm_tabular(), ConfirmedExtraction, ExtractionError, BaseModel (+17 more)
+### Community 17 - "imports.py"
+Cohesion: 0.12
+Nodes (50): _balance(), Candidate, confirm(), confirm_narrative(), confirm_tabular(), ConfirmedExtraction, ExtractionError, BaseModel (+42 more)
 
 ### Community 18 - "backend/patterns.py"
-Cohesion: 0.13
-Nodes (39): CaptureSettings, Dyad, Mcq, BaseModel, Validation for ``frameworks.definition_json`` (PRD §3 and §5). Every…, A 2D canvas on which the respondent places named chips., A multiple-choice question., Every non-signifier string the respondent reads, plus capture toggles. (+31 more)
+Cohesion: 0.09
+Nodes (57): CaptureSettings, Dyad, Mcq, BaseModel, Validation for ``frameworks.definition_json`` (PRD §3 and §5). Every…, A 2D canvas on which the respondent places named chips., A multiple-choice question., Every non-signifier string the respondent reads, plus capture toggles. (+49 more)
 
 ### Community 19 - "CaptureLink"
-Cohesion: 0.16
-Nodes (25): CaptureLink, A token-gated capture URL pointing at one exact framework version., Rate limiting for the public capture endpoints (PRD §4). The public endpoints…, capture_link_qr(), capture_url(), CaptureLinkCreate, CaptureLinkOut, create_capture_link() (+17 more)
+Cohesion: 0.18
+Nodes (24): CaptureLink, A token-gated capture URL pointing at one exact framework version., capture_link_qr(), capture_url(), CaptureLinkCreate, CaptureLinkOut, create_capture_link(), _get_or_404() (+16 more)
 
 ### Community 20 - "parse"
 Cohesion: 0.11
-Nodes (28): parse(), Read one uploaded file into the normalised shape, or refuse it. Refusals are…, pptx_bytes(), test_prose_segments_carry_the_locator_they_came_from(), parametrize, Every format PRD §1.3 promises, read from a real file of that format., PRD §1.3 lists nine extensions. All nine are readable, nothing else is., The reverse map the API uses for jobs whose extension is long gone. (+20 more)
+Nodes (27): parse(), Read one uploaded file into the normalised shape, or refuse it. Refusals are…, docx_bytes(), pptx_bytes(), parametrize, Every format PRD §1.3 promises, read from a real file of that format., PRD §1.3 lists nine extensions. All nine are readable, nothing else is., The reverse map the API uses for jobs whose extension is long gone. (+19 more)
 
 ### Community 21 - "What You Must Do When Invoked"
 Cohesion: 0.08
 Nodes (24): For /graphify add and --watch, For /graphify query, For the commit hook and native CLAUDE.md integration, For --update and --cluster-only, /graphify, Honesty Rules, Interpreter guard for subcommands, Part A - Structural extraction for code files (+16 more)
 
-### Community 22 - "Signification"
-Cohesion: 0.12
-Nodes (19): One respondent (or validated AI) placement on one signifier. ``value_json``…, A free-text tag the analyst attaches to a story., Signification, Tag, _anecdote(), _framework(), parametrize, CRUD across the six tables of PRD §3, plus the vocabularies they enforce. (+11 more)
+### Community 22 - "_framework"
+Cohesion: 0.10
+Nodes (18): A free-text tag the analyst attaches to a story., Tag, _anecdote(), _framework(), parametrize, CRUD across the six tables of PRD §3, plus the vocabularies they enforce., Constraint 3: provenance on every record., PRD §3: input_method is typed | voice | paper | imported. (+10 more)
 
-### Community 23 - "test_organise_stage_a.py"
-Cohesion: 0.23
-Nodes (16): csv_bytes(), Any, MonkeyPatch, TestClient, Stage A: what it proposes, and what it is not allowed to get away with. Stage A…, Constraint 4 and 7: offline is a normal state, not a broken one. The file stays…, Make Stage A's next answer whatever the test says it is., _reply() (+8 more)
+### Community 23 - "TriadChart"
+Cohesion: 0.13
+Nodes (29): _axes(), Cell, _cell_index(), compute(), Landscape, LandscapePoint, _local_maxima(), _nearest_corner() (+21 more)
 
-### Community 24 - "public.py"
-Cohesion: 0.09
-Nodes (36): AppError, bad_request(), conflict(), not_found(), The error shape from PRD §4. ``{"error": {"code": ..., "message": plain-English…, An error the operator is meant to read and act on., _auto_title(), CaptureResult (+28 more)
+### Community 24 - "capture.py"
+Cohesion: 0.06
+Nodes (52): CaptureSubmission, LocalCaptureSubmission, PublicCaptureSubmission, BaseModel, A whole capture: one story plus its placements. Note what is *not* here: no id,…, A capture from the operator's own machine: admin, paper entry, or kiosk. Only…, A capture arriving through a capture link. ``framework_id`` is not accepted:…, AppError (+44 more)
 
 ### Community 25 - "TestClient"
 Cohesion: 0.14
@@ -252,13 +247,13 @@ Nodes (9): TestClient, List, create and fetch frameworks (PRD §4)., A new frame
 Cohesion: 0.10
 Nodes (19): 0. What you're getting (plain language), 10. Future upgrades — document, do not build, 11. Changelog v1.2 → v1.3, 1. Scope, 2. Binding constraints (restate these in every session), 3. Data model (SQLite, via SQLAlchemy + Alembic), 4. API contract (FastAPI, all JSON), 4a. AI call specs — unchanged from v1.2 (Stage A Organise per file class with deterministic post-confirmation table extraction; Stage B Propose chunked ≤20 anecdotes; `claude-sonnet-4-6`, temperature 0, strict JSON, mocks for both stages). (+11 more)
 
-### Community 27 - "Phases"
+### Community 27 - "Decisions"
 Cohesion: 0.09
 Nodes (21): Decisions, Fixed, Narrative Lens — Progress, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5 (+13 more)
 
-### Community 28 - "CaptureError"
-Cohesion: 0.12
-Nodes (23): CaptureError, CaptureSubmission, _check_dyad(), _check_mcq(), _check_stones(), _check_triad(), LocalCaptureSubmission, PublicCaptureSubmission (+15 more)
+### Community 28 - "test_explorer_clusters.py"
+Cohesion: 0.16
+Nodes (28): median_ms(), How long a call takes, measured as a median rather than a single sample. PRD §4…, _clusters(), _explorer(), TestClient, The 3D Explorer and the k-means overlay. Acceptance criterion 11: the Explorer…, PRD §9 assumption 8 pins the seed; the same stories always group the same., Acceptance criterion 11: always labelled "descriptive only". (+20 more)
 
 ### Community 29 - "App.jsx"
 Cohesion: 0.17
@@ -273,20 +268,20 @@ Cohesion: 0.24
 Nodes (15): CORNER_0, CORNER_1, CORNER_2, normalise(), roundTo(), toBarycentric(), toCartesian(), TRIANGLE_HEIGHT (+7 more)
 
 ### Community 32 - "test_schema_absence.py"
-Cohesion: 0.12
-Nodes (21): _columns(), parametrize, Constraint 9 — respondent anonymity is engineered, not promised. These tests…, Constraint 9: respondent time is hour-rounded, so no exact clock exists.…, The only writer of ``created_at_hour`` carries no sub-hour information., 13:59 must land on 13:00, never 14:00 — truncation, not rounding., A row written through the ORM gets an hour-rounded stamp automatically., The rules hold against the real database, not just the model metadata. (+13 more)
+Cohesion: 0.15
+Nodes (17): _columns(), parametrize, Constraint 9 — respondent anonymity is engineered, not promised. These tests…, Constraint 9: respondent time is hour-rounded, so no exact clock exists.…, A row written through the ORM gets an hour-rounded stamp automatically., The rules hold against the real database, not just the model metadata., PRD §3: migration 001 creates all six tables and no others., No IP, user agent, fingerprint, device/session id or email anywhere. (+9 more)
 
-### Community 33 - "paper_pack.py"
-Cohesion: 0.16
-Nodes (17): _facilitator_sheet(), _mcq_options(), The printable paper pack (PRD §1.2, §5b print grammar). One HTML page the…, A square canvas with both axes named at each end., Tick boxes, one per option, big enough to mark with a pen., One A4 landscape sheet for one signifier., The A4 story card: prompt, ruled space, groups, anonymity line., Running instructions, materials, and the reconciliation grid. (+9 more)
+### Community 33 - "render_paper_pack"
+Cohesion: 0.33
+Nodes (6): _facilitator_sheet(), The A4 story card: prompt, ruled space, groups, anonymity line., Running instructions, materials, and the reconciliation grid., Render the whole pack as one self-contained, printable HTML page., render_paper_pack(), _story_card()
 
-### Community 34 - "ConfirmationView"
-Cohesion: 0.13
-Nodes (20): classify(), ParseError, Exception, Return ``(file_type, file_class)`` for a filename, or refuse it., A file that could not be read, phrased for the operator., ProposeError, Exception, Stage B produced something that does not fit the framework. (+12 more)
+### Community 34 - "test_terrain_maths.py"
+Cohesion: 0.14
+Nodes (22): The landscape's geometry, held to fixed answers in Node. The terrain is drawn…, Rotation moves the terrain, it does not grow or shrink it., Nothing crosses a level the whole grid is already above., The answer known by hand: one peak, one loop, and it encircles the peak., Contours nest. If they did not, the terrain would be unreadable., What makes the terrain survive a grayscale screenshot (§5b)., Two equal heights project to the same rise, wherever they sit. A perspective…, Elevation is the camera's angle above the horizon, as it sounds. From the… (+14 more)
 
 ### Community 35 - "Anecdote"
-Cohesion: 0.26
-Nodes (11): Anecdote, One story, bound to the exact framework version it was told against.…, aggregate(), _bars(), CategoryChart, _demographics(), _mcq_chart(), Bars in drawn order: biggest first, ties broken alphabetically. §5b requires… (+3 more)
+Cohesion: 0.18
+Nodes (24): Cluster, ClusterAssignment, ClusterSet, Dimension, dimensions_of(), explorer(), ExplorerPoint, ExplorerSet (+16 more)
 
 ### Community 36 - "test_patterns.py"
 Cohesion: 0.12
@@ -296,13 +291,13 @@ Nodes (38): _capture(), _patterns(), TestClient, The patterns endpoint: what it 
 Cohesion: 0.40
 Nodes (3): One axis of the stones canvas, named at both ends., StonesAxis, model_validator
 
-### Community 38 - "ingest_fixtures.py"
-Cohesion: 0.22
-Nodes (7): docx_bytes(), pdf_bytes(), _pdf_escape(), Real files, in memory, one per format Narrative Lens claims to read. Acceptance…, A one-page PDF with each paragraph as its own text run. Written by hand:…, vtt_bytes(), test_segments_found_counts_what_stage_a_believes_it_found()
+### Community 38 - "test_capture_links.py"
+Cohesion: 0.12
+Nodes (14): qr_png_bytes(), QR codes for capture links (PRD §4, §1.8). A QR is how a phone gets to the…, Return a PNG of ``payload`` as QR, as raw bytes. Error correction is set to M…, Rate limiting for the public capture endpoints (PRD §4). The public endpoints…, Clear every counter. Tests call this between cases., reset_all(), _clear_limits(), fixture (+6 more)
 
-### Community 39 - "build_golden_dataset"
-Cohesion: 0.14
-Nodes (35): build_golden_dataset(), TestClient, Create the framework and its twenty stories. Returns the framework., _brief(), _csv(), TestClient, The CSV and the Pattern Brief. The CSV is tested as a file a person will open…, The case the provenance column exists for. (+27 more)
+### Community 39 - "test_exports.py"
+Cohesion: 0.13
+Nodes (32): _brief(), _csv(), TestClient, The CSV and the Pattern Brief. The CSV is tested as a file a person will open…, The case the provenance column exists for., Constraint 13f, the whole point of the brief., A brief that did not say what it excluded would be misleading., Constraint 12: exploratory and abductive, never causal. (+24 more)
 
 ### Community 40 - "voice.js"
 Cohesion: 0.28
@@ -313,8 +308,8 @@ Cohesion: 0.18
 Nodes (4): ImportTab(), MarkUpStep(), storyCount(), MappingScreen()
 
 ### Community 42 - "models.py"
-Cohesion: 0.09
-Nodes (31): What counts as data, in one place (constraint 1). An anecdote exists in three…, get_session(), Session, Database engine and session plumbing (constraint 4: SQLite + local files)., FastAPI dependency yielding a session that always closes., health(), mount_frontend(), get (+23 more)
+Cohesion: 0.19
+Nodes (12): hour_rounded_now(), _in_clause(), datetime, The six-table schema from PRD §3. Two constraints shape this module directly: *…, Render a SQL ``IN`` predicate for a CHECK constraint., Naive UTC now, for operator-side records that carry no respondent link., Naive UTC now truncated to the hour (constraint 9). Minutes, seconds and…, utcnow() (+4 more)
 
 ### Community 43 - "Wizard.jsx"
 Cohesion: 0.41
@@ -337,12 +332,12 @@ Cohesion: 0.20
 Nodes (9): Accessibility floor, Chart selection, Color encoding, Dashboard hierarchy, Data Visualization Reference — 2026, First principle, Integrity rules (non-negotiable), Interactivity discipline (+1 more)
 
 ### Community 48 - "FrameworkDefinition"
-Cohesion: 0.14
-Nodes (30): FrameworkDefinition, The whole respondent-facing definition of one framework version., propose(), Run Stage B over a file's stories and return checked proposals. Nothing is…, definition(), Any, fixture, MonkeyPatch (+22 more)
+Cohesion: 0.07
+Nodes (46): FrameworkDefinition, The whole respondent-facing definition of one framework version., One id namespace across all signifier kinds — significations key on it., How many signifier screens the respondent will see., PRD §1.1: warn past roughly six signifier screens., Coarse 'respondent minutes' estimate shown live in the Studio., Estimated respondent time, rounded to one decimal., _check_batch() (+38 more)
 
 ### Community 49 - "make_framework"
-Cohesion: 0.14
-Nodes (31): confirmed_import(), make_framework(), proposed_import(), TestClient, Shared helpers for the Stage B and validation-queue suites. One framework…, Drive a file as far as ``mapping_confirmed``, accepting Stage A as-is., Drive a file all the way to ``proposed`` — stories in the queue., _backend_modules() (+23 more)
+Cohesion: 0.17
+Nodes (26): confirmed_import(), make_framework(), proposed_import(), TestClient, Shared helpers for the Stage B and validation-queue suites. One framework…, Drive a file as far as ``mapping_confirmed``, accepting Stage A as-is., Drive a file all the way to ``proposed`` — stories in the queue., Session (+18 more)
 
 ### Community 50 - "graphify reference: extra exports and benchmark"
 Cohesion: 0.22
@@ -353,16 +348,16 @@ Cohesion: 0.22
 Nodes (8): Data visualization, Output, Step 1: Frame the brief, Step 2: Design plan before code, Step 3: B2B or B2C playbook, Step 4: Build to the quality floor (non-negotiable, never announced), Step 5: Critique pass, Web Design & Data Visualization
 
 ### Community 52 - "queue.py"
-Cohesion: 0.13
-Nodes (22): decide(), _finish_job_if_empty(), _low(), BaseModel, Depends, get, put, Query (+14 more)
+Cohesion: 0.09
+Nodes (41): CaptureError, _check_dyad(), _check_mcq(), _check_stones(), _check_triad(), ValueError, Validating a submitted capture against the framework it answers (PRD §4). A…, Triad weights: one per corner, non-negative, summing to 1.0. (+33 more)
 
 ### Community 53 - "backend/exports.py"
 Cohesion: 0.13
 Nodes (26): _category_finding(), dataset_csv(), _dyad_finding(), findings(), headline(), _headlines(), _join(), _nearest_corner() (+18 more)
 
-### Community 54 - "SubmittedSignification"
-Cohesion: 0.17
-Nodes (16): One placement as it arrives from the wizard or paper batch entry., SubmittedSignification, _check_batch(), Placement, ProposalBatch, ProposedPlacement, ProposedStory, BaseModel (+8 more)
+### Community 54 - "regenerate_golden.py"
+Cohesion: 0.16
+Nodes (16): main(), Rewrite both goldens. Run deliberately, never automatically. python -m…, produce(), TestClient, The pattern golden — byte-identical from Phase 7 onward (PRD §6). Twenty…, The one way this project writes a golden file. Sorted keys and a fixed indent,…, A missing golden would make every other test here silently vacuous., Determinism, checked against itself rather than against the file. If… (+8 more)
 
 ### Community 55 - "Design System Reference — 2026"
 Cohesion: 0.29
@@ -373,8 +368,8 @@ Cohesion: 0.29
 Nodes (5): The one endpoint Phase 1 ships., PRD §4 budgets 200ms for non-AI endpoints; health should be far under., Guard against building ahead of the phase plan (PRD §6). Enumerated from the…, test_health_is_fast_enough_for_the_200ms_budget(), test_no_routes_beyond_the_current_phase()
 
 ### Community 57 - "test_live_ai.py"
-Cohesion: 0.21
-Nodes (16): _last(), MonkeyPatch, TestClient, The live path to api.anthropic.com — the one Phase 7 switches on. Everything…, Answer each successive request with the next reply in the list., PRD §6 Phase 7: the repair path, exercised through Stage A itself., Acceptance criterion 12: offline is a working state, not a broken one., The operator loses the click, not the file. (+8 more)
+Cohesion: 0.08
+Nodes (45): AiError, _live_text(), Exception, The one AI client (constraint 6). Every call Narrative Lens makes to a language…, One live call to api.anthropic.com. The only network in the app. Imported…, An AI call that failed in a way the operator needs told about. Carries the PRD…, ModuleType, APIConnectionError (+37 more)
 
 ### Community 58 - "Narrative Lens — binding project instructions"
 Cohesion: 0.33
@@ -429,80 +424,76 @@ Cohesion: 0.29
 Nodes (6): fromStored(), orderedSignifiers(), toSubmission(), signifiersInOrder(), ValidationQueue(), widgetValues()
 
 ### Community 83 - "propose.py"
-Cohesion: 0.20
-Nodes (14): describe_signifiers(), _mock_batch(), _mock_confidence(), _mock_value(), _prompt(), Any, Stage B — Propose (PRD §4a, constraint 1). Stage B reads a story and *suggests*…, The questions, with the exact answer shape each one takes. Written out in full… (+6 more)
+Cohesion: 0.14
+Nodes (20): describe_signifiers(), _mock_batch(), _mock_confidence(), _mock_value(), Placement, _prompt(), ProposalBatch, ProposedPlacement (+12 more)
 
-### Community 84 - "export_brief"
-Cohesion: 0.10
-Nodes (31): only_pending(), only_validated(), Narrow a query to the stories a person has actually approved. Every read that…, Narrow a query to the stories still waiting on a person., export_brief(), export_csv(), Depends, get (+23 more)
+### Community 84 - "routers/landscape.py"
+Cohesion: 0.07
+Nodes (53): only_pending(), only_validated(), What counts as data, in one place (constraint 1). An anecdote exists in three…, Narrow a query to the stories a person has actually approved. Every read that…, Narrow a query to the stories still waiting on a person., export_brief(), export_csv(), Depends (+45 more)
 
 ### Community 85 - "Patterns.jsx"
+Cohesion: 0.08
+Nodes (32): BarChart(), DyadChart(), StonesChart(), CLUSTER_TOKENS, ExplorerView(), Scatter(), VIEW, ContourTwin() (+24 more)
+
+### Community 86 - "_story"
+Cohesion: 0.18
+Nodes (8): PRD §1.2: three entry modes share one wizard., Only a real token may produce a ``link`` record., Constraint 1: AI-derived content must not pose as first-hand., PRD §4: public endpoints are rate-limited — per token, never per person., The limit is per link, so one workshop cannot shut down another., _story(), TestKioskMode, TestRateLimiting
+
+### Community 87 - "conftest.py"
 Cohesion: 0.24
-Nodes (7): BarChart(), DyadChart(), StonesChart(), FILTERS, lineageOf(), optionsFrom(), PatternsTab()
+Nodes (12): client(), db_path(), db_url(), engine(), fixture, Path, TestClient, Shared fixtures. Every test runs against a throwaway SQLite file, never the… (+4 more)
 
-### Community 87 - "ai_client.py"
-Cohesion: 0.20
-Nodes (10): _fenced_json(), mock_enabled(), _parse(), The one AI client (constraint 6). Every call Narrative Lens makes to a language…, Parse one reply strictly, or raise the reason it could not be parsed., Whether this process runs with mocks instead of the network. Read on every call…, Return *raw* with one surrounding markdown fence removed, if present. Strict…, Payload (+2 more)
+### Community 88 - "test_landscape_golden.py"
+Cohesion: 0.26
+Nodes (10): peaks_of(), produce_peaks(), TestClient, The landscape golden — peaks stable to ±0.02 (PRD §6, Phase 8). The second of…, The headline guarantee: the terrain does not drift under anyone's feet., A golden of empty lists would pass the tolerance test forever., Determinism against itself, not only against the stored file., test_peaks_are_stable_within_tolerance() (+2 more)
 
-### Community 90 - "_live_text"
-Cohesion: 0.22
-Nodes (11): _live_text(), One live call to api.anthropic.com. The only network in the app. Imported…, ModuleType, fake_anthropic(), fixture, parametrize, A reply may carry blocks that are not text; they are not the answer., Install a fake ``anthropic`` package and turn mock mode off. (+3 more)
+### Community 89 - "TestTokenDecidesEverything"
+Cohesion: 0.29
+Nodes (4): The token, not the body, chooses the version and the entry mode., A later meaning change must not retarget an existing link., The browser may not choose which question set it answered., TestTokenDecidesEverything
 
-### Community 91 - "AiError"
-Cohesion: 0.24
-Nodes (8): AiError, Exception, An AI call that failed in a way the operator needs told about. Carries the PRD…, APIConnectionError, APIStatusError, _Block, Exception, RateLimitError
+### Community 90 - "TestLinkProvenance"
+Cohesion: 0.40
+Nodes (3): Constraint 3: provenance on every record, whatever route it came by., Constraint 3: input_method distinguishes voice from typing., TestLinkProvenance
+
+### Community 91 - "_backend_modules"
+Cohesion: 0.40
+Nodes (5): _backend_modules(), Path, One symbol, so the test above cannot be sidestepped by a literal., test_nobody_writes_the_status_as_a_bare_string(), test_only_two_modules_write_validated()
 
 ### Community 92 - "env.py"
-Cohesion: 0.27
-Nodes (9): Alembic environment. The database URL comes from…, Emit SQL to a script without a live connection., Run migrations against a live connection., _run(), run_migrations_offline(), run_migrations_online(), _url(), database_url() (+1 more)
+Cohesion: 0.36
+Nodes (7): Alembic environment. The database URL comes from…, Emit SQL to a script without a live connection., Run migrations against a live connection., _run(), run_migrations_offline(), run_migrations_online(), _url()
 
 ### Community 93 - "RateLimiter"
 Cohesion: 0.22
 Nodes (5): RateLimiter, A sliding-window counter keyed by an opaque string. Deliberately simple and in-…, Record a hit and report whether it is within the limit., Forget counters. Used by tests and when a link is revoked., How many hits are still allowed in the current window.
 
-### Community 94 - "_calls"
-Cohesion: 0.29
-Nodes (6): _calls(), Any, Strict JSON is asked for on every call, not only where it is convenient., Every request made, across every client. ``_live_text`` builds a fresh…, _Response, test_the_json_instruction_is_appended_to_every_system_prompt()
-
-### Community 95 - "xlsx_bytes"
-Cohesion: 0.29
-Nodes (7): A two-sheet workbook: one of responses, one lookup table to ignore. The…, xlsx_bytes(), PRD §4: AI endpoints are exempt; reading a job's status is not., test_job_status_is_inside_the_200ms_budget(), A lookup table is not a set of responses, and saying so is the answer., test_a_sheet_with_nothing_story_like_is_proposed_as_ignore(), test_the_mock_reads_a_named_story_column()
-
 ### Community 96 - "patterns_fixtures.py"
 Cohesion: 0.50
 Nodes (4): The twenty-story fixture behind the pattern golden (PRD §6, Phase 7). Twenty…, One story, entirely determined by its position in the run., story_payload(), _tenths()
 
-### Community 97 - "_FakeAnthropic"
-Cohesion: 0.50
-Nodes (3): _FakeAnthropic, _FakeMessages, Stands in for ``anthropic.Anthropic`` and records what it was asked.
-
-### Community 99 - "chunks"
-Cohesion: 0.50
-Nodes (4): chunks(), Split the stories into calls of at most ``size`` (PRD §4a)., test_a_long_file_is_split_into_calls_of_twenty(), test_a_short_file_is_one_call()
-
-### Community 100 - "public_base_url"
-Cohesion: 0.50
-Nodes (4): lan_host(), public_base_url(), The address other devices on the mesh can reach this machine at. A QR pointing…, Base URL a capture link should carry.
+### Community 100 - "db.py"
+Cohesion: 0.18
+Nodes (10): _connect_args(), Database engine and session plumbing (constraint 4: SQLite + local files)., SQLite needs ``check_same_thread=False`` to serve requests from a pool., database_url(), lan_host(), public_base_url(), Runtime settings. Constraint 7 (non-technical operator) forbids config editing,…, Return the SQLAlchemy URL for the local SQLite database. (+2 more)
 
 ## Knowledge Gaps
-- **151 isolated node(s):** `name`, `version`, `description`, `dev`, `build` (+146 more)
+- **158 isolated node(s):** `name`, `version`, `description`, `dev`, `build` (+153 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **10 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Anecdote` connect `Anecdote` to `TestClient`, `TestClient`, `Framework`, `TestClient`, `test_import_pipeline.py`, `_create`, `test_public_identifier_absence.py`, `imports.py`, `backend/patterns.py`, `CaptureLink`, `Signification`, `public.py`, `CaptureError`, `test_schema_absence.py`, `ConfirmationView`, `models.py`, `test_queue.py`, `make_framework`, `queue.py`, `backend/exports.py`, `SubmittedSignification`, `export_brief`?**
-  _High betweenness centrality (0.178) - this node is a cross-community bridge._
-- **Why does `FrameworkDefinition` connect `FrameworkDefinition` to `Framework`, `imports.py`, `validate_definition`, `backend/patterns.py`, `public.py`, `CaptureError`, `paper_pack.py`, `ConfirmationView`, `Anecdote`, `models.py`, `queue.py`, `backend/exports.py`, `SubmittedSignification`, `test_placement_shape_parity.py`, `edit_semantics.py`, `propose.py`, `.estimated_minutes`, `.exceeds_screen_warning`, `.signifier_count`, `.signifier_ids_must_be_unique`?**
-  _High betweenness centrality (0.095) - this node is a cross-community bridge._
-- **Why does `Signification` connect `Signification` to `ConfirmationView`, `Anecdote`, `TestClient`, `test_import_pipeline.py`, `test_public_identifier_absence.py`, `models.py`, `imports.py`, `test_queue.py`, `make_framework`, `backend/patterns.py`, `export_brief`, `backend/exports.py`, `queue.py`, `SubmittedSignification`, `public.py`, `CaptureError`?**
-  _High betweenness centrality (0.052) - this node is a cross-community bridge._
-- **Are the 46 inferred relationships involving `FrameworkDefinition` (e.g. with `CaptureError` and `CaptureSubmission`) actually correct?**
-  _`FrameworkDefinition` has 46 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 63 inferred relationships involving `Anecdote` (e.g. with `Bar` and `CategoryChart`) actually correct?**
-  _`Anecdote` has 63 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 39 inferred relationships involving `Signification` (e.g. with `Bar` and `CategoryChart`) actually correct?**
-  _`Signification` has 39 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `Anecdote` connect `Anecdote` to `TestClient`, `TestClient`, `Framework`, `TestClient`, `test_import_pipeline.py`, `_create`, `test_public_identifier_absence.py`, `ImportJob`, `validate_definition`, `build_golden_dataset`, `imports.py`, `backend/patterns.py`, `CaptureLink`, `_framework`, `TriadChart`, `capture.py`, `test_schema_absence.py`, `test_capture_links.py`, `models.py`, `test_queue.py`, `make_framework`, `queue.py`, `backend/exports.py`, `routers/landscape.py`, `_story`, `TestTokenDecidesEverything`, `TestLinkProvenance`?**
+  _High betweenness centrality (0.192) - this node is a cross-community bridge._
+- **Why does `FrameworkDefinition` connect `FrameworkDefinition` to `render_paper_pack`, `Anecdote`, `Framework`, `validate_definition`, `test_placement_shape_parity.py`, `edit_semantics.py`, `backend/patterns.py`, `propose.py`, `queue.py`, `backend/exports.py`, `imports.py`, `TriadChart`, `capture.py`, `routers/landscape.py`?**
+  _High betweenness centrality (0.083) - this node is a cross-community bridge._
+- **Why does `Signification` connect `Anecdote` to `TestClient`, `test_import_pipeline.py`, `test_public_identifier_absence.py`, `models.py`, `ImportJob`, `validate_definition`, `test_queue.py`, `build_golden_dataset`, `imports.py`, `backend/patterns.py`, `make_framework`, `routers/landscape.py`, `backend/exports.py`, `queue.py`, `TriadChart`, `capture.py`, `_framework`?**
+  _High betweenness centrality (0.057) - this node is a cross-community bridge._
+- **Are the 53 inferred relationships involving `FrameworkDefinition` (e.g. with `CaptureError` and `CaptureSubmission`) actually correct?**
+  _`FrameworkDefinition` has 53 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 69 inferred relationships involving `Anecdote` (e.g. with `Cluster` and `ClusterAssignment`) actually correct?**
+  _`Anecdote` has 69 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 45 inferred relationships involving `Signification` (e.g. with `Cluster` and `ClusterAssignment`) actually correct?**
+  _`Signification` has 45 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 30 inferred relationships involving `Framework` (e.g. with `CaptureResult` and `CaptureLinkCreate`) actually correct?**
   _`Framework` has 30 INFERRED edges - model-reasoned connections that need verification._

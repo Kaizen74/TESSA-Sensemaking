@@ -267,5 +267,37 @@ case "$brief_out" in
         ;;
 esac
 
+# The landscape: one grid, two readings, and a peak that knows its stories.
+land="http://127.0.0.1:${SMOKE_PORT}/api/landscape/${framework_id}/t1"
+curl -sf "$land" | $PYTHON -c '
+import json, sys
+
+panel = json.load(sys.stdin)["panels"][0]
+assert panel["grid"] == 64, panel["grid"]
+if panel["has_surface"]:
+    highest = max(max(row) for row in panel["density"])
+    assert abs(panel["max_density"] - highest) < 1e-6, "contour and surface disagree"
+    assert all(level < highest for level in panel["contour_levels"]), panel["contour_levels"]
+seen = [i for cell in panel["cells"] for i in cell["anecdote_ids"]]
+assert sorted(seen) == sorted(p["anecdote_id"] for p in panel["points"]), "region drill is lossy"
+count = panel["count"]
+print("  landscape: 64x64 grid, %d stories, one grid for both readings" % count)
+' || {
+    echo "  FAIL: the landscape endpoint broke one of its own guarantees"
+    exit 1
+}
+
+curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/clusters/${framework_id}?k=2" | $PYTHON -c '
+import json, sys
+
+view = json.load(sys.stdin)
+assert view["seed"] == 42, view["seed"]
+assert view["caveat"] == "statistical clusters — descriptive only", view["caveat"]
+print("  clusters carry their seed and their caveat")
+' || {
+    echo "  FAIL: the cluster endpoint dropped its caveat"
+    exit 1
+}
+
 echo
 echo "ALL CHECKS PASSED"

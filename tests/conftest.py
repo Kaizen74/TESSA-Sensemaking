@@ -7,6 +7,7 @@ Every test runs against a throwaway SQLite file, never the operator's
 from __future__ import annotations
 
 import os
+import time
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -27,6 +28,25 @@ from sqlalchemy.orm import Session, sessionmaker
 from backend.db import get_session, make_engine
 from backend.main import app
 from backend.models import Base
+
+
+def median_ms(call, samples: int = 5) -> float:
+    """How long a call takes, measured as a median rather than a single sample.
+
+    PRD §4 budgets 200ms for the non-AI endpoints. That is a promise about what
+    the operator feels, and this suite runs on shared machines where any one
+    sample can be stolen by whatever else is running — a first call also pays
+    for caches it will never pay for again. A median over a handful of calls is
+    the honest reading, and a real regression moves it; a busy neighbour does
+    not.
+    """
+    timings = []
+    for _ in range(samples):
+        start = time.perf_counter()
+        call()
+        timings.append((time.perf_counter() - start) * 1000)
+    timings.sort()
+    return timings[len(timings) // 2]
 
 
 @pytest.fixture
