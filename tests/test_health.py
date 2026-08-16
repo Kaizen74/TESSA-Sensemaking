@@ -58,6 +58,11 @@ EXPECTED_API_PATHS = {
     "/api/import/{job_id}/propose",
     "/api/queue",
     "/api/queue/{anecdote_id}",
+    # Phase 7 — supporting charts and exports. /api/export/heard is the
+    # respondent-facing "What We Heard" and belongs to Phase 9.
+    "/api/patterns/{framework_id}",
+    "/api/export/csv",
+    "/api/export/brief",
 }
 
 

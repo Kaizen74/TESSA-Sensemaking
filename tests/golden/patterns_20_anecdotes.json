@@ -1,0 +1,853 @@
+{
+  "demographics": [
+    {
+      "answered": 20,
+      "bars": [
+        {
+          "count": 7,
+          "label": "Deck",
+          "share": 0.35
+        },
+        {
+          "count": 7,
+          "label": "Ops",
+          "share": 0.35
+        },
+        {
+          "count": 6,
+          "label": "Support",
+          "share": 0.3
+        }
+      ],
+      "id": "respondent_group",
+      "title": "Who told the story"
+    },
+    {
+      "answered": 20,
+      "bars": [
+        {
+          "count": 8,
+          "label": "typed",
+          "share": 0.4
+        },
+        {
+          "count": 6,
+          "label": "paper",
+          "share": 0.3
+        },
+        {
+          "count": 6,
+          "label": "voice",
+          "share": 0.3
+        }
+      ],
+      "id": "input_method",
+      "title": "How it was written down"
+    },
+    {
+      "answered": 20,
+      "bars": [
+        {
+          "count": 10,
+          "label": "admin",
+          "share": 0.5
+        },
+        {
+          "count": 10,
+          "label": "kiosk",
+          "share": 0.5
+        }
+      ],
+      "id": "entry_mode",
+      "title": "Where it came from"
+    },
+    {
+      "answered": 20,
+      "bars": [
+        {
+          "count": 20,
+          "label": "capture",
+          "share": 1.0
+        }
+      ],
+      "id": "source_type",
+      "title": "How it reached Narrative Lens"
+    }
+  ],
+  "dyads": [
+    {
+      "answered": 20,
+      "histogram": [
+        {
+          "count": 2,
+          "lower": 0.0,
+          "upper": 0.1
+        },
+        {
+          "count": 2,
+          "lower": 0.1,
+          "upper": 0.2
+        },
+        {
+          "count": 2,
+          "lower": 0.2,
+          "upper": 0.3
+        },
+        {
+          "count": 2,
+          "lower": 0.3,
+          "upper": 0.4
+        },
+        {
+          "count": 2,
+          "lower": 0.4,
+          "upper": 0.5
+        },
+        {
+          "count": 2,
+          "lower": 0.5,
+          "upper": 0.6
+        },
+        {
+          "count": 2,
+          "lower": 0.6,
+          "upper": 0.7
+        },
+        {
+          "count": 2,
+          "lower": 0.7,
+          "upper": 0.8
+        },
+        {
+          "count": 2,
+          "lower": 0.8,
+          "upper": 0.9
+        },
+        {
+          "count": 2,
+          "lower": 0.9,
+          "upper": 1.0
+        }
+      ],
+      "id": "d1",
+      "left": "Alone",
+      "median": 0.475,
+      "points": [
+        {
+          "anecdote_id": 1,
+          "value": 0.0
+        },
+        {
+          "anecdote_id": 2,
+          "value": 0.05
+        },
+        {
+          "anecdote_id": 3,
+          "value": 0.1
+        },
+        {
+          "anecdote_id": 4,
+          "value": 0.15
+        },
+        {
+          "anecdote_id": 5,
+          "value": 0.2
+        },
+        {
+          "anecdote_id": 6,
+          "value": 0.25
+        },
+        {
+          "anecdote_id": 7,
+          "value": 0.3
+        },
+        {
+          "anecdote_id": 8,
+          "value": 0.35
+        },
+        {
+          "anecdote_id": 9,
+          "value": 0.4
+        },
+        {
+          "anecdote_id": 10,
+          "value": 0.45
+        },
+        {
+          "anecdote_id": 11,
+          "value": 0.5
+        },
+        {
+          "anecdote_id": 12,
+          "value": 0.55
+        },
+        {
+          "anecdote_id": 13,
+          "value": 0.6
+        },
+        {
+          "anecdote_id": 14,
+          "value": 0.65
+        },
+        {
+          "anecdote_id": 15,
+          "value": 0.7
+        },
+        {
+          "anecdote_id": 16,
+          "value": 0.75
+        },
+        {
+          "anecdote_id": 17,
+          "value": 0.8
+        },
+        {
+          "anecdote_id": 18,
+          "value": 0.85
+        },
+        {
+          "anecdote_id": 19,
+          "value": 0.9
+        },
+        {
+          "anecdote_id": 20,
+          "value": 0.95
+        }
+      ],
+      "right": "Backed",
+      "title": "How supported?"
+    }
+  ],
+  "filters": {},
+  "framework_id": 1,
+  "framework_name": "Hangar",
+  "framework_version": 1,
+  "mcqs": [
+    {
+      "answered": 20,
+      "bars": [
+        {
+          "count": 7,
+          "label": "Badly",
+          "share": 0.35
+        },
+        {
+          "count": 7,
+          "label": "Well",
+          "share": 0.35
+        },
+        {
+          "count": 6,
+          "label": "Unresolved",
+          "share": 0.3
+        }
+      ],
+      "id": "m1",
+      "title": "How did it end?"
+    }
+  ],
+  "mixed": false,
+  "stones": {
+    "answered": 20,
+    "id": "s1",
+    "points": [
+      {
+        "anecdote_id": 1,
+        "label": "Doing",
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 1,
+        "label": "Fixing",
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 1,
+        "label": "Planning",
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 2,
+        "label": "Doing",
+        "x": 0.25,
+        "y": 0.2
+      },
+      {
+        "anecdote_id": 2,
+        "label": "Fixing",
+        "x": 0.333333,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 2,
+        "label": "Planning",
+        "x": 0.2,
+        "y": 0.25
+      },
+      {
+        "anecdote_id": 3,
+        "label": "Doing",
+        "x": 0.5,
+        "y": 0.4
+      },
+      {
+        "anecdote_id": 3,
+        "label": "Fixing",
+        "x": 0.666667,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 3,
+        "label": "Planning",
+        "x": 0.4,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 4,
+        "label": "Doing",
+        "x": 0.75,
+        "y": 0.6
+      },
+      {
+        "anecdote_id": 4,
+        "label": "Fixing",
+        "x": 0.0,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 4,
+        "label": "Planning",
+        "x": 0.6,
+        "y": 0.75
+      },
+      {
+        "anecdote_id": 5,
+        "label": "Doing",
+        "x": 0.0,
+        "y": 0.8
+      },
+      {
+        "anecdote_id": 5,
+        "label": "Fixing",
+        "x": 0.333333,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 5,
+        "label": "Planning",
+        "x": 0.8,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 6,
+        "label": "Doing",
+        "x": 0.25,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 6,
+        "label": "Fixing",
+        "x": 0.666667,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 6,
+        "label": "Planning",
+        "x": 0.0,
+        "y": 0.25
+      },
+      {
+        "anecdote_id": 7,
+        "label": "Doing",
+        "x": 0.5,
+        "y": 0.2
+      },
+      {
+        "anecdote_id": 7,
+        "label": "Fixing",
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 7,
+        "label": "Planning",
+        "x": 0.2,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 8,
+        "label": "Doing",
+        "x": 0.75,
+        "y": 0.4
+      },
+      {
+        "anecdote_id": 8,
+        "label": "Fixing",
+        "x": 0.333333,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 8,
+        "label": "Planning",
+        "x": 0.4,
+        "y": 0.75
+      },
+      {
+        "anecdote_id": 9,
+        "label": "Doing",
+        "x": 0.0,
+        "y": 0.6
+      },
+      {
+        "anecdote_id": 9,
+        "label": "Fixing",
+        "x": 0.666667,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 9,
+        "label": "Planning",
+        "x": 0.6,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 10,
+        "label": "Doing",
+        "x": 0.25,
+        "y": 0.8
+      },
+      {
+        "anecdote_id": 10,
+        "label": "Fixing",
+        "x": 0.0,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 10,
+        "label": "Planning",
+        "x": 0.8,
+        "y": 0.25
+      },
+      {
+        "anecdote_id": 11,
+        "label": "Doing",
+        "x": 0.5,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 11,
+        "label": "Fixing",
+        "x": 0.333333,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 11,
+        "label": "Planning",
+        "x": 0.0,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 12,
+        "label": "Doing",
+        "x": 0.75,
+        "y": 0.2
+      },
+      {
+        "anecdote_id": 12,
+        "label": "Fixing",
+        "x": 0.666667,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 12,
+        "label": "Planning",
+        "x": 0.2,
+        "y": 0.75
+      },
+      {
+        "anecdote_id": 13,
+        "label": "Doing",
+        "x": 0.0,
+        "y": 0.4
+      },
+      {
+        "anecdote_id": 13,
+        "label": "Fixing",
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 13,
+        "label": "Planning",
+        "x": 0.4,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 14,
+        "label": "Doing",
+        "x": 0.25,
+        "y": 0.6
+      },
+      {
+        "anecdote_id": 14,
+        "label": "Fixing",
+        "x": 0.333333,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 14,
+        "label": "Planning",
+        "x": 0.6,
+        "y": 0.25
+      },
+      {
+        "anecdote_id": 15,
+        "label": "Doing",
+        "x": 0.5,
+        "y": 0.8
+      },
+      {
+        "anecdote_id": 15,
+        "label": "Fixing",
+        "x": 0.666667,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 15,
+        "label": "Planning",
+        "x": 0.8,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 16,
+        "label": "Doing",
+        "x": 0.75,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 16,
+        "label": "Fixing",
+        "x": 0.0,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 16,
+        "label": "Planning",
+        "x": 0.0,
+        "y": 0.75
+      },
+      {
+        "anecdote_id": 17,
+        "label": "Doing",
+        "x": 0.0,
+        "y": 0.2
+      },
+      {
+        "anecdote_id": 17,
+        "label": "Fixing",
+        "x": 0.333333,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 17,
+        "label": "Planning",
+        "x": 0.2,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 18,
+        "label": "Doing",
+        "x": 0.25,
+        "y": 0.4
+      },
+      {
+        "anecdote_id": 18,
+        "label": "Fixing",
+        "x": 0.666667,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 18,
+        "label": "Planning",
+        "x": 0.4,
+        "y": 0.25
+      },
+      {
+        "anecdote_id": 19,
+        "label": "Doing",
+        "x": 0.5,
+        "y": 0.6
+      },
+      {
+        "anecdote_id": 19,
+        "label": "Fixing",
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "anecdote_id": 19,
+        "label": "Planning",
+        "x": 0.6,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 20,
+        "label": "Doing",
+        "x": 0.75,
+        "y": 0.8
+      },
+      {
+        "anecdote_id": 20,
+        "label": "Fixing",
+        "x": 0.333333,
+        "y": 0.5
+      },
+      {
+        "anecdote_id": 20,
+        "label": "Planning",
+        "x": 0.8,
+        "y": 0.75
+      }
+    ],
+    "title": "Where did the effort go?",
+    "x_axis": [
+      "Routine",
+      "Novel"
+    ],
+    "y_axis": [
+      "Quiet",
+      "Fraught"
+    ]
+  },
+  "total": 20,
+  "triads": [
+    {
+      "answered": 20,
+      "corners": [
+        "Speed",
+        "Care",
+        "Cost"
+      ],
+      "id": "t1",
+      "points": [
+        {
+          "anecdote_id": 1,
+          "x": 0.35,
+          "y": 0.086603
+        },
+        {
+          "anecdote_id": 2,
+          "x": 0.5,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 3,
+          "x": 0.65,
+          "y": 0.259808
+        },
+        {
+          "anecdote_id": 4,
+          "x": 0.25,
+          "y": 0.086603
+        },
+        {
+          "anecdote_id": 5,
+          "x": 0.5,
+          "y": 0.34641
+        },
+        {
+          "anecdote_id": 6,
+          "x": 0.35,
+          "y": 0.086603
+        },
+        {
+          "anecdote_id": 7,
+          "x": 0.5,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 8,
+          "x": 0.65,
+          "y": 0.259808
+        },
+        {
+          "anecdote_id": 9,
+          "x": 0.25,
+          "y": 0.086603
+        },
+        {
+          "anecdote_id": 10,
+          "x": 0.5,
+          "y": 0.34641
+        },
+        {
+          "anecdote_id": 11,
+          "x": 0.35,
+          "y": 0.086603
+        },
+        {
+          "anecdote_id": 12,
+          "x": 0.5,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 13,
+          "x": 0.65,
+          "y": 0.259808
+        },
+        {
+          "anecdote_id": 14,
+          "x": 0.25,
+          "y": 0.086603
+        },
+        {
+          "anecdote_id": 15,
+          "x": 0.5,
+          "y": 0.34641
+        },
+        {
+          "anecdote_id": 16,
+          "x": 0.35,
+          "y": 0.086603
+        },
+        {
+          "anecdote_id": 17,
+          "x": 0.5,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 18,
+          "x": 0.65,
+          "y": 0.259808
+        },
+        {
+          "anecdote_id": 19,
+          "x": 0.25,
+          "y": 0.086603
+        },
+        {
+          "anecdote_id": 20,
+          "x": 0.5,
+          "y": 0.34641
+        }
+      ],
+      "title": "What drove this?"
+    },
+    {
+      "answered": 20,
+      "corners": [
+        "Me",
+        "My team",
+        "Someone else"
+      ],
+      "id": "t2",
+      "points": [
+        {
+          "anecdote_id": 1,
+          "x": 0.4,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 2,
+          "x": 0.7,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 3,
+          "x": 0.5,
+          "y": 0.34641
+        },
+        {
+          "anecdote_id": 4,
+          "x": 0.85,
+          "y": 0.086603
+        },
+        {
+          "anecdote_id": 5,
+          "x": 0.4,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 6,
+          "x": 0.7,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 7,
+          "x": 0.5,
+          "y": 0.34641
+        },
+        {
+          "anecdote_id": 8,
+          "x": 0.85,
+          "y": 0.086603
+        },
+        {
+          "anecdote_id": 9,
+          "x": 0.4,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 10,
+          "x": 0.7,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 11,
+          "x": 0.5,
+          "y": 0.34641
+        },
+        {
+          "anecdote_id": 12,
+          "x": 0.85,
+          "y": 0.086603
+        },
+        {
+          "anecdote_id": 13,
+          "x": 0.4,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 14,
+          "x": 0.7,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 15,
+          "x": 0.5,
+          "y": 0.34641
+        },
+        {
+          "anecdote_id": 16,
+          "x": 0.85,
+          "y": 0.086603
+        },
+        {
+          "anecdote_id": 17,
+          "x": 0.4,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 18,
+          "x": 0.7,
+          "y": 0.173205
+        },
+        {
+          "anecdote_id": 19,
+          "x": 0.5,
+          "y": 0.34641
+        },
+        {
+          "anecdote_id": 20,
+          "x": 0.85,
+          "y": 0.086603
+        }
+      ],
+      "title": "Who decided?"
+    }
+  ],
+  "versions": []
+}
