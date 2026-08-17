@@ -247,7 +247,7 @@ editLog.js` turning schema paths into English, tested through Node by
 `tests/test_edit_log_wording.py`; and the critique-pass edits listed under
 "Decisions".
 
-- **Gate shown green:** 1025 passed · ruff "All checks passed" · eslint 0
+- **Gate shown green:** 1030 passed · ruff "All checks passed" · eslint 0
   problems · frontend build · smoke test end-to-end, now including the
   suppression floor and the plain-English 404. Regression list green in one
   run: identifier-absence, edit-semantics, stage gate + no-bypass, barycentric,
@@ -257,7 +257,10 @@ editLog.js` turning schema paths into English, tested through Node by
   upload → stage gate (409) → Organise → mapping → reconciliation (5 rows: 4
   with a story, 1 empty, balanced) → Stage B → four queued → accept, accept,
   correct, reject → patterns, CSV and "What We Heard" all agreeing on the five
-  stories that exist. The paper pack was printed to a real A4 PDF from Chromium
+  stories that exist. A second end-to-end run — a one-triangle set, eight
+  stories, and a wording fix that renamed a corner — found the one real bug of
+  this phase, listed first under "Fixed". The paper pack was printed to a real
+  A4 PDF from Chromium
   (33 KB, 28 sheets): story card with the verbatim anonymity line, one sheet per
   signifier, facilitator sheet with the reconciliation grid, and every computed
   colour on the page is `rgb(0,0,0)` on white.
@@ -755,7 +758,15 @@ simpler option was taken unless noted.
     counted as a paragraph rather than a line — where a sentence wraps is a fact
     about the editor, not about how many times the app names somebody else's
     product.
-93. **The launcher opens the app, not its health check.** `Start Narrative
+93. **A wording fix carries the answers, not just the words.** Renaming a triad
+    corner, a stones chip or an MCQ option rewrites the stored answers in the
+    same transaction, positionally. The alternative — making every reader
+    tolerant of a label it no longer recognises — would have spread the problem
+    across patterns, the landscape, the exports and the queue, and left the
+    database holding words the framework does not contain. One invariant is
+    better than four kindnesses: a stored answer always uses its own version's
+    current labels.
+94. **The launcher opens the app, not its health check.** `Start Narrative
     Lens.bat` pointed the browser at `/api/health`, so a successful start looked
     like a page of JSON. It now polls health for up to fifteen seconds — the
     ceiling acceptance criterion 1 sets — and opens the app itself, and it
@@ -768,7 +779,21 @@ simpler option was taken unless noted.
 
 Bugs found and fixed, newest first.
 
-0. **Five found in the Phase 9 critique pass, four of them in a real browser.**
+0. **A wording fix that renamed a corner stranded every answer under it**
+   *(Phase 9, found by the end-to-end mock run — no unit test could have caught
+   it, because every piece was behaving exactly as written)*. Three of the four
+   signifier kinds store an answer by its label: a triad is `{corner: weight}`,
+   stones name their chip, an MCQ lists the options chosen. A wording fix is
+   allowed to rewrite those labels — renaming "Care" to "Carefulness" is the
+   textbook case the guardrail blesses — and when it did, every stored answer
+   was left keyed by a word the framework no longer had. The Patterns tab then
+   failed outright on a renamed triad corner, and a renamed option or chip
+   quietly stopped being counted, which is worse. A wording fix now carries the
+   answers with the words, positionally — sound because the structural check
+   has already refused anything that adds, removes or reshapes. Five tests in
+   `TestARenameCarriesTheAnswers` hold it; four of them fail if the migration
+   is removed.
+1. **Five found in the Phase 9 critique pass, four of them in a real browser.**
    (a) *The launcher opened a page of JSON.* `Start Narrative Lens.bat` sent the
    browser to `/api/health`, so a perfectly successful start looked like a
    failure to anyone who is not a developer. It now waits for health and opens
@@ -781,7 +806,7 @@ Bugs found and fixed, newest first.
    answer — was drawn as a bar chart with nothing to compare. (e) *A duplicated
    CSS rule* for `.nl-import__soon`, under a class name left over from before
    the tab was built.
-1. **The landscape was buried under the filter rail on a phone** *(Phase 8,
+2. **The landscape was buried under the filter rail on a phone** *(Phase 8,
    found in a real browser)*. The rail comes first in source order, which is
    right for a screen reader and for the keyboard — but stacked on a 375px
    screen it put the terrain 1,264px down the page. Constraint 13a makes the
@@ -789,7 +814,7 @@ Bugs found and fixed, newest first.
    a column of dropdowns is not one. Fixed with `order: -1` on the main column
    under 60rem, so the picture leads visually while the rail still leads for
    assistive technology. `frontend/src/patterns/patterns.css`.
-2. **Corner labels were clipped off both landscape views** *(Phase 8, found in a
+3. **Corner labels were clipped off both landscape views** *(Phase 8, found in a
    real browser)*. On the terrain, "Cost" ran past the canvas edge and was cut
    to "ost" — and which side each corner lands on changes as the view rotates,
    so a fixed alignment cannot be right. On the contour, "Speed" arrived as
@@ -799,7 +824,7 @@ Bugs found and fixed, newest first.
    Confirmed by asserting no ink touches the canvas border and no text box
    escapes its SVG, at both widths and after a large rotation.
    `frontend/src/patterns/Landscape.jsx`.
-3. **Chart labels were clipped away wherever they ran long** *(Phase 7, found in
+4. **Chart labels were clipped away wherever they ran long** *(Phase 7, found in
    a real browser)*. Three separate cases of the same mistake: bar values wide
    enough to read "20 · 100%" ran past the viewBox and were cut to "20 · 10";
    a stones axis label like "Fraught" set horizontally beside the square ran off

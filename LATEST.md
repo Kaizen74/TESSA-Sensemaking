@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-17
 **Phase:** 9 of 9 complete — the build is finished
-**Status:** green (1025 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+**Status:** green (1030 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
 
 ---
 
@@ -44,6 +44,14 @@ contour, the supporting charts and the Explorer all survive being drained of
 colour, because length, position and direct labels carry the meaning. One real
 bug came out of the grayscale pass and three out of the browser pass — see
 PROGRESS.md "Fixed".
+
+**The end-to-end run found a real bug, which is what it is for.** A wording fix
+that renames a triangle's corner — "Care" to "Carefulness", exactly the edit the
+guardrail is built to bless — left every stored answer keyed by a word the
+question set no longer had. The Patterns tab failed outright; a renamed option or
+tile quietly stopped being counted, which is worse. A wording fix now carries the
+answers along with the words, and five tests hold it there. No unit test could
+have caught it: every piece was behaving exactly as written.
 
 **The manual smoke the PRD asks for.** A two-sheet `workshop.xlsx` went through
 the whole machine over HTTP — upload, the stage gate refusing to skip a step,

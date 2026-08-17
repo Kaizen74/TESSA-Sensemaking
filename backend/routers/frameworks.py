@@ -19,9 +19,14 @@ from sqlalchemy.orm import Session
 
 from backend import errors
 from backend.db import get_session
-from backend.edit_semantics import build_edit_log_entries, is_structural_change
+from backend.edit_semantics import (
+    build_edit_log_entries,
+    is_structural_change,
+    label_renames,
+    rename_in_value,
+)
 from backend.framework_schema import FrameworkDefinition, default_definition
-from backend.models import Anecdote, Framework, utcnow
+from backend.models import Anecdote, Framework, Signification, utcnow
 from backend.paper_pack import render_paper_pack
 
 router = APIRouter(prefix="/api/frameworks", tags=["frameworks"])
@@ -274,6 +279,27 @@ def _apply_wording_fix(
         )
 
     entries = build_edit_log_entries(old_definition, new_definition, utcnow())
+
+    # A renamed corner, chip or option is a wording fix — and answers are stored
+    # under those very words, so the answers have to come with it. Without this,
+    # renaming a triad corner leaves every stored placement keyed by a word the
+    # framework no longer has: the Patterns tab fails outright on a triad, and
+    # an MCQ or a stone quietly stops counting. Positional, which is sound
+    # because the structural check above has already refused any reshaping.
+    renames = label_renames(old_definition, new_definition)
+    if renames:
+        stored = session.scalars(
+            select(Signification)
+            .join(Anecdote, Signification.anecdote_id == Anecdote.id)
+            .where(
+                Anecdote.framework_id == framework.id,
+                Signification.signifier_id.in_(renames),
+            )
+        ).all()
+        for placement in stored:
+            placement.value_json = rename_in_value(
+                placement.value_json, renames[placement.signifier_id]
+            )
 
     framework.definition_json = new_definition.model_dump(mode="json")
     # Reassign rather than append: SQLAlchemy only notices a new object on a

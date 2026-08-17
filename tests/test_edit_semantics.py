@@ -11,10 +11,11 @@ phase. The state machine it pins down:
 
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from backend.models import Anecdote, Framework
+from backend.models import Anecdote, Framework, Signification
 
 TRIAD = {
     "id": "pressure",
@@ -499,3 +500,152 @@ class TestLineageBookkeeping:
         rows = session.query(Framework).all()
         assert len(rows) == 2
         assert sorted(row.version for row in rows) == [1, 2]
+
+
+class TestARenameCarriesTheAnswers:
+    """PRD §1.1: a wording fix keeps the stories attached — including their answers.
+
+    Three of the four signifier kinds store an answer *by its label*: a triad is
+    ``{corner: weight}``, stones are placements naming their chip, an MCQ is the
+    options that were chosen. A wording fix is allowed to rewrite those labels,
+    and when it did, every stored answer was left keyed by a word the framework
+    no longer contained. The Patterns tab failed outright on a renamed triad
+    corner; a renamed option or chip stopped being counted without saying so.
+
+    Found by running the whole app end to end rather than by any unit test —
+    each piece was behaving exactly as written.
+    """
+
+    FULL = {
+        "prompt_text": "Tell us about a moment at work that stuck with you.",
+        "triads": [{"id": "t1", "title": "What drove this?", "corners": ["Speed", "Care", "Cost"]}],
+        "dyads": [{"id": "d1", "title": "How clear?", "left": "Murky", "right": "Clear"}],
+        "stones": {
+            "id": "s1",
+            "title": "Where did the effort go?",
+            "x_axis": {"low": "Routine", "high": "Novel"},
+            "y_axis": {"low": "Quiet", "high": "Fraught"},
+            "chips": ["Planning", "Doing"],
+        },
+        "mcqs": [{"id": "m1", "title": "How did it end?", "options": ["Well", "Badly"]}],
+    }
+
+    def _with_a_story(self, client: TestClient) -> dict:
+        created = client.post("/api/frameworks", json={"name": "Hangar", "definition": self.FULL})
+        framework = created.json()
+        stored = client.post(
+            "/api/capture",
+            json={
+                "framework_id": framework["id"],
+                "text": "The parts arrived three hours before the deadline.",
+                "significations": [
+                    {"signifier_id": "t1", "value": {"Speed": 0.6, "Care": 0.3, "Cost": 0.1}},
+                    {"signifier_id": "d1", "value": {"value": 0.4}},
+                    {
+                        "signifier_id": "s1",
+                        "value": {
+                            "placements": [
+                                {"label": "Planning", "x": 0.2, "y": 0.8},
+                                {"label": "Doing", "x": 0.5, "y": 0.5},
+                            ]
+                        },
+                    },
+                    {"signifier_id": "m1", "value": {"selected": ["Well"]}},
+                ],
+            },
+        )
+        assert stored.status_code == 201, stored.text
+        return framework
+
+    def _renamed(self) -> dict:
+        import copy
+
+        changed = copy.deepcopy(self.FULL)
+        changed["triads"][0]["corners"][1] = "Carefulness"
+        changed["stones"]["chips"][0] = "Planning it"
+        changed["mcqs"][0]["options"][0] = "It went well"
+        return changed
+
+    def test_patterns_still_answer_after_a_corner_is_renamed(self, client: TestClient) -> None:
+        framework = self._with_a_story(client)
+
+        fixed = client.put(
+            f"/api/frameworks/{framework['id']}",
+            json={"definition": self._renamed(), "edit_kind": "wording_fix"},
+        )
+        assert fixed.status_code == 200, fixed.text
+
+        view = client.get(f"/api/patterns/{framework['id']}")
+
+        assert view.status_code == 200, view.text
+        assert view.json()["total"] == 1
+
+    def test_the_answer_is_counted_under_its_new_words(self, client: TestClient) -> None:
+        framework = self._with_a_story(client)
+        client.put(
+            f"/api/frameworks/{framework['id']}",
+            json={"definition": self._renamed(), "edit_kind": "wording_fix"},
+        )
+
+        view = client.get(f"/api/patterns/{framework['id']}").json()
+
+        triad = view["triads"][0]
+        assert triad["corners"] == ["Speed", "Carefulness", "Cost"]
+        assert triad["answered"] == 1
+        # The weights are unchanged; it is only the word for the middle corner
+        # that moved. 0.6 towards Speed on a unit triangle is x = 0.6·1 + 0.3·0.
+        assert triad["points"][0]["x"] == pytest.approx(0.3 + 0.1 / 2)
+
+        chosen = {bar["label"]: bar["count"] for bar in view["mcqs"][0]["bars"]}
+        assert chosen == {"It went well": 1, "Badly": 0}
+
+        placed = {point["label"] for point in view["stones"]["points"]}
+        assert placed == {"Planning it", "Doing"}
+
+    def test_the_landscape_is_drawn_from_the_renamed_corners(self, client: TestClient) -> None:
+        framework = self._with_a_story(client)
+        client.put(
+            f"/api/frameworks/{framework['id']}",
+            json={"definition": self._renamed(), "edit_kind": "wording_fix"},
+        )
+
+        land = client.get(f"/api/landscape/{framework['id']}/t1")
+
+        assert land.status_code == 200, land.text
+        assert land.json()["panels"][0]["corners"] == ["Speed", "Carefulness", "Cost"]
+
+    def test_an_untouched_answer_is_left_exactly_alone(
+        self, client: TestClient, session: Session
+    ) -> None:
+        """A dyad has no label to rename, and nothing else may drift either."""
+        framework = self._with_a_story(client)
+        before = {
+            row.signifier_id: dict(row.value_json) for row in session.query(Signification).all()
+        }
+
+        client.put(
+            f"/api/frameworks/{framework['id']}",
+            json={"definition": self._renamed(), "edit_kind": "wording_fix"},
+        )
+        session.expire_all()
+        after = {
+            row.signifier_id: dict(row.value_json) for row in session.query(Signification).all()
+        }
+
+        assert after["d1"] == before["d1"]
+        assert after["t1"]["Speed"] == before["t1"]["Speed"]
+        assert set(after["t1"]) == {"Speed", "Carefulness", "Cost"}
+
+    def test_the_edit_log_still_records_the_words_that_changed(self, client: TestClient) -> None:
+        """The rename is carried, and it is also on the record."""
+        framework = self._with_a_story(client)
+
+        fixed = client.put(
+            f"/api/frameworks/{framework['id']}",
+            json={"definition": self._renamed(), "edit_kind": "wording_fix"},
+        ).json()
+
+        changed = {(entry["old_text"], entry["new_text"]) for entry in fixed["edit_log"]}
+        assert ("Care", "Carefulness") in changed
+        assert ("Well", "It went well") in changed
+        assert ("Planning", "Planning it") in changed

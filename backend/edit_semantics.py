@@ -105,3 +105,86 @@ def build_edit_log_entries(
         }
         for field_path, old_text, new_text in diff_text_fields(old, new)
     ]
+
+
+# --------------------------------------------------------------------------
+# Carrying the stored answers through a rename
+# --------------------------------------------------------------------------
+#
+# Three of the four signifier kinds store an answer *by the label it was given*:
+# a triad is ``{corner: weight}``, stones are ``{"placements": [{"label": chip,
+# …}]}``, and an MCQ is ``{"selected": [option, …]}``. A wording fix is allowed
+# to rewrite those labels — "Care" to "Carefulness" is exactly the kind of edit
+# the guardrail blesses — and when it does, every stored answer is suddenly
+# keyed by a word the framework no longer contains.
+#
+# So a wording fix rewrites the answers along with the words. It is sound to do
+# positionally because :func:`structural_signature` has already refused anything
+# that adds, removes or reshapes: corner two is corner two on both sides of the
+# edit, whatever it is now called.
+
+
+def label_renames(
+    old: FrameworkDefinition, new: FrameworkDefinition
+) -> dict[str, dict[str, str]]:
+    """``{signifier_id: {old_label: new_label}}`` for every renamed label.
+
+    Only labels that answers are stored under — triad corners, stones chips and
+    MCQ options. Titles, prompts and pole names are wording the reader sees;
+    they key nothing.
+    """
+    renames: dict[str, dict[str, str]] = {}
+
+    def pairs(before: list[str], after: list[str]) -> dict[str, str]:
+        return {was: now for was, now in zip(before, after, strict=True) if was != now}
+
+    for was_triad, now_triad in zip(old.triads, new.triads, strict=True):
+        changed = pairs(list(was_triad.corners), list(now_triad.corners))
+        if changed:
+            renames[now_triad.id] = changed
+
+    if old.stones is not None and new.stones is not None:
+        changed = pairs(list(old.stones.chips), list(new.stones.chips))
+        if changed:
+            renames[new.stones.id] = changed
+
+    for was_mcq, now_mcq in zip(old.mcqs, new.mcqs, strict=True):
+        changed = pairs(list(was_mcq.options), list(now_mcq.options))
+        if changed:
+            renames[now_mcq.id] = changed
+
+    return renames
+
+
+def rename_in_value(value_json: Any, renames: dict[str, str]) -> Any:
+    """One stored answer with its labels brought up to date, or unchanged.
+
+    Shape-agnostic on purpose: it recognises the three storage shapes rather
+    than being told which kind it is, so a caller that has only the row cannot
+    pass the wrong kind.
+    """
+    if not isinstance(value_json, dict):
+        return value_json
+
+    # Stones: a list of placements, each naming its chip.
+    if isinstance(value_json.get("placements"), list):
+        return {
+            **value_json,
+            "placements": [
+                {**placement, "label": renames.get(placement.get("label"), placement.get("label"))}
+                if isinstance(placement, dict)
+                else placement
+                for placement in value_json["placements"]
+            ],
+        }
+
+    # MCQ: the chosen options, by name.
+    if isinstance(value_json.get("selected"), list):
+        return {
+            **value_json,
+            "selected": [renames.get(option, option) for option in value_json["selected"]],
+        }
+
+    # Triad: weights keyed by corner. A dyad is ``{"value": …}`` and has no
+    # label to rename, so it falls through this untouched.
+    return {renames.get(key, key): weight for key, weight in value_json.items()}
