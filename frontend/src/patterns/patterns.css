@@ -88,17 +88,10 @@
   gap: var(--nl-space-8);
 }
 
-.nl-patterns__empty,
-.nl-patterns__soon {
+.nl-patterns__empty {
   color: var(--nl-grey);
   font-size: var(--nl-text-sm);
   max-width: 60ch;
-}
-
-.nl-patterns__soon {
-  margin-top: var(--nl-space-8);
-  padding-top: var(--nl-space-4);
-  border-top: 1px solid var(--nl-grey-line);
 }
 
 .nl-patterns__error {
@@ -187,6 +180,14 @@
   align-items: center;
   font-size: var(--nl-text-sm);
   color: var(--nl-data);
+}
+
+/* A note in the rail, quiet enough not to compete with the landscape (13a). */
+.nl-rail__aside {
+  margin: 0;
+  font-size: var(--nl-text-xs);
+  line-height: 1.5;
+  color: var(--nl-grey);
 }
 
 /* ---- The version chip (§5.4) ---- */
@@ -436,7 +437,7 @@
   font-family: var(--nl-font-data);
 }
 
-.nl-land__thin-note {
+.nl-land__empty {
   max-width: 44ch;
   font-size: var(--nl-text-sm);
   color: var(--nl-grey);
@@ -450,6 +451,16 @@
   flex-wrap: wrap;
   gap: var(--nl-space-2);
   margin-bottom: var(--nl-space-4);
+}
+
+/* The question the landscape answers, when there is only one of them and so
+   no row of buttons to carry the name. Quiet: it labels the picture, and the
+   picture is the thing being looked at (constraint 13a). */
+.nl-patterns__triad-name {
+  margin: 0 0 var(--nl-space-4);
+  font-size: var(--nl-text-sm);
+  font-weight: var(--nl-weight-medium);
+  color: var(--nl-grey);
 }
 
 /* ---- Region drill ---- */

@@ -42,7 +42,10 @@ async function request(path, options = {}) {
   }
 
   if (!response.ok) {
-    const envelope = body?.detail?.error ?? body?.error;
+    // One shape from the server, per PRD §4. The nested reading stays as a belt
+    // and braces: an error that arrives unrecognised is shown as "something
+    // went wrong", which is the least useful thing this app can say.
+    const envelope = body?.error ?? body?.detail?.error;
     if (envelope) {
       throw new ApiError(response.status, envelope.code, envelope.message, envelope.action);
     }
@@ -134,6 +137,10 @@ export const api = {
     `/api/export/csv${queryString({ framework_id: frameworkId, ...params })}`,
   exportBriefUrl: (frameworkId, params = {}) =>
     `/api/export/brief${queryString({ framework_id: frameworkId, ...params })}`,
+  // The summary that goes back to the room: no stories, no provenance, and no
+  // slice fewer than five people said (PRD §1.7).
+  exportHeardUrl: (frameworkId, params = {}) =>
+    `/api/export/heard${queryString({ framework_id: frameworkId, ...params })}`,
 
   // The landscape suite. The surface and its contour twin arrive in one
   // response, because they must be the same landscape (constraint 13b).

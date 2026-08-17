@@ -35,6 +35,12 @@ const CONTOUR_PAD = 44;
 /** Radians of rotation per pixel dragged. */
 const DRAG_SENSITIVITY = 0.008;
 
+/** Corner labels, in CSS pixels as they should appear on screen (§5b: ≥12). */
+const LABEL_PX = 13;
+
+/** …and the ceiling, so a very narrow panel does not shout its corners. */
+const LABEL_PX_MAX = 30;
+
 /** The terrain scale, read once from tokens.css so there is one palette. */
 function terrainStops() {
   if (typeof window === "undefined") return ["#00204d", "#e2cb52"];
@@ -129,9 +135,9 @@ function ThinLandscape({ panel }) {
   return (
     <div className="nl-land__thin">
       <ContourFrame panel={panel} segments={[]} />
-      <p className="nl-land__thin-note">
+      <p className="nl-land__empty">
         {panel.count === 0
-          ? "No stories here yet."
+          ? "No stories have answered this triangle yet. Collect some under Capture & Links, or work the queue under Import & Validate."
           : `${panel.count} ${panel.count === 1 ? "story" : "stories"} — too few, or too alike, to draw a landscape from. The marks are shown as they are.`}
       </p>
     </div>
@@ -187,7 +193,15 @@ function Terrain({ panel, camera, onCamera }) {
     context.fillStyle = getComputedStyle(document.documentElement)
       .getPropertyValue("--nl-ink")
       .trim();
-    context.font = "13px ui-sans-serif, system-ui, sans-serif";
+    // The canvas draws in a fixed 640-unit space and is then stretched to
+    // whatever width it has been given, so a font set in canvas units shrinks
+    // with the picture — on a 375px phone, 13 units lands at about 7px, half
+    // the 12px floor §5b sets for chart text. Scaling the font by how much the
+    // canvas was squeezed keeps the label the same size on screen at every
+    // width.
+    const shownWidth = canvas.clientWidth || VIEW.width;
+    const labelPx = Math.min(LABEL_PX * (VIEW.width / shownWidth), LABEL_PX_MAX);
+    context.font = `${labelPx.toFixed(1)}px ui-sans-serif, system-ui, sans-serif`;
     const corners = [
       [0, 0],
       [1, 0],
@@ -214,6 +228,11 @@ function Terrain({ panel, camera, onCamera }) {
 
   useEffect(() => {
     draw();
+    // The label size depends on how wide the canvas ended up, so a window that
+    // changes width has to be drawn again or the corners are left at the size
+    // of the width before last.
+    window.addEventListener("resize", draw);
+    return () => window.removeEventListener("resize", draw);
   }, [draw]);
 
   function onPointerDown(event) {

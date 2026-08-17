@@ -1,76 +1,76 @@
 # Narrative Lens — Latest
 
-**Updated:** 2026-08-16
-**Phase:** 8 of 9 complete — the Narrative Landscape
-**Status:** green (617 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+**Updated:** 2026-08-17
+**Phase:** 9 of 9 complete — the build is finished
+**Status:** green (1025 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
 
 ---
 
 ## Where things stand
 
-The Patterns tab now opens on the thing the whole app was built to show: the
-**Narrative Landscape**.
+**All nine phases are done.** The app writes the questions, collects the stories
+five ways, brings in files you already have, keeps every AI suggestion waiting
+for a human, draws the landscape, and now closes the loop by handing something
+back to the people who told the stories.
 
-- **A terrain you can turn.** Every story that answered a triangle is a point
-  inside it; the landscape is how thickly those points lie. Drag it to look from
-  another angle, or use the arrow keys. One button puts it back where it
-  started.
-- **The peaks are labelled with what they hold** — "4 near Speed", not a colour
-  key. Click one and you get exactly the stories sitting under it. Not roughly
-  those stories: exactly them, because every story sits in one square of the
-  grid and a peak is the squares around it.
-- **A contour twin, one tap away.** The same landscape seen from directly above,
-  as nested rings with every story as a dot. Use it when you want to measure
-  rather than to look — and it is what a saved picture gives you, in black on
-  white, because a contour can be read off a printed page.
-- **Side by side.** Split the landscape by who told the stories, or how they
-  arrived, and you get a panel each — drawn to one shared height so comparing
-  them by eye is honest.
-- **A 3D Explorer**, one level down, plotting any three answers against each
-  other, with an optional overlay of statistical clusters. Those clusters always
-  carry their label: *statistical clusters — descriptive only*. They describe
-  where answers sit and say nothing about why.
-- **Notes on how to read it**, under the picture: that height is thickness and
-  not importance, that triangles are closure-constrained so a rise on one corner
-  is a fall on another, and that a cluster tells you where to look next rather
-  than what caused what.
+Phase 9 added the last of it, and hardened the rest for the person who has to
+use it:
 
-**The landscape maths is pinned and tested.** Scott-bandwidth density on a fixed
-64×64 grid, no seed and no sampling, so the same stories always give the same
-terrain. The peaks on the twenty-story set are held to within a fiftieth of the
-triangle's width, and the surface and the contour are not two calculations that
-agree — they are one calculation looked at twice, which is a test.
+- **"What we heard."** A summary safe to give back to the room: no story text,
+  nothing about how a story arrived, and nothing that fewer than five people
+  said. The floor is applied to every slice, not to the total, and it is applied
+  *after* any filter — a filtered view is a smaller room, which is exactly when
+  it matters. When something is withheld, the page says so; a reader who cannot
+  see that something is missing reads the rest as the whole.
+- **Every error now speaks English.** The app's own refusals already did. What
+  changed is everything else: a mistyped address, a request the page malformed,
+  a fault in the app itself — all of them now leave by the same door, in the one
+  shape the PRD names, as a sentence with something to do about it. There is no
+  path left that answers with "Internal Server Error" or a validator's field
+  dump. A test reads every message in the backend out of the source and holds it
+  to the rule, so the next one written in a hurry cannot slip through.
+- **Every empty screen tells you what to do next**, and the app says "question
+  set" everywhere it used to say "framework" in one place and not the other.
+- **A README written for you** rather than for a developer, with two one-pagers:
+  printing a paper pack, and reading a landscape.
+- **A critique pass over every view**, with one element removed from each: a
+  dead "coming soon" branch, a schema path in the edit log (now the Studio's own
+  words), a row of buttons offering one choice, and a chart that could only ever
+  say 100%.
 
-**And there is now one test that runs the whole app end to end**: write the
-questions, collect stories four ways, import a spreadsheet through both AI
-stages, work the queue, then check that the patterns, the landscape, the
-Explorer, the CSV and the brief all agree about which stories exist and what
-they say. That is the test that catches the joins between phases rather than the
-phases themselves.
+**Checked in a real browser, at 1440px and 375px, and again in grayscale.** The
+landscape is the single boldest thing on the Patterns page at both widths. The
+contour, the supporting charts and the Explorer all survive being drained of
+colour, because length, position and direct labels carry the meaning. One real
+bug came out of the grayscale pass and three out of the browser pass — see
+PROGRESS.md "Fixed".
 
-**Checked in a real browser** at 1440px and 375px: it opens on the Landscape,
-the terrain paints and turns, the camera resets, a peak lists its four stories,
-the contour draws 557 rings and all twenty dots, a split gives three panels, the
-Explorer plots and clusters, and the snapshot downloads. Three layout bugs were
-found this way and fixed — see PROGRESS.md "Fixed".
+**The manual smoke the PRD asks for.** A two-sheet `workshop.xlsx` went through
+the whole machine over HTTP — upload, the stage gate refusing to skip a step,
+Organise, the mapping, a reconciliation that balanced at five rows, Stage B, four
+stories queued, then accept, accept, correct and reject — and the patterns, the
+CSV and "What we heard" all agreed afterwards about which five stories exist. The
+paper pack printed to a real A4 PDF from Chromium: story card with the verbatim
+anonymity line, one sheet per question, facilitator sheet with the reconciliation
+grid, and every colour on the page measured as black on white.
 
-**Still not verified:** the `.bat` launcher has never run on Windows, because
-this build runs on Linux. It also does not yet build the frontend — you need to
-run `npm run build` in `frontend/` once before the app can serve it.
+**Still not verified, and it should be said plainly:**
+
+- **A phone over Tailscale.** This build has one machine and no second device.
+  The respondent's wizard was exercised at 375px in a browser, which is not the
+  same as a handset on the mesh.
+- **The `.bat` launcher on Windows.** It has been read carefully and fixed
+  twice; it has never been run. Its first real run belongs to the operator.
+- The frontend must be built once (`npm run build` in `frontend/`) before the
+  app can serve its own pages. The launcher now says so plainly instead of
+  starting into a blank screen.
 
 ## Next step
 
-**Phase 9 — Closing the loop + operator hardening + critique pass.** The last
-one. It adds "What We Heard" for respondents with small-group suppression
-(nothing under five people is shown), a pass over every error message in plain
-English, empty states everywhere, the README written for you rather than for a
-developer — including one-pagers on printing a paper pack and reading a
-landscape — and a design critique pass: remove one element per view, confirm the
-landscape is the single boldest thing on screen, and check every view in
-grayscale.
-
-Its gate is the full regression plus a manual smoke: one phone over Tailscale,
-one xlsx through the pipeline, and one paper pack printed to PDF.
+There is no next phase. What is left is real use: run a session, and let what
+breaks decide what gets built. PRD §1 scope item 6 — the story browser, with
+full-text search, tags and stars — was never assigned a phase and is the obvious
+first candidate for a v2 if it turns out to be wanted.
 
 ## How to resume
 
@@ -79,18 +79,19 @@ one xlsx through the pipeline, and one paper pack printed to PDF.
 2. Run `./run_checks.sh` to confirm the base is green **before** changing
    anything. If it is red, fix that first and say so — never build new work on a
    red base.
-3. Build Phase 9 exactly per PRD §6, including its tests and gate.
-4. Run the full regression list, show the gate output, commit with the phase's
-   commit message, and update `PROGRESS.md` and `LATEST.md`.
+3. Anything new is beyond v1.3. Decide with the operator what it is worth before
+   building it, and record the decision in `PROGRESS.md` under "Decisions".
 
-**Four traps worth knowing.** Kill any server you started by hand before
+**Five traps worth knowing.** Kill any server you started by hand before
 starting another — a stale one once quietly served an out-of-date app, which
 looked exactly like a broken feature. The CSS is global, so check a new class
 name is not already taken in another stylesheet. SVG and canvas both clip text
-silently rather than wrapping it, so any label that can run long needs measuring
-against its widest case. And time an endpoint with `median_ms` from
-`tests/conftest.py`, never with a single sample — this machine is shared, and one
-sample measures the neighbours.
+silently rather than wrapping it, and a canvas stretched to fit also shrinks its
+own text below the legibility floor — measure any label against its widest case
+*and* its narrowest screen. Time an endpoint with `median_ms` from
+`tests/conftest.py`, never with a single sample; this machine is shared, and one
+sample measures the neighbours. And JSX drops the line break between an element
+and the text after it, which silently runs two words together.
 
 ## Running it yourself
 
@@ -113,6 +114,7 @@ sample measures the neighbours.
 | Save a picture for a document | Patterns → **Save the contour as a picture** |
 | Get the data out | Patterns → **Download the stories (CSV)** |
 | Get a written summary | Patterns → **Download the Pattern Brief** |
+| Give something back to the room | Patterns → **Download "What we heard"** |
 | Print a paper pack | Studio → **Paper pack for version 1**, then Print → Save as PDF |
 | Check everything still works | Run `./run_checks.sh` — you want `ALL CHECKS PASSED` |
 | Stop the app | Close the small "Narrative Lens server" window |

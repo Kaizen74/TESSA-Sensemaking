@@ -314,7 +314,7 @@ def test_an_unknown_framework_says_so_in_plain_english(client: TestClient) -> No
     response = client.get("/api/patterns/404")
 
     assert response.status_code == 404
-    error = response.json()["detail"]["error"]
+    error = response.json()["error"]
     assert error["code"] == "framework_not_found"
     assert "Studio" in error["action"]
 

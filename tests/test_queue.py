@@ -182,7 +182,7 @@ def test_accepting_does_not_take_placements(client: TestClient) -> None:
     )
 
     assert response.status_code == 400
-    error = response.json()["detail"]["error"]
+    error = response.json()["error"]
     assert error["code"] == "unexpected_placements"
     assert "Correct" in error["action"]
 
@@ -267,7 +267,7 @@ def test_a_correction_is_checked_against_the_framework(client: TestClient) -> No
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"]["error"]["code"] == "capture_invalid"
+    assert response.json()["error"]["code"] == "capture_invalid"
 
 
 def test_correcting_needs_the_placements(client: TestClient) -> None:
@@ -277,7 +277,7 @@ def test_correcting_needs_the_placements(client: TestClient) -> None:
     response = client.put(f"/api/queue/{item['anecdote_id']}", json={"action": "correct"})
 
     assert response.status_code == 400
-    assert response.json()["detail"]["error"]["code"] == "missing_placements"
+    assert response.json()["error"]["code"] == "missing_placements"
 
 
 # --------------------------------------------------------------------------
@@ -327,7 +327,7 @@ def test_a_story_cannot_be_decided_twice(client: TestClient) -> None:
     again = client.put(f"/api/queue/{item['anecdote_id']}", json={"action": "reject"})
 
     assert again.status_code == 409
-    error = again.json()["detail"]["error"]
+    error = again.json()["error"]
     assert error["code"] == "already_decided"
     assert "already been dealt with" in error["message"]
 
@@ -351,7 +351,7 @@ def test_an_unknown_story_says_so_in_plain_english(client: TestClient) -> None:
     response = client.put("/api/queue/404", json={"action": "accept"})
 
     assert response.status_code == 404
-    error = response.json()["detail"]["error"]
+    error = response.json()["error"]
     assert error["code"] == "story_not_found"
     assert "Reload the queue" in error["action"]
 
@@ -398,7 +398,7 @@ def test_a_finished_file_goes_no_further(client: TestClient) -> None:
     again = client.post(f"/api/import/{job['id']}/propose", json={"framework_id": 1})
 
     assert again.status_code == 409
-    assert again.json()["detail"]["error"]["code"] == "wrong_stage"
+    assert again.json()["error"]["code"] == "wrong_stage"
 
 
 def test_one_file_finishing_does_not_finish_another(client: TestClient) -> None:

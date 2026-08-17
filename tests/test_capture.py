@@ -260,7 +260,7 @@ class TestPlacementValidation:
         )
 
         assert response.status_code == 400
-        assert response.json()["detail"]["error"]["code"] == "capture_invalid"
+        assert response.json()["error"]["code"] == "capture_invalid"
 
     def test_triad_missing_a_corner_is_refused(self, client: TestClient) -> None:
         framework = _framework(client)
@@ -273,7 +273,7 @@ class TestPlacementValidation:
         )
 
         assert response.status_code == 400
-        assert "missing a corner" in response.json()["detail"]["error"]["message"]
+        assert "missing a corner" in response.json()["error"]["message"]
 
     def test_triad_that_does_not_sum_to_one_is_normalised(
         self, client: TestClient, session
@@ -304,7 +304,7 @@ class TestPlacementValidation:
         )
 
         assert response.status_code == 400
-        assert "outside the triangle" in response.json()["detail"]["error"]["message"]
+        assert "outside the triangle" in response.json()["error"]["message"]
 
     def test_dyad_out_of_range_is_refused(self, client: TestClient) -> None:
         framework = _framework(client)
@@ -315,7 +315,7 @@ class TestPlacementValidation:
         )
 
         assert response.status_code == 400
-        assert "off the end of the line" in response.json()["detail"]["error"]["message"]
+        assert "off the end of the line" in response.json()["error"]["message"]
 
     def test_stones_outside_the_square_is_refused(self, client: TestClient) -> None:
         framework = _framework(client)
@@ -331,7 +331,7 @@ class TestPlacementValidation:
         )
 
         assert response.status_code == 400
-        assert "outside the square" in response.json()["detail"]["error"]["message"]
+        assert "outside the square" in response.json()["error"]["message"]
 
     def test_stones_unknown_chip_is_refused(self, client: TestClient) -> None:
         framework = _framework(client)
@@ -367,7 +367,7 @@ class TestPlacementValidation:
         )
 
         assert response.status_code == 400
-        assert "takes one answer" in response.json()["detail"]["error"]["message"]
+        assert "takes one answer" in response.json()["error"]["message"]
 
     def test_multi_choice_mcq_accepts_two_answers(self, client: TestClient) -> None:
         framework = _framework(
@@ -394,7 +394,7 @@ class TestPlacementValidation:
         )
 
         assert response.status_code == 400
-        assert "answered twice" in response.json()["detail"]["error"]["message"]
+        assert "answered twice" in response.json()["error"]["message"]
 
     def test_an_empty_story_is_refused(self, client: TestClient) -> None:
         framework = _framework(client)
@@ -405,13 +405,13 @@ class TestPlacementValidation:
         response = _submit(client, framework["id"], respondent_group="Flight deck")
 
         assert response.status_code == 400
-        assert response.json()["detail"]["error"]["code"] == "unknown_respondent_group"
+        assert response.json()["error"]["code"] == "unknown_respondent_group"
 
     def test_missing_framework_explains_itself(self, client: TestClient) -> None:
         response = _submit(client, 4242)
 
         assert response.status_code == 404
-        error = response.json()["detail"]["error"]
+        error = response.json()["error"]
         assert error["code"] == "framework_not_found"
         assert error["action"]
 
@@ -423,7 +423,7 @@ class TestPlacementValidation:
             framework["id"],
             significations=[{"signifier_id": "clarity", "value": {"value": 9.0}}],
         )
-        error = response.json()["detail"]["error"]
+        error = response.json()["error"]
 
         assert error["message"].endswith(".")
         assert error["action"]

@@ -42,6 +42,16 @@ SHARE_LEAD = 0.40
 #: Fewer stories than this and a "finding" is an anecdote about anecdotes.
 MIN_FOR_FINDING = 3
 
+#: Small-group suppression for "What We Heard" (PRD §1.7, acceptance criterion
+#: 13). Nothing computed from fewer than five stories is shown to respondents.
+#:
+#: This is constraint 9 continuing past the database. The schema holds no
+#: identifier, but "2 of the 3 people in Deck said it ended badly" identifies
+#: somebody to their colleagues just as surely as a name would. Five is the
+#: floor the PRD sets, and it is applied to every slice — never to the total
+#: only, because it is the slices that are small.
+SUPPRESSION_FLOOR = 5
+
 PROVENANCE_COLUMNS = [
     "anecdote_id",
     "framework_id",
@@ -165,11 +175,7 @@ def dataset_csv(
             "validated_at": _stamp(min(validated)) if validated else "",
             "lowest_ai_confidence": min(confidences) if confidences else "",
         }
-        row.update(
-            _placement_cells(
-                definition, {p.signifier_id: p.value_json for p in placements}
-            )
-        )
+        row.update(_placement_cells(definition, {p.signifier_id: p.value_json for p in placements}))
         writer.writerow(row)
 
     return buffer.getvalue()
@@ -276,26 +282,33 @@ def findings(patterns: PatternSet) -> list[str]:
     return lines
 
 
-def _headlines(patterns: PatternSet) -> list[str]:
+def _headlines(patterns: PatternSet, floor: int = MIN_FOR_FINDING) -> list[str]:
     """Finding-first sentences, short enough to be a title (constraint 13f).
 
     Written separately from the bullets rather than derived from them. A bullet
     starts by naming the question — right in a list, wrong as a headline, where
     "On *What drove this?*, stories pull towards Speed" reads as a topic with a
     finding tacked on. A headline has to lead with what was found.
+
+    ``floor`` is the smallest number of stories a sentence may be computed from,
+    and it applies to any single answer a sentence names as well as to the chart
+    as a whole. The analyst's brief uses :data:`MIN_FOR_FINDING`; the summary
+    that goes back to the room uses :data:`SUPPRESSION_FLOOR`, because a headline
+    is still a figure and "Deck told most of the stories (3 of 8)" would walk a
+    slice of three straight past the suppression the bullets below it apply.
     """
     lines: list[str] = []
 
     for chart in patterns.triads:
         lean = _nearest_corner(chart)
-        if lean is None or chart.answered < MIN_FOR_FINDING:
+        if lean is None or chart.answered < floor:
             continue
         corner, weight = lean
         if weight >= TRIAD_LEAN:
             lines.append(f"Stories pull towards {corner} on “{chart.title}”")
 
     for chart in patterns.dyads:
-        if chart.median is None or chart.answered < MIN_FOR_FINDING:
+        if chart.median is None or chart.answered < floor:
             continue
         distance = chart.median - 0.5
         if abs(distance) >= DYAD_LEAN:
@@ -304,11 +317,9 @@ def _headlines(patterns: PatternSet) -> list[str]:
 
     for chart in patterns.mcqs:
         bars = [bar for bar in chart.bars if bar.count]
-        if not bars or chart.answered < MIN_FOR_FINDING:
+        if not bars or chart.answered < floor or bars[0].count < floor:
             continue
-        if bars[0].share >= SHARE_LEAD and (
-            len(bars) == 1 or bars[0].count > bars[1].count
-        ):
+        if bars[0].share >= SHARE_LEAD and (len(bars) == 1 or bars[0].count > bars[1].count):
             lines.append(
                 f"Most stories answer “{chart.title}” with {bars[0].label} "
                 f"({round(bars[0].share * 100)}%)"
@@ -317,14 +328,16 @@ def _headlines(patterns: PatternSet) -> list[str]:
     groups = next(
         (chart for chart in patterns.demographics if chart.id == "respondent_group"), None
     )
-    if groups and groups.answered >= MIN_FOR_FINDING:
+    if groups and groups.answered >= floor:
         bars = [bar for bar in groups.bars if bar.count]
-        if bars and bars[0].share >= SHARE_LEAD and (
-            len(bars) == 1 or bars[0].count > bars[1].count
+        if (
+            bars
+            and bars[0].count >= floor
+            and bars[0].share >= SHARE_LEAD
+            and (len(bars) == 1 or bars[0].count > bars[1].count)
         ):
             lines.append(
-                f"{bars[0].label} told most of the stories "
-                f"({bars[0].count} of {groups.answered})"
+                f"{bars[0].label} told most of the stories ({bars[0].count} of {groups.answered})"
             )
 
     return lines
@@ -404,8 +417,131 @@ def pattern_brief(patterns: PatternSet, generated_at: dt.datetime) -> str:
         "cause."
     )
     lines.append(
-        "- Patterns point at where to look next. They are not evidence of what "
-        "caused what."
+        "- Patterns point at where to look next. They are not evidence of what caused what."
+    )
+    lines.append("")
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------
+# "What We Heard" — the version respondents see
+# --------------------------------------------------------------------------
+
+
+def _heard_category(chart) -> list[str]:
+    """One categorical view, with every small slice suppressed.
+
+    Suppression is per bar, not per chart. A question answered by forty people
+    can still contain a slice of two, and it is the slice that identifies
+    somebody — "both people in Deck said it went badly" names them to anyone who
+    knows there are two people in Deck.
+    """
+    shown = [bar for bar in chart.bars if bar.count >= SUPPRESSION_FLOOR]
+    hidden = [bar for bar in chart.bars if 0 < bar.count < SUPPRESSION_FLOOR]
+
+    if not shown and not hidden:
+        return []
+
+    lines = [f"**{chart.title}**"]
+    if not shown:
+        # The question still gets its heading. A question that disappears
+        # entirely reads as one nobody was asked, which is a different and
+        # untrue thing from one whose answers were all too thin to show.
+        lines.append(
+            f"- Every answer here had fewer than {SUPPRESSION_FLOOR} stories, so "
+            "none of them are shown and nobody can be picked out."
+        )
+        return lines
+
+    lines.extend(f"- {bar.label}: {round(bar.share * 100)}% ({bar.count} stories)" for bar in shown)
+    if hidden:
+        # Said out loud rather than silently dropped: a reader who cannot see
+        # that something is missing will read the remainder as the whole.
+        answers = "answer" if len(hidden) == 1 else "answers"
+        lines.append(
+            f"- {len(hidden)} other {answers} had fewer than {SUPPRESSION_FLOOR} "
+            "stories each and are not shown, so nobody can be picked out."
+        )
+    return lines
+
+
+def what_we_heard(patterns: PatternSet, generated_at: dt.datetime) -> str:
+    """A summary safe to hand back to the people who told the stories.
+
+    Three things are deliberately absent, and each for a reason:
+
+    * **No verbatim stories.** A story is the most identifying thing in the
+      dataset — its details belong to the person who lived it.
+    * **No provenance.** How a story arrived, and when, is the operator's
+      business. It says nothing a respondent needs and something a colleague
+      could use.
+    * **No slice under five** (:data:`SUPPRESSION_FLOOR`), and the count of what
+      was withheld is stated rather than hidden.
+
+    What is left is what the group said as a group, which is the thing worth
+    handing back.
+    """
+    lines: list[str] = []
+    lines.append("# What we heard")
+    lines.append("")
+
+    if patterns.total < SUPPRESSION_FLOOR:
+        lines.append(
+            f"Fewer than {SUPPRESSION_FLOOR} stories have been shared so far, so "
+            "there is nothing here that could be shown without risking somebody "
+            "being recognised. Once more people have taken part, this page will "
+            "fill in."
+        )
+        lines.append("")
+        return "\n".join(lines)
+
+    lines.append(
+        f"{patterns.total} people shared a story. Here is what they said, "
+        f"together — no names, no quotes, and nothing that fewer than "
+        f"{SUPPRESSION_FLOOR} people said."
+    )
+    lines.append("")
+    lines.append(f"*Prepared {generated_at:%d %B %Y}*")
+    lines.append("")
+
+    said = _headlines(patterns, floor=SUPPRESSION_FLOOR)
+    if said:
+        lines.append("## The short version")
+        lines.append("")
+        lines.extend(f"- {line}" for line in said)
+        lines.append("")
+
+    blocks: list[list[str]] = []
+    for chart in patterns.mcqs:
+        blocks.append(_heard_category(chart))
+    groups = next(
+        (chart for chart in patterns.demographics if chart.id == "respondent_group"), None
+    )
+    if groups is not None:
+        blocks.append(_heard_category(groups))
+
+    shown = [block for block in blocks if block]
+    if shown:
+        lines.append("## In more detail")
+        lines.append("")
+        for block in shown:
+            lines.extend(block)
+            lines.append("")
+
+    lines.append("## About this summary")
+    lines.append("")
+    lines.append(
+        "- Nothing here identifies anyone. No names, email addresses, devices "
+        "or network addresses were ever recorded, and the time each story "
+        "arrived is rounded to the hour."
+    )
+    lines.append(
+        f"- Anything fewer than {SUPPRESSION_FLOOR} people said has been left "
+        "out, so no one can be picked out of a small group."
+    )
+    lines.append(
+        "- These are counts of what people marked on the questions. They show "
+        "what was said, not why it was said."
     )
     lines.append("")
     return "\n".join(lines)

@@ -284,6 +284,13 @@ export function PatternsTab() {
             <a className="nl-rail__download" href={api.exportBriefUrl(selected.id, params)}>
               Download the Pattern Brief
             </a>
+            <a className="nl-rail__download" href={api.exportHeardUrl(selected.id, params)}>
+              Download “What we heard”
+            </a>
+            <p className="nl-rail__aside">
+              “What we heard” is the one to give back: no stories, no history,
+              nothing fewer than five people said.
+            </p>
             {subView === VIEW_LANDSCAPE && land?.panels?.[0]?.has_surface && (
               <button
                 type="button"
@@ -341,25 +348,35 @@ export function PatternsTab() {
                     </p>
                   ) : (
                     <>
-                      <div className="nl-patterns__triads">
-                        {triads.map((triad) => (
-                          <button
-                            key={triad.id}
-                            type="button"
-                            className={
-                              triad.id === currentTriad
-                                ? "nl-import__view nl-import__view--current"
-                                : "nl-import__view"
-                            }
-                            onClick={() => {
-                              setTriadId(triad.id);
-                              setRegion(null);
-                            }}
-                          >
-                            {triad.title}
-                          </button>
-                        ))}
-                      </div>
+                      {/* A row of buttons only when there is a choice to make.
+                          One triangle in the set makes it one button that
+                          cannot change anything, standing between the reader
+                          and the picture — so it becomes what it always was,
+                          the name of the question being looked at. */}
+                      {triads.length === 1 && (
+                        <p className="nl-patterns__triad-name">{triads[0].title}</p>
+                      )}
+                      {triads.length > 1 && (
+                        <div className="nl-patterns__triads">
+                          {triads.map((triad) => (
+                            <button
+                              key={triad.id}
+                              type="button"
+                              className={
+                                triad.id === currentTriad
+                                  ? "nl-import__view nl-import__view--current"
+                                  : "nl-import__view"
+                              }
+                              onClick={() => {
+                                setTriadId(triad.id);
+                                setRegion(null);
+                              }}
+                            >
+                              {triad.title}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       {land ? (
                         <LandscapeView view={land} onRegion={setRegion} />
                       ) : (
@@ -382,23 +399,45 @@ export function PatternsTab() {
                 <>
                   <section className="nl-patterns__band">
                     <h3 className="nl-patterns__band-title">What people said</h3>
-                    <div className="nl-patterns__grid">
-                      {view.dyads.map((chart) => (
-                        <DyadChart key={chart.id} chart={chart} />
-                      ))}
-                      {view.mcqs.map((chart) => (
-                        <BarChart key={chart.id} chart={chart} />
-                      ))}
-                      {view.stones && <StonesChart chart={view.stones} />}
-                    </div>
+                    {/* A question set can be a prompt and nothing else, and then
+                        this band has no charts to draw. A heading over empty
+                        space reads as a fault; say what is missing instead. */}
+                    {view.dyads.length === 0 &&
+                    view.mcqs.length === 0 &&
+                    !view.stones ? (
+                      <p className="nl-patterns__empty">
+                        This question set asks for the story and nothing else, so
+                        there is nothing to chart here. Add a slider, a choice or
+                        a square in the <strong>Studio</strong> — or read the
+                        landscape, which needs only a triangle.
+                      </p>
+                    ) : (
+                      <div className="nl-patterns__grid">
+                        {view.dyads.map((chart) => (
+                          <DyadChart key={chart.id} chart={chart} />
+                        ))}
+                        {view.mcqs.map((chart) => (
+                          <BarChart key={chart.id} chart={chart} />
+                        ))}
+                        {view.stones && <StonesChart chart={view.stones} />}
+                      </div>
+                    )}
                   </section>
 
                   <section className="nl-patterns__band">
                     <h3 className="nl-patterns__band-title">Who told these stories</h3>
                     <div className="nl-patterns__grid">
-                      {view.demographics.map((chart) => (
-                        <BarChart key={chart.id} chart={chart} />
-                      ))}
+                      {/* A bar chart is a comparison. One answer at 100% has
+                          nothing to compare it to — it is a fact about the set,
+                          and the CSV carries it. Drawing it is chart junk
+                          (constraint 13d), so it waits until there are two. */}
+                      {view.demographics
+                        .filter(
+                          (chart) => chart.bars.filter((bar) => bar.count > 0).length > 1,
+                        )
+                        .map((chart) => (
+                          <BarChart key={chart.id} chart={chart} />
+                        ))}
                     </div>
                   </section>
                 </>

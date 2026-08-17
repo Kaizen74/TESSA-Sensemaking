@@ -270,7 +270,7 @@ class TestEdgeCases:
     def test_missing_framework_explains_itself(self, client: TestClient) -> None:
         response = client.get("/api/frameworks/4242/paper-pack")
         assert response.status_code == 404
-        assert response.json()["detail"]["error"]["code"] == "framework_not_found"
+        assert response.json()["error"]["code"] == "framework_not_found"
 
     def test_each_version_prints_its_own_wording(self, client: TestClient, session) -> None:  # noqa: ANN001
         """A meaning change must not retro-print onto the old version's pack."""

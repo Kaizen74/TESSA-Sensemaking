@@ -315,3 +315,226 @@ def test_ties_read_as_english(client: TestClient) -> None:
 
     assert " and and " not in brief
     assert "** and **" not in brief or ", " in brief
+
+
+# --------------------------------------------------------------------------
+# "What We Heard" — the version that goes back to the room
+# --------------------------------------------------------------------------
+
+
+def _heard(client: TestClient, framework_id: int, **params) -> str:
+    response = client.get(
+        "/api/export/heard", params={"framework_id": framework_id, **params}
+    )
+    assert response.status_code == 200, response.text
+    return response.text
+
+
+def test_what_we_heard_says_what_the_group_said(client: TestClient) -> None:
+    framework = build_golden_dataset(client)
+
+    heard = _heard(client, framework["id"])
+
+    assert heard.splitlines()[0] == "# What we heard"
+    assert "20 people shared a story" in heard
+    assert "How did it end?" in heard
+
+
+def test_no_slice_under_five_is_ever_shown(client: TestClient) -> None:
+    """Acceptance criterion 13, and constraint 9 continuing past the database.
+
+    A group of two is identifiable to its own colleagues however anonymous the
+    schema is, so the floor is applied per slice rather than to the total.
+    """
+    framework = make_framework(client, GOLDEN_DEFINITION)
+    # Six from Ops, two from Deck. The pair must not appear.
+    for index in range(6):
+        client.post(
+            "/api/capture",
+            json={
+                "framework_id": framework["id"],
+                "text": f"An Ops story, number {index}.",
+                "respondent_group": "Ops",
+                "significations": [{"signifier_id": "m1", "value": {"selected": ["Well"]}}],
+            },
+        )
+    for index in range(2):
+        client.post(
+            "/api/capture",
+            json={
+                "framework_id": framework["id"],
+                "text": f"A Deck story, number {index}.",
+                "respondent_group": "Deck",
+                "significations": [{"signifier_id": "m1", "value": {"selected": ["Badly"]}}],
+            },
+        )
+
+    heard = _heard(client, framework["id"])
+
+    assert "Ops" in heard
+    assert "Deck" not in heard
+    # "Badly" was chosen twice, so it goes too.
+    assert "Badly" not in heard
+
+
+def test_what_was_withheld_is_counted_out_loud(client: TestClient) -> None:
+    """A reader who cannot see that something is missing reads the rest as all."""
+    framework = make_framework(client, GOLDEN_DEFINITION)
+    for index in range(6):
+        client.post(
+            "/api/capture",
+            json={
+                "framework_id": framework["id"],
+                "text": f"Story {index}.",
+                "respondent_group": "Ops",
+                "significations": [{"signifier_id": "m1", "value": {"selected": ["Well"]}}],
+            },
+        )
+    for index in range(2):
+        client.post(
+            "/api/capture",
+            json={
+                "framework_id": framework["id"],
+                "text": f"Story {index + 6}.",
+                "respondent_group": "Deck",
+                "significations": [{"signifier_id": "m1", "value": {"selected": ["Badly"]}}],
+            },
+        )
+
+    heard = _heard(client, framework["id"])
+
+    assert "fewer than 5 stories each and are not shown" in heard
+
+
+def test_a_thin_set_shows_nothing_at_all(client: TestClient) -> None:
+    framework = make_framework(client, GOLDEN_DEFINITION)
+    for index in range(4):
+        client.post(
+            "/api/capture",
+            json={
+                "framework_id": framework["id"],
+                "text": f"Story {index}.",
+                "respondent_group": "Ops",
+                "significations": [{"signifier_id": "m1", "value": {"selected": ["Well"]}}],
+            },
+        )
+
+    heard = _heard(client, framework["id"])
+
+    assert "Fewer than 5 stories have been shared so far" in heard
+    assert "Ops" not in heard
+    assert "Well" not in heard
+
+
+def test_no_story_text_ever_reaches_it(client: TestClient) -> None:
+    """A story is the most identifying thing in the dataset."""
+    framework = make_framework(client, GOLDEN_DEFINITION)
+    secret = "The night the compressor failed and Priya stayed until four."
+    for _index in range(6):
+        client.post(
+            "/api/capture",
+            json={
+                "framework_id": framework["id"],
+                "text": secret,
+                "respondent_group": "Ops",
+                "significations": [{"signifier_id": "m1", "value": {"selected": ["Well"]}}],
+            },
+        )
+
+    heard = _heard(client, framework["id"])
+
+    assert secret not in heard
+    assert "Priya" not in heard
+
+
+def test_no_provenance_reaches_it_either(client: TestClient) -> None:
+    """How a story arrived is the operator's business, not the room's."""
+    framework = build_golden_dataset(client)
+
+    heard = _heard(client, framework["id"])
+
+    for leak in (
+        "input_method",
+        "entry_mode",
+        "source_file",
+        "kiosk",
+        "imported",
+        "signified_by",
+        "framework_id",
+    ):
+        assert leak not in heard, leak
+
+
+def test_it_states_its_own_anonymity_plainly(client: TestClient) -> None:
+    framework = build_golden_dataset(client)
+
+    heard = _heard(client, framework["id"])
+
+    assert "Nothing here identifies anyone" in heard
+    assert "rounded to the hour" in heard
+    assert "not why it was said" in heard
+
+
+def test_the_floor_applies_after_a_filter(client: TestClient) -> None:
+    """The moment it matters most: a filtered view is a smaller room.
+
+    Unfiltered, every answer in the golden set is over the floor and is named.
+    Filtered to the ten kiosk stories, not one answer reaches five — the total
+    is still ten, so the page is not blank, but every figure inside it goes.
+    """
+    framework = build_golden_dataset(client)
+
+    everything = _heard(client, framework["id"])
+    kiosk = _heard(client, framework["id"], entry_mode="kiosk")
+
+    assert "20 people shared a story" in everything
+    assert "Well" in everything
+    assert "Badly" in everything
+
+    assert "10 people shared a story" in kiosk
+    for label in ("Well", "Badly", "Unresolved", "Ops", "Deck", "Support"):
+        assert label not in kiosk, label
+    # And the reader is told the figures are missing, not left to assume none
+    # were collected.
+    assert "Every answer here had fewer than 5 stories" in kiosk
+
+
+def test_a_headline_never_names_a_slice_the_bullets_would_hide(
+    client: TestClient,
+) -> None:
+    """The short version is a figure too, and the floor binds it equally."""
+    framework = make_framework(client, GOLDEN_DEFINITION)
+    # Six stories, four of them from a group of four: the group leads, but four
+    # people are four people.
+    for index in range(6):
+        client.post(
+            "/api/capture",
+            json={
+                "framework_id": framework["id"],
+                "text": f"Story {index}.",
+                "respondent_group": "Ops" if index < 4 else "Deck",
+                "significations": [
+                    {"signifier_id": "m1", "value": {"selected": ["Well"]}}
+                    if index < 4
+                    else {"signifier_id": "m1", "value": {"selected": ["Badly"]}}
+                ],
+            },
+        )
+
+    heard = _heard(client, framework["id"])
+    brief = _brief(client, framework["id"])
+
+    # The brief is the analyst's, and says it.
+    assert "Ops" in brief
+    # The summary for the room does not, in either section.
+    assert "Ops" not in heard
+    assert "Well" not in heard
+
+
+def test_it_downloads_as_markdown(client: TestClient) -> None:
+    framework = build_golden_dataset(client)
+
+    response = client.get("/api/export/heard", params={"framework_id": framework["id"]})
+
+    assert "hangar-v1-what-we-heard.md" in response.headers["content-disposition"]
+    assert response.headers["content-type"].startswith("text/markdown")

@@ -224,6 +224,8 @@ gives three panels on one scale; the second triad redraws; the Explorer plots
 three chosen axes with the cluster overlay and its caveat; and the snapshot
 downloads as `hangar-v1-…-contour-stories-cluster-near-my-team.png`. Three
 label-clipping and layout bugs were found this way — see "Fixed".
+
+### [x] Phase 9 — Closing the loop + operator hardening + critique pass — **complete 2026-08-17**
 "What We Heard" with <5 suppression; plain-English error pass; empty states;
 README-for-Eric (incl. "printing a paper pack" and "reading a landscape"
 one-pagers); critique pass per the design skill: remove one element per view,
@@ -231,6 +233,43 @@ verify the landscape is the single boldest thing, grayscale screenshot check.
 - Gate: full regression; manual smoke incl. one phone over Tailscale, one xlsx
   through the pipeline, and one paper pack printed to PDF.
 - Commit: `phase-9: v1.3`.
+
+Delivered: `exports.what_we_heard` with `SUPPRESSION_FLOOR = 5` applied per
+slice and after any filter, plus `GET /api/export/heard` and its download in the
+Patterns rail; four exception handlers in `backend/main.py` so a mistyped
+address, a malformed request and a fault in the app itself all leave by the same
+door in the same shape; the whole error surface read out of the source and held
+to the rule by `tests/test_error_surface.py`; empty states audited across every
+screen and guarded by `tests/test_empty_states.py`; `README.md` rewritten for the
+operator with both one-pagers and the single attribution PRD §15 permits, with
+`tests/test_original_names.py` holding constraint 8; `frontend/src/studio/
+editLog.js` turning schema paths into English, tested through Node by
+`tests/test_edit_log_wording.py`; and the critique-pass edits listed under
+"Decisions".
+
+- **Gate shown green:** 1025 passed · ruff "All checks passed" · eslint 0
+  problems · frontend build · smoke test end-to-end, now including the
+  suppression floor and the plain-English 404. Regression list green in one
+  run: identifier-absence, edit-semantics, stage gate + no-bypass, barycentric,
+  both goldens, the landscape suite and the whole-app integration — 172 tests
+  in the named subset.
+- **Manual smoke:** a real two-sheet `workshop.xlsx` driven over HTTP through
+  upload → stage gate (409) → Organise → mapping → reconciliation (5 rows: 4
+  with a story, 1 empty, balanced) → Stage B → four queued → accept, accept,
+  correct, reject → patterns, CSV and "What We Heard" all agreeing on the five
+  stories that exist. The paper pack was printed to a real A4 PDF from Chromium
+  (33 KB, 28 sheets): story card with the verbatim anonymity line, one sheet per
+  signifier, facilitator sheet with the reconciliation grid, and every computed
+  colour on the page is `rgb(0,0,0)` on white.
+- **Not verified:** a phone over Tailscale. This build has one machine and no
+  second device, so the wizard was exercised at 375px in Chromium rather than on
+  a handset, and the `.bat` launcher still has never run on Windows.
+
+Checked in a real browser at 1440px and 375px, and again with every view forced
+to grayscale: the landscape is the single boldest element on the Patterns page
+at both widths; the contour, the supporting charts and the Explorer all survive
+grayscale because length, position and direct labels carry the meaning; corner
+labels on the terrain now hold their size on a phone.
 
 ---
 
@@ -256,6 +295,11 @@ Green in every phase from introduction onward:
   `tests/test_landscape.py`)*
 - whole-app integration *(added Phase 8 — `tests/test_whole_app.py`, one run
   through every feature in the order an operator uses them)*
+- the error surface *(added Phase 9 — `tests/test_error_surface.py`, every
+  operator-facing sentence in the backend read out of the source and held to
+  the plain-English rule, plus the paths nobody wrote a message for)*
+- original names *(added Phase 9 — `tests/test_original_names.py`, constraint 8
+  and acceptance criterion 15 as a test rather than a promise)*
 
 ---
 
@@ -655,12 +699,88 @@ simpler option was taken unless noted.
     assigned a phase. The region drawer covers "the stories beneath it"; the
     browser is left for Phase 9 or a v2 decision rather than smuggled in here.
 
+### Phase 9
+
+83. **The floor is per slice, and it is applied after the filter.** Five is the
+    total below which "What We Heard" shows nothing at all; it is also the
+    minimum any single answer needs before it is named. A filtered view is a
+    smaller room, so the ten kiosk stories can be over the floor as a set while
+    not one of their answers is — and then the page says so rather than
+    disappearing.
+84. **Suppression is stated, never silent.** A question whose every answer is
+    too thin keeps its heading and says that nothing under it can be shown. A
+    reader who cannot see that something is missing reads the remainder as the
+    whole, which is a worse failure than showing less.
+85. **The headline obeys the floor too.** `_headlines` takes the floor as an
+    argument: `MIN_FOR_FINDING` (3) for the analyst's brief, `SUPPRESSION_FLOOR`
+    (5) for the summary that goes back to the room. Without it "Deck told most
+    of the stories (3 of 8)" would have walked a slice of three past the
+    suppression the bullets below it apply.
+86. **One error shape, everywhere, as PRD §4 states it.** FastAPI nests an
+    `HTTPException` detail under `detail`, so the app was emitting
+    `{"detail": {"error": …}}` from its own refusals and `{"error": …}` from the
+    catch-all. A handler now unwraps it, and every failure — ours, the
+    framework's 404 and 405, a malformed request, and an unhandled fault — leaves
+    as `{"error": {code, message, action}}`. The tests were updated to read the
+    one shape.
+87. **A validator's rejection keeps its status code and loses its body.** The
+    422 stays (it is what the anonymity tests assert on, and the operator never
+    sees a number); the field dump is replaced by a sentence that names the part
+    that could not be read.
+88. **"Question set" is the operator's word for a framework.** The code, the
+    schema and the PRD all say framework; the Studio said both. Every visible
+    string now says question set, and `tests/test_empty_states.py` holds it.
+89. **The critique pass removed one element per view.** The shell: the dead
+    "coming soon" branch and its CSS, with the brand promoted to the page's only
+    `h1`. The Studio: the schema field path in the edit log, replaced by the
+    Studio's own words for the same field. The Landscape: the row of triangle
+    buttons when there is only one triangle, which becomes the caption it always
+    was. The supporting charts: any categorical chart with a single answer at
+    100%, which is a fact rather than a comparison and lives in the CSV. Import:
+    a duplicated CSS rule under a name left over from "coming soon".
+90. **Corner labels are sized in screen pixels, not canvas units.** The terrain
+    draws in a fixed 640-unit space stretched to whatever width it is given, so
+    a 13-unit label landed at about 7px on a 375px phone — half §5b's floor. The
+    font is now scaled by how much the canvas was squeezed, and a resize
+    redraws.
+91. **Empty states are checked by reading the source.** There is no DOM test
+    harness in this project, and adding one to assert on eleven sentences would
+    be heavier apparatus than the thing it guards. The test asserts what a
+    reader can confirm by eye: every screen has empty-state copy, and that copy
+    names a next step.
+92. **The trademark scan excludes the PRD and CLAUDE.md.** They are the
+    specification and the standing instructions, and they *state* constraint 8.
+    A rule that forbade quoting itself would be a strange rule. Everything that
+    ships is scanned, and the README carries exactly one attribution paragraph,
+    counted as a paragraph rather than a line — where a sentence wraps is a fact
+    about the editor, not about how many times the app names somebody else's
+    product.
+93. **The launcher opens the app, not its health check.** `Start Narrative
+    Lens.bat` pointed the browser at `/api/health`, so a successful start looked
+    like a page of JSON. It now polls health for up to fifteen seconds — the
+    ceiling acceptance criterion 1 sets — and opens the app itself, and it
+    refuses to start with a plain sentence if the frontend has not been built.
+    Still never executed on Windows.
+
 ---
 
 ## Fixed
 
 Bugs found and fixed, newest first.
 
+0. **Five found in the Phase 9 critique pass, four of them in a real browser.**
+   (a) *The launcher opened a page of JSON.* `Start Narrative Lens.bat` sent the
+   browser to `/api/health`, so a perfectly successful start looked like a
+   failure to anyone who is not a developer. It now waits for health and opens
+   the app. (b) *Terrain corner labels shrank below the legibility floor on a
+   phone* — 13 canvas units in a 640-unit space stretched to 343px is about 7px
+   on screen, against §5b's 12px floor. Scaled by the squeeze, and redrawn on
+   resize. (c) *"Waiting for you" ran into "before it counts"* on the Import
+   tab: JSX drops the line break between an element and the text after it. (d)
+   *A chart that could only ever say 100%* — the source-type breakdown with one
+   answer — was drawn as a bar chart with nothing to compare. (e) *A duplicated
+   CSS rule* for `.nl-import__soon`, under a class name left over from before
+   the tab was built.
 1. **The landscape was buried under the filter rail on a phone** *(Phase 8,
    found in a real browser)*. The rail comes first in source order, which is
    right for a screen reader and for the keyboard — but stacked on a 375px

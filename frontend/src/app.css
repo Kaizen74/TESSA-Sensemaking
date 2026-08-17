@@ -11,7 +11,11 @@
   background: var(--nl-surface);
 }
 
+/* The one h1 on the page. Sized as a brand mark rather than as a heading:
+   the tabs below it are the h2s, and constraint 13a keeps the landscape the
+   only thing on screen allowed to be loud. */
 .nl-nav__brand {
+  margin: 0;
   font-weight: var(--nl-weight-bold);
   font-size: var(--nl-text-base);
 }
@@ -49,10 +53,6 @@
   color: var(--nl-ink);
   font-weight: var(--nl-weight-medium);
   box-shadow: inset 0 -2px 0 var(--nl-accent);
-}
-
-.nl-nav__soon {
-  font-size: var(--nl-text-xs);
 }
 
 @media (max-width: 48rem) {

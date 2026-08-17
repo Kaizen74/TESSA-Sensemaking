@@ -267,6 +267,46 @@ case "$brief_out" in
         ;;
 esac
 
+# "What We Heard": the export that goes back to the room. One validated story is
+# under the floor of five, so it must show nothing at all.
+heard_out="$(curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/export/heard?framework_id=${framework_id}")" || {
+    echo "  FAIL: the What We Heard export did not answer"
+    exit 1
+}
+case "$heard_out" in
+    *"Fewer than 5 stories have been shared"*)
+        echo "  what we heard suppresses a set under the floor of five" ;;
+    *)
+        echo "  FAIL: What We Heard showed figures for fewer than five stories"
+        exit 1
+        ;;
+esac
+case "$heard_out" in
+    *"parts finally arrived"*|*"wet deck"*)
+        echo "  FAIL: What We Heard leaked a story into the respondents' copy"
+        exit 1
+        ;;
+esac
+
+# Constraint 7 on the paths nobody wrote a message for: a mistyped address must
+# come back as a sentence in the one error shape, never as framework wording.
+missing="$(curl -s "http://127.0.0.1:${SMOKE_PORT}/api/no-such-thing")"
+printf '%s' "$missing" | $PYTHON -c '
+import json, sys
+
+body = json.load(sys.stdin)
+assert set(body) == {"error"}, body
+error = body["error"]
+assert set(error) == {"code", "message", "action"}, error
+for word in ("HTTP", "Not Found", "detail", "Internal"):
+    assert word not in error["message"], error
+assert error["action"], error
+print("  a mistyped address answers in plain English, in the one error shape")
+' || {
+    echo "  FAIL: an unknown address did not answer in the app's own error shape"
+    exit 1
+}
+
 # The landscape: one grid, two readings, and a peak that knows its stories.
 land="http://127.0.0.1:${SMOKE_PORT}/api/landscape/${framework_id}/t1"
 curl -sf "$land" | $PYTHON -c '

@@ -177,8 +177,10 @@ export function ImportTab() {
         </ul>
       )}
 
-      <p className="nl-import__soon">
-        Every imported story passes through <strong>Waiting for you</strong>
+      <p className="nl-import__note">
+        {/* The explicit space matters: JSX drops the line break between an
+            element and the text after it, which ran "you" into "before". */}
+        Every imported story passes through <strong>Waiting for you</strong>{" "}
         before it counts. Nothing the AI suggests reaches your patterns until you
         have looked at it.
       </p>

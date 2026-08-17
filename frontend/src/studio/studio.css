@@ -123,10 +123,11 @@
   border-bottom: 1px solid var(--nl-grey-faint);
 }
 
+/* What was changed, in the Studio's own words rather than the schema's. */
 .nl-editlog__path {
   display: block;
-  font-family: var(--nl-font-data);
   color: var(--nl-grey);
+  font-weight: var(--nl-weight-medium);
   margin-bottom: var(--nl-space-1);
 }
 

@@ -76,7 +76,7 @@ class TestFetch:
         response = client.get("/api/frameworks/4242")
 
         assert response.status_code == 404
-        error = response.json()["detail"]["error"]
+        error = response.json()["error"]
         assert error["code"] == "framework_not_found"
         assert "4242" in error["message"]
         assert error["action"]

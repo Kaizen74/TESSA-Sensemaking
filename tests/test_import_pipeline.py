@@ -111,7 +111,7 @@ def test_confirming_a_mapping_before_organising_is_refused(client: TestClient) -
     response = client.post(f"/api/import/{uploaded['id']}/mapping", json={"sheets": []})
 
     assert response.status_code == 409
-    error = response.json()["detail"]["error"]
+    error = response.json()["error"]
     assert error["code"] == "wrong_stage"
     assert error["action"] == "Click Organise on this file first."
 
@@ -124,7 +124,7 @@ def test_organising_twice_is_refused(client: TestClient) -> None:
     response = client.post(f"/api/import/{uploaded['id']}/organise")
 
     assert response.status_code == 409
-    assert response.json()["detail"]["error"]["code"] == "wrong_stage"
+    assert response.json()["error"]["code"] == "wrong_stage"
 
 
 def test_confirming_twice_is_refused(client: TestClient) -> None:
@@ -220,7 +220,7 @@ def test_a_mapping_onto_a_column_that_is_not_there_is_refused(client: TestClient
     response = client.post(f"/api/import/{uploaded['id']}/mapping", json=body)
 
     assert response.status_code == 400
-    assert response.json()["detail"]["error"]["code"] == "mapping_column_unknown"
+    assert response.json()["error"]["code"] == "mapping_column_unknown"
 
 
 def test_a_mapping_that_forgets_a_sheet_is_refused(client: TestClient) -> None:
@@ -232,7 +232,7 @@ def test_a_mapping_that_forgets_a_sheet_is_refused(client: TestClient) -> None:
     response = client.post(f"/api/import/{uploaded['id']}/mapping", json=body)
 
     assert response.status_code == 400
-    assert response.json()["detail"]["error"]["code"] == "mapping_sheets_mismatch"
+    assert response.json()["error"]["code"] == "mapping_sheets_mismatch"
 
 
 def test_a_stories_sheet_with_no_story_column_is_refused(client: TestClient) -> None:
@@ -244,7 +244,7 @@ def test_a_stories_sheet_with_no_story_column_is_refused(client: TestClient) -> 
     response = client.post(f"/api/import/{uploaded['id']}/mapping", json=body)
 
     assert response.status_code == 400
-    assert response.json()["detail"]["error"]["code"] == "mapping_no_story_column"
+    assert response.json()["error"]["code"] == "mapping_no_story_column"
 
 
 def test_a_table_cannot_be_confirmed_as_if_it_were_prose(client: TestClient) -> None:
@@ -254,7 +254,7 @@ def test_a_table_cannot_be_confirmed_as_if_it_were_prose(client: TestClient) -> 
     response = client.post(f"/api/import/{uploaded['id']}/mapping", json={"accepted": [0]})
 
     assert response.status_code == 400
-    error = response.json()["detail"]["error"]
+    error = response.json()["error"]
     assert error["code"] == "confirmation_shape"
     assert "which column holds the story" in error["message"]
 
@@ -266,7 +266,7 @@ def test_prose_cannot_be_confirmed_as_if_it_were_a_table(client: TestClient) -> 
     response = client.post(f"/api/import/{uploaded['id']}/mapping", json={"sheets": []})
 
     assert response.status_code == 400
-    assert response.json()["detail"]["error"]["code"] == "confirmation_shape"
+    assert response.json()["error"]["code"] == "confirmation_shape"
 
 
 # --------------------------------------------------------------------------
@@ -311,7 +311,7 @@ def test_confirming_a_passage_that_is_not_on_the_list_is_refused(
     response = client.post(f"/api/import/{uploaded['id']}/mapping", json={"accepted": [99]})
 
     assert response.status_code == 400
-    assert response.json()["detail"]["error"]["code"] == "segment_not_found"
+    assert response.json()["error"]["code"] == "segment_not_found"
 
 
 def test_the_same_passage_cannot_be_confirmed_twice(client: TestClient) -> None:
@@ -321,7 +321,7 @@ def test_the_same_passage_cannot_be_confirmed_twice(client: TestClient) -> None:
     response = client.post(f"/api/import/{uploaded['id']}/mapping", json={"accepted": [0, 0]})
 
     assert response.status_code == 400
-    assert response.json()["detail"]["error"]["code"] == "segment_repeated"
+    assert response.json()["error"]["code"] == "segment_repeated"
 
 
 def test_low_confidence_is_flagged_but_routed_identically(client: TestClient) -> None:
@@ -406,7 +406,7 @@ def test_an_unreadable_file_is_refused_at_the_door(client: TestClient) -> None:
     response = client.post("/api/import", files={"file": ("recording.mp3", b"...")})
 
     assert response.status_code == 400
-    error = response.json()["detail"]["error"]
+    error = response.json()["error"]
     assert error["code"] == "unsupported_file_type"
     assert ".docx" in error["action"]
 
@@ -443,7 +443,7 @@ def test_an_unknown_job_says_so_in_plain_english(client: TestClient) -> None:
     response = client.get("/api/import/404")
 
     assert response.status_code == 404
-    assert response.json()["detail"]["error"]["code"] == "import_not_found"
+    assert response.json()["error"]["code"] == "import_not_found"
 
 
 def test_every_stage_is_described_without_jargon(client: TestClient) -> None:

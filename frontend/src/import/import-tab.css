@@ -81,13 +81,10 @@
 }
 
 .nl-import__empty,
-.nl-import__soon {
+.nl-import__note {
   color: var(--nl-grey);
   font-size: var(--nl-text-sm);
   max-width: 60ch;
-}
-
-.nl-import__soon {
   margin-top: var(--nl-space-8);
   padding-top: var(--nl-space-4);
   border-top: 1px solid var(--nl-grey-line);

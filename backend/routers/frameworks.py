@@ -109,8 +109,8 @@ def _get_or_404(session: Session, framework_id: int) -> Framework:
     if framework is None:
         raise errors.not_found(
             "framework_not_found",
-            f"There is no framework numbered {framework_id}.",
-            "Go back to the Studio and pick a framework from the list.",
+            f"There is no question set numbered {framework_id}.",
+            "Go back to the Studio and pick a question set from the list.",
         )
     return framework
 
@@ -231,7 +231,7 @@ def update_framework(
         raise errors.conflict(
             "edit_kind_required",
             (
-                f"This framework already has {story_count} "
+                f"This question set already has {story_count} "
                 f"{'story' if story_count == 1 else 'stories'}, so changing its "
                 "words needs a decision from you first."
             ),

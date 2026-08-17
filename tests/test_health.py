@@ -63,6 +63,8 @@ EXPECTED_API_PATHS = {
     "/api/patterns/{framework_id}",
     "/api/export/csv",
     "/api/export/brief",
+    # Phase 9 — the summary that goes back to the respondents
+    "/api/export/heard",
     # Phase 8 — the landscape suite
     "/api/landscape/{framework_id}/{triad_id}",
     "/api/explorer/{framework_id}",

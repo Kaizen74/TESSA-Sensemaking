@@ -246,7 +246,7 @@ def test_an_unreachable_service_leaves_the_file_where_it_was(
     response = client.post(f"/api/import/{uploaded['id']}/organise")
 
     assert response.status_code == 502
-    assert response.json()["detail"]["error"]["code"] == "ai_unreachable"
+    assert response.json()["error"]["code"] == "ai_unreachable"
 
     job = session.get(ImportJob, uploaded["id"])
     assert job.stage == "uploaded"
@@ -297,4 +297,4 @@ def test_a_hallucinated_answer_is_reported_as_the_services_fault(
     response = client.post(f"/api/import/{uploaded['id']}/organise")
 
     assert response.status_code == 502
-    assert response.json()["detail"]["error"]["code"] == "organise_locator_unknown"
+    assert response.json()["error"]["code"] == "organise_locator_unknown"

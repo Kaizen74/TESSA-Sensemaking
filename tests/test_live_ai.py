@@ -285,7 +285,7 @@ def test_analyse_fails_in_a_sentence_when_there_is_no_key(
     response = client.post(f"/api/import/{uploaded['id']}/organise")
 
     assert response.status_code == 502
-    error = response.json()["detail"]["error"]
+    error = response.json()["error"]
     assert error["code"] == "ai_key_missing"
     assert "Capture" in error["action"]
 
@@ -350,4 +350,4 @@ def test_stage_b_also_degrades_gracefully(
     )
 
     assert response.status_code == 502
-    assert response.json()["detail"]["error"]["code"] == "ai_key_missing"
+    assert response.json()["error"]["code"] == "ai_key_missing"

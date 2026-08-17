@@ -117,7 +117,7 @@ class TestLiveFrameworkRequiresEditKind:
             f"/api/frameworks/{created['id']}",
             json={"definition": _definition(prompt_text="Changed.")},
         )
-        error = response.json()["detail"]["error"]
+        error = response.json()["error"]
 
         assert error["code"] == "edit_kind_required"
         assert "1 story" in error["message"]
@@ -150,7 +150,7 @@ class TestLiveFrameworkRequiresEditKind:
             f"/api/frameworks/{created['id']}",
             json={"definition": _definition(prompt_text="Changed.")},
         )
-        assert "3 stories" in response.json()["detail"]["error"]["message"]
+        assert "3 stories" in response.json()["error"]["message"]
 
 
 class TestWordingFix:
@@ -277,7 +277,7 @@ class TestWordingFix:
         )
 
         assert response.status_code == 409
-        error = response.json()["detail"]["error"]
+        error = response.json()["error"]
         assert error["code"] == "structural_change_needs_new_version"
         assert "Change meaning" in error["action"]
 
@@ -300,7 +300,7 @@ class TestWordingFix:
         )
 
         assert response.status_code == 409
-        assert response.json()["detail"]["error"]["code"] == "structural_change_needs_new_version"
+        assert response.json()["error"]["code"] == "structural_change_needs_new_version"
 
 
 class TestMeaningChange:

@@ -15,6 +15,7 @@ import { api, ApiError } from "../api.js";
 import { EditKindDialog } from "./EditKindDialog.jsx";
 import { PhonePreview, orderedSignifiers } from "./PhonePreview.jsx";
 import { Field, TextArea, SignifierEditor } from "./Fields.jsx";
+import { describePath } from "./editLog.js";
 import "./studio.css";
 
 const MINUTES_BAR = 4;
@@ -130,7 +131,7 @@ export function Studio() {
   async function createFramework() {
     setBusy(true);
     try {
-      const created = await api.createFramework("New framework", {});
+      const created = await api.createFramework("New question set", {});
       await refresh(created.id);
       setStatus("Created. Give it a name and add your questions.");
     } catch (caught) {
@@ -146,16 +147,16 @@ export function Studio() {
 
   return (
     <div className="nl-studio">
-      <aside className="nl-studio__rail" aria-label="Frameworks and versions">
+      <aside className="nl-studio__rail" aria-label="Question sets and versions">
         <div className="nl-studio__rail-head">
-          <h2 className="nl-studio__rail-title">Frameworks</h2>
+          <h2 className="nl-studio__rail-title">Question sets</h2>
           <button type="button" className="nl-btn nl-btn--quiet" onClick={createFramework}>
             New
           </button>
         </div>
         {frameworks.length === 0 ? (
           <p className="nl-empty">
-            No frameworks yet. Choose <strong>New</strong> to write your first question.
+            No question sets yet. Choose <strong>New</strong> to write your first question.
           </p>
         ) : (
           <ul className="nl-versions">
@@ -196,7 +197,7 @@ export function Studio() {
             <ol className="nl-editlog__list">
               {selected.edit_log.map((entry, index) => (
                 <li key={`${entry.field_path}-${index}`} className="nl-editlog__entry">
-                  <code className="nl-editlog__path">{entry.field_path}</code>
+                  <span className="nl-editlog__path">{describePath(entry.field_path)}</span>
                   <span className="nl-editlog__old">{entry.old_text}</span>
                   <span className="nl-editlog__new">{entry.new_text}</span>
                 </li>
@@ -210,7 +211,7 @@ export function Studio() {
         <>
           <main className="nl-studio__editor">
             <header className="nl-studio__header">
-              <h1 className="nl-studio__title">Studio</h1>
+              <h2 className="nl-studio__title">Studio</h2>
               <p className="nl-studio__sub">
                 Everything a respondent reads is on this page. The phone on the right
                 updates as you type.
@@ -236,7 +237,7 @@ export function Studio() {
               )}
             </div>
 
-            <Field label="Framework name" value={name} onChange={setName} />
+            <Field label="Name of this question set" value={name} onChange={setName} />
 
             <fieldset className="nl-fieldset">
               <legend className="nl-legend">The story prompt</legend>
@@ -325,7 +326,7 @@ export function Studio() {
         </>
       ) : (
         <main className="nl-studio__editor">
-          <p className="nl-empty">Choose a framework on the left, or make a new one.</p>
+          <p className="nl-empty">Choose a question set on the left, or make a new one.</p>
         </main>
       )}
 

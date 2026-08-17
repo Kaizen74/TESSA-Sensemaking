@@ -111,7 +111,7 @@ class TestLinkCreation:
         response = client.post("/api/capture-links", json={"framework_id": 4242})
 
         assert response.status_code == 404
-        assert response.json()["detail"]["error"]["code"] == "framework_not_found"
+        assert response.json()["error"]["code"] == "framework_not_found"
 
     def test_links_are_listed_with_their_story_counts(self, client: TestClient) -> None:
         framework = _framework(client)
@@ -162,7 +162,7 @@ class TestTokenLifecycle:
         response = client.get(f"/api/public/capture/{link['token']}")
 
         assert response.status_code == 404
-        assert response.json()["detail"]["error"]["code"] == "capture_link_closed"
+        assert response.json()["error"]["code"] == "capture_link_closed"
 
     def test_a_revoked_link_accepts_no_stories(self, client: TestClient) -> None:
         """The heart of §7.6: a taken-down QR poster cannot keep collecting."""
@@ -173,14 +173,14 @@ class TestTokenLifecycle:
         response = client.post(f"/api/public/capture/{link['token']}", json=_story())
 
         assert response.status_code == 404
-        assert response.json()["detail"]["error"]["code"] == "capture_link_closed"
+        assert response.json()["error"]["code"] == "capture_link_closed"
 
     def test_the_closed_message_is_plain_english(self, client: TestClient) -> None:
         framework = _framework(client)
         link = _link(client, framework["id"])
         client.post(f"/api/capture-links/{link['id']}/revoke")
 
-        error = client.get(f"/api/public/capture/{link['token']}").json()["detail"]["error"]
+        error = client.get(f"/api/public/capture/{link['token']}").json()["error"]
 
         assert "closed" in error["message"]
         assert error["action"]
@@ -197,7 +197,7 @@ class TestTokenLifecycle:
         second = client.post(f"/api/capture-links/{link['id']}/revoke")
 
         assert second.status_code == 409
-        assert second.json()["detail"]["error"]["code"] == "capture_link_already_closed"
+        assert second.json()["error"]["code"] == "capture_link_already_closed"
 
     def test_revoking_keeps_the_stories_it_collected(self, client: TestClient) -> None:
         framework = _framework(client)
@@ -222,13 +222,13 @@ class TestTokenLifecycle:
         response = client.get("/api/public/capture/not-a-real-token")
 
         assert response.status_code == 404
-        assert response.json()["detail"]["error"]["code"] == "capture_link_not_found"
+        assert response.json()["error"]["code"] == "capture_link_not_found"
 
     def test_revoking_a_missing_link_explains_itself(self, client: TestClient) -> None:
         response = client.post("/api/capture-links/4242/revoke")
 
         assert response.status_code == 404
-        assert response.json()["detail"]["error"]["code"] == "capture_link_not_found"
+        assert response.json()["error"]["code"] == "capture_link_not_found"
 
 
 class TestTokenDecidesEverything:
@@ -355,7 +355,7 @@ class TestLinkProvenance:
         )
 
         assert response.status_code == 400
-        assert response.json()["detail"]["error"]["code"] == "capture_invalid"
+        assert response.json()["error"]["code"] == "capture_invalid"
 
 
 class TestKioskMode:
@@ -435,7 +435,7 @@ class TestQrCode:
         response = client.get("/api/capture-links/4242/qr.png")
 
         assert response.status_code == 404
-        assert response.json()["detail"]["error"]["code"] == "capture_link_not_found"
+        assert response.json()["error"]["code"] == "capture_link_not_found"
 
 
 class TestRateLimiting:
@@ -467,7 +467,7 @@ class TestRateLimiting:
 
         error = client.post(
             f"/api/public/capture/{link['token']}", json=_story()
-        ).json()["detail"]["error"]
+        ).json()["error"]
 
         assert "not sent" in error["message"]
         assert "still here" in error["action"], "a respondent must not fear losing their words"
