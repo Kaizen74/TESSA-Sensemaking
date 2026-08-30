@@ -212,6 +212,51 @@ def test_the_whole_app_agrees_with_itself(client: TestClient, session: Session) 
     assert ops_patterns["total"] == ops_land["total"] == len(ops_csv)
     assert {row["respondent_group"] for row in ops_csv} == {"Ops"}
 
+    # --------------------------------------------------------- the browser
+    # The last view, and the one that has to agree with all of them: the same
+    # stories the charts counted, readable one at a time.
+    browsed = client.get(f"/api/stories/{fid}").json()
+    assert browsed["total"] == patterns["total"]
+    assert {story["anecdote_id"] for story in browsed["stories"]} == {
+        int(row["anecdote_id"]) for row in rows
+    }
+
+    ops_browsed = client.get(f"/api/stories/{fid}", params={"respondent_group": "Ops"}).json()
+    assert ops_browsed["matched"] == ops_patterns["total"]
+
+    # Search, star, tag, and take a chosen one out — the whole of §1.6.
+    hunted = client.get(f"/api/stories/{fid}", params={"q": "workshop"}).json()
+    picked = browsed["stories"][0]
+    marked = client.put(
+        f"/api/stories/{picked['anecdote_id']}/marks",
+        json={"starred": True, "tags": ["worth a second look"]},
+    ).json()
+    assert marked["starred"] is True
+    assert marked["tags"] == ["worth a second look"]
+    assert hunted["matched"] <= browsed["total"]
+
+    starred = client.get(f"/api/stories/{fid}", params={"starred": True}).json()
+    assert starred["matched"] == 1
+    assert starred["stories"][0]["anecdote_id"] == picked["anecdote_id"]
+
+    selected = client.get(
+        "/api/export/csv",
+        params={"framework_id": fid, "ids": str(picked["anecdote_id"])},
+    ).text
+    chosen_rows = list(csv.DictReader(io.StringIO(selected)))
+    assert len(chosen_rows) == 1
+    assert int(chosen_rows[0]["anecdote_id"]) == picked["anecdote_id"]
+    # Same columns as the whole export: one code path, one provenance promise.
+    assert selected.splitlines()[0] == export.text.splitlines()[0]
+
+    # --------------------------------------------- and the respondents' copy
+    heard = client.get("/api/export/heard", params={"framework_id": fid}).text
+    assert heard.startswith("# What we heard")
+    for row in rows:
+        assert row["text"] not in heard, "a story reached the respondents' copy"
+    for leak in ("input_method", "entry_mode", "workshop.xlsx", "signified_by"):
+        assert leak not in heard, leak
+
 
 def test_a_meaning_change_keeps_the_two_versions_apart_everywhere(
     client: TestClient,
@@ -318,6 +363,8 @@ def test_an_empty_app_answers_every_endpoint_without_falling_over(
     imports = client.get("/api/import")
     csv_export = client.get("/api/export/csv", params={"framework_id": fid})
     brief = client.get("/api/export/brief", params={"framework_id": fid})
+    heard = client.get("/api/export/heard", params={"framework_id": fid})
+    browsed = client.get(f"/api/stories/{fid}")
     pack = client.get(f"/api/frameworks/{fid}/paper-pack")
 
     assert [
@@ -331,13 +378,18 @@ def test_an_empty_app_answers_every_endpoint_without_falling_over(
             imports,
             csv_export,
             brief,
+            heard,
+            browsed,
             pack,
         )
-    ] == [200] * 9
+    ] == [200] * 11
 
     assert patterns.json()["total"] == 0
     assert land.json()["panels"][0]["has_surface"] is False
     assert clusters.json()["computed"] is False
     assert clusters.json()["caveat"]
     assert brief.text.splitlines()[0] == "# No stories match these filters yet"
+    assert "Fewer than 5 stories have been shared" in heard.text
+    assert browsed.json()["total"] == 0
+    assert browsed.json()["stories"] == []
     assert csv_export.text.strip().count("\n") == 0, "header only"

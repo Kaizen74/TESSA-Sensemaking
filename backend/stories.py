@@ -128,13 +128,19 @@ def search_clause(query: str):
     Deliberately plain ``LIKE``. A search index would be another table, and PRD
     §3 ends the schema at six; at the scale this app is for, the difference is
     not something an operator could feel.
+
+    ``%`` and ``_`` are escaped rather than passed through. They are ordinary
+    characters in a story about a 50% overrun or a file called shift_notes, and
+    a search box that quietly treats them as wildcards returns matches the
+    operator cannot account for.
     """
     clauses = []
     for word in query.split():
-        pattern = f"%{word.lower()}%"
+        escaped = word.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        pattern = f"%{escaped}%"
         clauses.append(
-            func.lower(Anecdote.text).like(pattern)
-            | func.lower(func.coalesce(Anecdote.title_auto, "")).like(pattern)
+            func.lower(Anecdote.text).like(pattern, escape="\\")
+            | func.lower(func.coalesce(Anecdote.title_auto, "")).like(pattern, escape="\\")
         )
     return clauses
 

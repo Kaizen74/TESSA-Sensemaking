@@ -1,8 +1,8 @@
 # Narrative Lens — Latest
 
 **Updated:** 2026-08-17
-**Phase:** 9 of 9 complete — the build is finished
-**Status:** green (1030 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+**Phase:** 9 of 9 complete, plus a completeness pass against PRD §1
+**Status:** green (1081 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
 
 ---
 
@@ -73,12 +73,38 @@ grid, and every colour on the page measured as black on white.
   app can serve its own pages. The launcher now says so plainly instead of
   starting into a blank screen.
 
+## The completeness pass, after Phase 9
+
+Asked whether the build was actually finished, I checked it against PRD **§1**
+rather than against the phase plan — and the answer was no. All nine phases were
+green while three things §1 asks for had no phase at all, so nothing was failing
+and nothing was looking. They are built now:
+
+- **The story browser.** The stories themselves: search them, star the ones
+  worth returning to, tag them in your own words, tick a few and download just
+  those. It is the fourth way of looking on the Patterns tab, and it is where a
+  surprising hill in the landscape should send you.
+- **The QR of the open link, on the screen the app opens on.** A workshop starts
+  with a laptop and a room full of phones; the first screen now already has the
+  thing they scan.
+- **The supporting charts as a picture**, black on white like the contour.
+
+And one thing that was failing quietly: **the 200ms promise, measured at the
+size the PRD names.** The tests only ever tried a thousand stories; the PRD
+sizes the budget at five thousand, and at five thousand every reading screen was
+over — the landscape at more than twice its budget. Most of it turned out to be
+work nobody needed, and taking it out roughly halved every one of them. What is
+left of the landscape is one call to the statistics library the PRD pins us to.
+
+Two standing tests now guard the things a phase plan cannot: one walks every
+numbered item of §1's scope against the code, and one compares every address the
+browser can ask for against every address the server answers, in both
+directions.
+
 ## Next step
 
-There is no next phase. What is left is real use: run a session, and let what
-breaks decide what gets built. PRD §1 scope item 6 — the story browser, with
-full-text search, tags and stars — was never assigned a phase and is the obvious
-first candidate for a v2 if it turns out to be wanted.
+There is no next phase, and no scope item left unbuilt. What remains is real
+use: run a session, and let what breaks decide what gets built next.
 
 ## How to resume
 
@@ -122,6 +148,10 @@ and the text after it, which silently runs two words together.
 | Save a picture for a document | Patterns → **Save the contour as a picture** |
 | Get the data out | Patterns → **Download the stories (CSV)** |
 | Get a written summary | Patterns → **Download the Pattern Brief** |
+| Find one story again | Patterns → **Story browser** → search, or filter by star or tag |
+| Keep a story to come back to | Story browser → **☆ Star** |
+| Take a few stories out | Story browser → tick them → **Download the ticked stories** |
+| Save the charts for a document | Patterns → **Supporting charts** → **Save these charts as a picture** |
 | Give something back to the room | Patterns → **Download "What we heard"** |
 | Print a paper pack | Studio → **Paper pack for version 1**, then Print → Save as PDF |
 | Check everything still works | Run `./run_checks.sh` — you want `ALL CHECKS PASSED` |

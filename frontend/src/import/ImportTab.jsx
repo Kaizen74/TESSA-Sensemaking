@@ -73,11 +73,10 @@ export function ImportTab() {
   }
 
   const tabs = (
-    <div className="nl-import__views" role="tablist" aria-label="Import and validate">
+    <nav className="nl-import__views" aria-label="Import and validate">
       <button
         type="button"
-        role="tab"
-        aria-selected={view === VIEW_FILES}
+        aria-current={view === VIEW_FILES ? "true" : undefined}
         className={
           view === VIEW_FILES ? "nl-import__view nl-import__view--current" : "nl-import__view"
         }
@@ -87,8 +86,7 @@ export function ImportTab() {
       </button>
       <button
         type="button"
-        role="tab"
-        aria-selected={view === VIEW_QUEUE}
+        aria-current={view === VIEW_QUEUE ? "true" : undefined}
         className={
           view === VIEW_QUEUE ? "nl-import__view nl-import__view--current" : "nl-import__view"
         }
@@ -96,7 +94,7 @@ export function ImportTab() {
       >
         Waiting for you{waiting > 0 && ` (${waiting})`}
       </button>
-    </div>
+    </nav>
   );
 
   if (view === VIEW_QUEUE) {

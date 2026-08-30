@@ -95,13 +95,12 @@ export function CaptureTab() {
           </select>
         </label>
 
-        <div className="nl-capture__modes" role="tablist" aria-label="How to enter stories">
+        <nav className="nl-capture__modes" aria-label="How to enter stories">
           {MODES.map((option) => (
             <button
               key={option.id}
               type="button"
-              role="tab"
-              aria-selected={mode === option.id}
+              aria-current={mode === option.id ? "true" : undefined}
               className={
                 mode === option.id
                   ? "nl-capture__mode nl-capture__mode--current"
@@ -112,7 +111,7 @@ export function CaptureTab() {
               {option.label}
             </button>
           ))}
-        </div>
+        </nav>
       </div>
 
       {mode === MODE_WIZARD && <Wizard key={`wizard-${selected.id}`} framework={selected} />}

@@ -82,8 +82,13 @@ like every other one.
 ### 4. Patterns — read what you have
 
 Opens on the **Narrative Landscape**. There is a one-pager on reading it below.
-Underneath the picture sit the quieter charts — who told the stories, how they
-answered the sliders and choices — and three things to download:
+Three more ways of looking sit beside it: the quieter **supporting charts** (who
+told the stories, how they answered the sliders and choices), the **3D
+Explorer**, and the **story browser** — the stories themselves, searchable, with
+a star for the ones worth coming back to and tags in your own words. When a hill
+in the landscape surprises you, that is where you go next.
+
+Four things to download:
 
 - **The stories (CSV)** — every story with its full history: how it arrived,
   when, which version of the questions it answered, who moved which marker.
@@ -92,6 +97,11 @@ answered the sliders and choices — and three things to download:
 - **What we heard** — the version to give back to the people who told the
   stories. No story text, nothing about how a story arrived, and nothing that
   fewer than five people said.
+- **A picture** — the landscape as a contour, or the supporting charts as one
+  sheet. Both save in black on white, ready to paste into a document or put
+  through a photocopier.
+
+And from the story browser, a CSV of just the stories you ticked.
 
 ---
 

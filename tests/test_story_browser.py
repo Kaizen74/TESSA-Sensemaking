@@ -262,3 +262,23 @@ def test_an_unreadable_selection_is_refused_in_plain_english(client: TestClient)
 
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "unreadable_selection"
+
+
+def test_a_wildcard_in_the_search_box_is_just_a_character(client: TestClient) -> None:
+    """"50%" is a thing people write in stories, not a pattern to match with."""
+    framework = make_framework(client, GOLDEN_DEFINITION)
+    for text in (
+        "We came in at a 50% overrun and nobody flagged it.",
+        "The shift_notes file was the only record anyone kept.",
+        "A quiet week with nothing unusual in it.",
+    ):
+        client.post(
+            "/api/capture",
+            json={"framework_id": framework["id"], "text": text, "significations": []},
+        )
+
+    assert _browse(client, framework["id"], q="50%")["matched"] == 1
+    assert _browse(client, framework["id"], q="shift_notes")["matched"] == 1
+    # And the wildcards do not quietly match everything.
+    assert _browse(client, framework["id"], q="%")["matched"] == 1
+    assert _browse(client, framework["id"], q="_")["matched"] == 1

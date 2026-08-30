@@ -276,6 +276,32 @@ labels on the terrain now hold their size on a phone.
 
 ---
 
+### [x] Completeness pass — **complete 2026-08-17**
+
+Not a phase. A review of the build against PRD **§1** rather than against PRD
+§6, prompted by the question "is this actually finished?" — and the answer was
+no. All nine phases were green while three items of §1's scope had no phase at
+all, so nothing was failing and nothing was looking.
+
+- **The story browser (§1.6, §5.4).** Search, star, tag, export selected, as the
+  fourth Patterns sub-view. `backend/stories.py`, `backend/routers/stories.py`,
+  `frontend/src/patterns/StoryBrowser.jsx`, `tests/test_story_browser.py`.
+- **The QR of the active link on the admin home (§1.8, criterion 1).**
+  `frontend/src/studio/ActiveLinkQr.jsx`.
+- **The supporting-charts PNG (§1.7).** `saveChartsSnapshot` in
+  `frontend/src/patterns/snapshot.js`.
+- **The 200ms budget at the scale §4 names.** The suite tested 1,000 stories;
+  the PRD says 5,000. Every read endpoint was over. See "Fixed".
+- **Two new standing tests**: `tests/test_scope_completeness.py` walks §1's
+  scope against the code, and `tests/test_api_alignment.py` compares every
+  address `api.js` can build against every route the server exposes, in both
+  directions.
+- **Gate shown green:** 1081 passed · ruff clean · eslint 0 · frontend build ·
+  smoke test end-to-end including the browser and the selected export. Checked
+  in a real browser across every view at 1440px and 375px.
+
+---
+
 ## Regression list
 
 Green in every phase from introduction onward:
@@ -303,6 +329,12 @@ Green in every phase from introduction onward:
   the plain-English rule, plus the paths nobody wrote a message for)*
 - original names *(added Phase 9 — `tests/test_original_names.py`, constraint 8
   and acceptance criterion 15 as a test rather than a promise)*
+- scope completeness *(added in the completeness pass —
+  `tests/test_scope_completeness.py`, every numbered item of PRD §1 checked
+  against the code, because a phase plan cannot notice what it never scheduled)*
+- frontend/backend alignment *(added in the completeness pass —
+  `tests/test_api_alignment.py`, every address the browser can build against
+  every route the server answers, in both directions)*
 
 ---
 
@@ -773,13 +805,70 @@ simpler option was taken unless noted.
     refuses to start with a plain sentence if the frontend has not been built.
     Still never executed on Windows.
 
+### Completeness pass
+
+95. **Stars are a reserved tag, not a new column.** PRD §3 ends with "no further
+    schema in v1", and the tags table is already there. ``__starred__`` is
+    refused as a typed tag so the two can never be confused.
+96. **The browser reads validated stories only**, like every other view. What is
+    still waiting belongs to the validation queue, which is a different screen
+    with a different job.
+97. **"Export selected" is the CSV endpoint with an ``ids`` parameter**, not a
+    fourth export. One code path means a selection cannot quietly become a
+    thinner kind of export than the whole dataset (constraint 3).
+98. **Search is plain ``LIKE`` with the wildcards escaped.** A search index
+    would be a seventh table; at this app's scale the difference is not
+    something an operator could feel, and "50%" is a thing people write.
+99. **The read path carries rows, not mapped objects.** ``load_rows`` selects
+    columns, and every reader downstream works unchanged because attribute
+    access is identical. Writers still use the mapped classes; this is the read
+    side only.
+100. **The budget test asserts our share, not scipy's.** At five thousand
+     stories the density estimate is 165ms of the request and the PRD pins the
+     library that does it. A test that asserted the total would fail on a slow
+     machine and pass on a fast one while the app got worse; a test that
+     subtracts the estimate catches the thing we can actually control.
+101. **Three switchers, one pattern.** The capture modes and import views gave
+     up their ``role="tablist"`` rather than grow the arrow-key navigation and
+     tabpanels that pattern promises. The simpler option, and now the app
+     announces every switcher the same way.
+
 ---
 
 ## Fixed
 
 Bugs found and fixed, newest first.
 
-0. **A wording fix that renamed a corner stranded every answer under it**
+0. **Every read endpoint was over its budget at the size the PRD names**
+   *(completeness pass, found by measuring where PRD §4 says to measure)*. The
+   suite tested the landscape at 1,000 stories; §4 sizes the budget at 5,000.
+   At five thousand the landscape took 455ms and patterns, explorer, clusters
+   and the CSV were all over 200ms too. Most of it was work nobody needed:
+   SQLAlchemy entities built so they could be written to, on a path that only
+   reads; one triangle's answers loaded alongside every other question's; numpy
+   called on single scalars; and every placement validated twice, once on the
+   way out of the database and once on the way into the maths. Landscape 455 →
+   222ms, patterns 321 → 167, explorer 251 → 159, clusters 306 → 200, CSV 303 →
+   240, brief 350 → 195. What is left of the landscape is one scipy call the
+   PRD pins us to, so the new budget test asserts the share the app controls
+   rather than scipy's.
+1. **The supporting-charts picture painted a black square over the scatter**
+   *(completeness pass, found in a real browser)*. The export clones each
+   chart's SVG, and a clone leaves the stylesheet behind — so the stones frame,
+   which has `fill: none` in CSS and no fill of its own, defaulted to black and
+   covered the data. Fixed by copying each element's resolved style onto the
+   copy rather than guessing from its class name.
+2. **Two switchers claimed an ARIA pattern they did not implement**
+   *(completeness pass)*. The capture modes and the import views were marked
+   `role="tablist"`/`role="tab"` with no tabpanel to move into and no arrow-key
+   navigation — a promise to a screen reader that the app did not keep. They are
+   now plain buttons with `aria-current`, the same as the Patterns
+   sub-navigation, so all three switchers are announced the same way.
+3. **A wildcard typed into the search box was treated as one**
+   *(completeness pass)*. "50%" and "shift_notes" are things people write in
+   stories; `%` and `_` are now escaped, so a search returns what the operator
+   asked for.
+4. **A wording fix that renamed a corner stranded every answer under it**
    *(Phase 9, found by the end-to-end mock run — no unit test could have caught
    it, because every piece was behaving exactly as written)*. Three of the four
    signifier kinds store an answer by its label: a triad is `{corner: weight}`,
@@ -793,7 +882,7 @@ Bugs found and fixed, newest first.
    has already refused anything that adds, removes or reshapes. Five tests in
    `TestARenameCarriesTheAnswers` hold it; four of them fail if the migration
    is removed.
-1. **Five found in the Phase 9 critique pass, four of them in a real browser.**
+5. **Five found in the Phase 9 critique pass, four of them in a real browser.**
    (a) *The launcher opened a page of JSON.* `Start Narrative Lens.bat` sent the
    browser to `/api/health`, so a perfectly successful start looked like a
    failure to anyone who is not a developer. It now waits for health and opens
@@ -806,7 +895,7 @@ Bugs found and fixed, newest first.
    answer — was drawn as a bar chart with nothing to compare. (e) *A duplicated
    CSS rule* for `.nl-import__soon`, under a class name left over from before
    the tab was built.
-2. **The landscape was buried under the filter rail on a phone** *(Phase 8,
+6. **The landscape was buried under the filter rail on a phone** *(Phase 8,
    found in a real browser)*. The rail comes first in source order, which is
    right for a screen reader and for the keyboard — but stacked on a 375px
    screen it put the terrain 1,264px down the page. Constraint 13a makes the
