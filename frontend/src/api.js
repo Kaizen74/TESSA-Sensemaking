@@ -142,6 +142,16 @@ export const api = {
   exportHeardUrl: (frameworkId, params = {}) =>
     `/api/export/heard${queryString({ framework_id: frameworkId, ...params })}`,
 
+  // The story browser (PRD §1.6). Reading and marking; the export of a
+  // selection is the ordinary CSV with an `ids` parameter.
+  browseStories: (frameworkId, params = {}) =>
+    request(`/api/stories/${frameworkId}${queryString(params)}`),
+  markStory: (anecdoteId, marks) =>
+    request(`/api/stories/${anecdoteId}/marks`, {
+      method: "PUT",
+      body: JSON.stringify(marks),
+    }),
+
   // The landscape suite. The surface and its contour twin arrive in one
   // response, because they must be the same landscape (constraint 13b).
   getLandscape: (frameworkId, triadId, params = {}) =>

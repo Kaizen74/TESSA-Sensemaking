@@ -24,8 +24,8 @@ import csv
 import datetime as dt
 import io
 
+from backend.dataset import AnswerRow, StoryRow
 from backend.framework_schema import FrameworkDefinition
-from backend.models import Anecdote, Signification
 from backend.patterns import PatternSet
 
 #: A triad whose average placement puts this much weight on one corner is
@@ -126,8 +126,8 @@ def _placement_cells(
 
 def dataset_csv(
     definition: FrameworkDefinition,
-    anecdotes: list[Anecdote],
-    significations: list[Signification],
+    anecdotes: list[StoryRow],
+    significations: list[AnswerRow],
     framework_names: dict[int, tuple[str, int]],
 ) -> str:
     """The whole filtered dataset, one row per story, provenance intact.
@@ -136,7 +136,7 @@ def dataset_csv(
     mixed-version export says which wording each story actually answered — the
     single most important thing to know when reading two versions side by side.
     """
-    by_anecdote: dict[int, list[Signification]] = {}
+    by_anecdote: dict[int, list[AnswerRow]] = {}
     for placement in significations:
         by_anecdote.setdefault(placement.anecdote_id, []).append(placement)
 

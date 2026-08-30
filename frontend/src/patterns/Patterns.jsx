@@ -14,22 +14,30 @@
  * which stories they are about.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../api.js";
 import { BarChart, DyadChart, StonesChart } from "./Charts.jsx";
 import { ExplorerView } from "./Explorer.jsx";
+import { StoryBrowser } from "./StoryBrowser.jsx";
 import { LandscapeView } from "./Landscape.jsx";
-import { snapshotFilename, saveContourSnapshot } from "./snapshot.js";
+import {
+  chartsFilename,
+  saveChartsSnapshot,
+  saveContourSnapshot,
+  snapshotFilename,
+} from "./snapshot.js";
 import "./patterns.css";
 
 const VIEW_LANDSCAPE = "landscape";
 const VIEW_CHARTS = "charts";
 const VIEW_EXPLORER = "explorer";
+const VIEW_STORIES = "stories";
 
 const SUB_VIEWS = [
   { id: VIEW_LANDSCAPE, label: "Landscape" },
   { id: VIEW_CHARTS, label: "Supporting charts" },
   { id: VIEW_EXPLORER, label: "3D Explorer" },
+  { id: VIEW_STORIES, label: "Story browser" },
 ];
 
 const FILTERS = [
@@ -74,6 +82,7 @@ export function PatternsTab() {
   const [showClusters, setShowClusters] = useState(false);
   const [region, setRegion] = useState(null);
   const [error, setError] = useState(null);
+  const chartsRef = useRef(null);
 
   useEffect(() => {
     api
@@ -302,6 +311,17 @@ export function PatternsTab() {
                 Save the contour as a picture
               </button>
             )}
+            {subView === VIEW_CHARTS && (
+              <button
+                type="button"
+                className="nl-rail__clear"
+                onClick={() =>
+                  saveChartsSnapshot(chartsRef.current, chartsFilename(view, selected))
+                }
+              >
+                Save these charts as a picture
+              </button>
+            )}
           </div>
         </aside>
 
@@ -324,10 +344,15 @@ export function PatternsTab() {
             ))}
           </nav>
 
-          <p className="nl-patterns__count">
-            <strong>{view.total}</strong> {view.total === 1 ? "story" : "stories"} in this
-            view
-          </p>
+          {/* The story browser prints "3 of 20" itself, which says more than
+              this line does. Two counts of the same thing, in two shapes, is
+              one more than a reader needs. */}
+          {subView !== VIEW_STORIES && (
+            <p className="nl-patterns__count">
+              <strong>{view.total}</strong> {view.total === 1 ? "story" : "stories"} in
+              this view
+            </p>
+          )}
 
           {view.mixed && view.versions.length > 1 && <VersionChip versions={view.versions} />}
 
@@ -396,7 +421,7 @@ export function PatternsTab() {
               )}
 
               {subView === VIEW_CHARTS && (
-                <>
+                <div ref={chartsRef}>
                   <section className="nl-patterns__band">
                     <h3 className="nl-patterns__band-title">What people said</h3>
                     {/* A question set can be a prompt and nothing else, and then
@@ -440,7 +465,7 @@ export function PatternsTab() {
                         ))}
                     </div>
                   </section>
-                </>
+                </div>
               )}
 
               {subView === VIEW_EXPLORER &&
@@ -456,6 +481,10 @@ export function PatternsTab() {
                 ) : (
                   <p className="nl-patterns__empty">Loading…</p>
                 ))}
+
+              {subView === VIEW_STORIES && (
+                <StoryBrowser framework={selected} params={params} />
+              )}
             </>
           )}
         </div>

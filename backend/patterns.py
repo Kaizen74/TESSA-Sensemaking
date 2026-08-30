@@ -29,9 +29,9 @@ from collections import Counter
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from backend.barycentric import from_value_json, to_cartesian
+from backend.barycentric import point_from_value_json
+from backend.dataset import AnswerRow, StoryRow
 from backend.framework_schema import Dyad, FrameworkDefinition, Mcq, Stones, Triad
-from backend.models import Anecdote, Signification
 
 #: Coordinates are rounded here, once. Six places is far finer than any screen
 #: and coarse enough that two runs agree exactly.
@@ -226,10 +226,10 @@ def _histogram(values: list[float]) -> list[HistogramBin]:
 def _triad_chart(
     triad: Triad, placements: list[tuple[int, dict]], total: int
 ) -> TriadChart:
+    corners = tuple(triad.corners)
     points: list[TriadPoint] = []
     for anecdote_id, value in placements:
-        weights = from_value_json(value, tuple(triad.corners))  # type: ignore[arg-type]
-        x, y = to_cartesian(weights)  # type: ignore[arg-type]
+        x, y = point_from_value_json(value, corners)  # type: ignore[arg-type]
         points.append(
             TriadPoint(
                 anecdote_id=anecdote_id,
@@ -320,7 +320,7 @@ DEMOGRAPHIC_TITLES = {
 }
 
 
-def _demographics(anecdotes: list[Anecdote]) -> list[CategoryChart]:
+def _demographics(anecdotes: list[StoryRow]) -> list[CategoryChart]:
     charts: list[CategoryChart] = []
     for field, title in DEMOGRAPHIC_TITLES.items():
         counter: Counter[str] = Counter()
@@ -336,7 +336,7 @@ def _demographics(anecdotes: list[Anecdote]) -> list[CategoryChart]:
 
 
 def placements_by_signifier(
-    anecdotes: list[Anecdote], significations: list[Signification]
+    anecdotes: list[StoryRow], significations: list[AnswerRow]
 ) -> dict[str, list[tuple[int, dict]]]:
     """Placements grouped by the question they answer, for the stories given."""
     keep = {anecdote.id for anecdote in anecdotes}
@@ -351,8 +351,8 @@ def placements_by_signifier(
 
 def one_triad(
     definition: FrameworkDefinition,
-    anecdotes: list[Anecdote],
-    significations: list[Signification],
+    anecdotes: list[StoryRow],
+    significations: list[AnswerRow],
     triad_id: str,
 ) -> TriadChart | None:
     """Just one triangle's points, without computing every other chart.
@@ -369,10 +369,29 @@ def one_triad(
     return _triad_chart(triad, grouped.get(triad_id, []), len(anecdotes))
 
 
+def triad_from_answers(
+    definition: FrameworkDefinition,
+    answers: list[tuple[int, dict]],
+    triad_id: str,
+    total: int,
+) -> TriadChart | None:
+    """The same chart as :func:`one_triad`, from rows rather than from objects.
+
+    Identical arithmetic — both end in :func:`_triad_chart` — so the landscape
+    cannot drift from the supporting charts. What differs is only how the
+    answers arrived: two columns out of the database instead of an object per
+    story (PRD §4's 200ms at 5,000 anecdotes).
+    """
+    triad = next((entry for entry in definition.triads if entry.id == triad_id), None)
+    if triad is None:
+        return None
+    return _triad_chart(triad, answers, total)
+
+
 def aggregate(
     definition: FrameworkDefinition,
-    anecdotes: list[Anecdote],
-    significations: list[Signification],
+    anecdotes: list[StoryRow],
+    significations: list[AnswerRow],
     *,
     framework_id: int,
     framework_name: str,

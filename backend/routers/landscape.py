@@ -26,9 +26,11 @@ from backend.clusters import ClusterSet, ExplorerSet, cluster, explorer
 from backend.db import get_session
 from backend.framework_schema import FrameworkDefinition
 from backend.landscape import Landscape
-from backend.patterns import FILTERABLE, TriadChart, one_triad
+from backend.patterns import FILTERABLE, TriadChart, triad_from_answers
 from backend.routers.patterns import (
     applied_filters,
+    distinct_values,
+    load_answers,
     load_framework,
     load_rows,
     scoped_ids,
@@ -66,14 +68,17 @@ def _triad_chart(
 ) -> tuple[TriadChart, int, FrameworkDefinition]:
     """The one triad's points, through the same code the supporting charts use.
 
-    ``one_triad`` rather than the whole aggregate: the landscape needs one
-    triangle, and building every bar and histogram on the framework alongside it
-    is the difference between meeting and missing the 200ms budget at a
-    thousand stories.
+    One triangle's answers rather than the whole aggregate, and read as two
+    columns rather than as an object per story: building every bar and histogram
+    on the framework alongside the terrain, out of fully hydrated rows, was the
+    difference between meeting and missing PRD §4's 200ms at five thousand
+    stories.
     """
     definition = FrameworkDefinition.model_validate(framework.definition_json)
-    anecdotes, placements = load_rows(session, framework, mixed=mixed, filters=filters)
-    chart = one_triad(definition, anecdotes, placements, triad_id)
+    answers, total = load_answers(
+        session, framework, mixed=mixed, filters=filters, signifier_id=triad_id
+    )
+    chart = triad_from_answers(definition, answers, triad_id, total)
     if chart is None:
         known = ", ".join(entry.id for entry in definition.triads) or "none"
         raise errors.not_found(
@@ -81,7 +86,7 @@ def _triad_chart(
             f"This question set has no triangle called '{triad_id}'.",
             f"Pick one of these instead: {known}.",
         )
-    return chart, len(anecdotes), definition
+    return chart, total, definition
 
 
 @router.get("/landscape/{framework_id}/{triad_id}", response_model=LandscapeSet)
@@ -153,8 +158,7 @@ def _split_panels(
     split_by: str,
 ) -> list[Landscape]:
     """One landscape per value of the split field, on a shared density scale."""
-    anecdotes, _ = load_rows(session, framework, mixed=mixed, filters=filters)
-    values = sorted({getattr(a, split_by) for a in anecdotes if getattr(a, split_by)})
+    values = distinct_values(session, framework, mixed=mixed, filters=filters, field=split_by)
 
     panels: list[Landscape] = []
     for value in values[:MAX_PANELS]:

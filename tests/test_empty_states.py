@@ -33,6 +33,7 @@ SCREENS = [
     "patterns/Patterns.jsx",
     "patterns/Explorer.jsx",
     "patterns/Landscape.jsx",
+    "patterns/StoryBrowser.jsx",
 ]
 
 #: Copy that is a state of the app rather than a state of the data. "Loading…"

@@ -33,6 +33,21 @@ export function snapshotFilename(landscape, framework) {
   )}-contour-${finding}.png`;
 }
 
+/** A filename for the supporting charts, naming the strongest thing they say. */
+export function chartsFilename(view, framework) {
+  const slug = (text) =>
+    String(text ?? "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+  const leading = view?.mcqs?.[0]?.bars?.[0];
+  const finding = leading?.count
+    ? `most-answered-${slug(view.mcqs[0].title)}-with-${slug(leading.label)}`
+    : "supporting-charts";
+  return `${slug(framework?.name) || "narrative-lens"}-v${framework?.version ?? 1}-${finding}.png`;
+}
+
+
 /**
  * Draw the contour twin to a canvas and hand it to the browser to save.
  *
@@ -132,4 +147,110 @@ export function saveContourSnapshot(panel, filename) {
   link.download = filename;
   link.href = canvas.toDataURL("image/png");
   link.click();
+}
+
+/**
+ * Save the supporting charts as one picture (PRD §1.7).
+ *
+ * The picture is made from the very elements the operator is looking at: each
+ * chart's SVG, serialised and drawn onto a canvas, stacked down the page in the
+ * order they were read. Redrawing them a second way would be a second chart
+ * that could disagree with the first.
+ *
+ * Black on white, like the contour, because §5b's print grammar says a
+ * photocopier is the test. The finding goes in the filename, because a PNG
+ * carries no alt text.
+ */
+export async function saveChartsSnapshot(container, filename) {
+  const figures = [...container.querySelectorAll("figure.nl-chart")];
+  const width = 900;
+  const MAX_CHART_HEIGHT = 380;
+  const scale = 2;
+  const gap = 24;
+  const titleSpace = 30;
+
+  const drawings = [];
+  for (const figure of figures) {
+    const svg = figure.querySelector("svg");
+    if (!svg) continue;
+
+    const clone = svg.cloneNode(true);
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+    // A clone leaves the stylesheet behind, and every colour, weight and size
+    // on these charts comes from it. So the resolved style is copied element by
+    // element from the live chart onto the copy — walked in parallel, which is
+    // sound because a clone has the same tree in the same order.
+    //
+    // Doing it by class name instead was a bug worth remembering: the frame of
+    // the stones square has `fill: none` in the stylesheet and no fill of its
+    // own, so the copy defaulted to black and painted a solid square over the
+    // data.
+    const live = [svg, ...svg.querySelectorAll("*")];
+    const copies = [clone, ...clone.querySelectorAll("*")];
+    for (let index = 0; index < copies.length; index += 1) {
+      const style = window.getComputedStyle(live[index]);
+      const inked = (value) => (value && value !== "none" ? "#000000" : "none");
+      copies[index].setAttribute("fill", inked(style.fill));
+      copies[index].setAttribute("stroke", inked(style.stroke));
+      copies[index].setAttribute("fill-opacity", "1");
+      copies[index].setAttribute("stroke-opacity", "1");
+      if (style.strokeWidth) copies[index].setAttribute("stroke-width", style.strokeWidth);
+      if (style.fontSize) copies[index].setAttribute("font-size", style.fontSize);
+      copies[index].setAttribute("font-family", "ui-sans-serif, system-ui, sans-serif");
+    }
+
+    const markup = new XMLSerializer().serializeToString(clone);
+    const image = new Image();
+    const loaded = new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = reject;
+    });
+    image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`;
+    await loaded;
+
+    // Drawn to the page width, unless that would blow a square chart up until
+    // its labels tower over the bar charts beside it. A cap on the height keeps
+    // every chart's text at about the same size, which is what makes them read
+    // as one picture rather than as several.
+    const box = svg.viewBox?.baseVal;
+    const ratio = box && box.width ? box.height / box.width : image.height / image.width;
+    const drawnWidth = Math.min(width, MAX_CHART_HEIGHT / ratio);
+    drawings.push({
+      image,
+      width: drawnWidth,
+      height: drawnWidth * ratio,
+      title: figure.querySelector("figcaption")?.textContent ?? "",
+    });
+  }
+
+  if (drawings.length === 0) return false;
+
+  const total = drawings.reduce((sum, entry) => sum + entry.height + titleSpace + gap, 60);
+  const canvas = document.createElement("canvas");
+  canvas.width = width * scale;
+  canvas.height = total * scale;
+  const context = canvas.getContext("2d");
+  context.setTransform(scale, 0, 0, scale, 0, 0);
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, width, total);
+  context.fillStyle = "#000000";
+
+  context.font = "22px ui-sans-serif, system-ui, sans-serif";
+  context.fillText("What people said", 0, 26);
+
+  let y = 60;
+  for (const entry of drawings) {
+    context.font = "16px ui-sans-serif, system-ui, sans-serif";
+    context.fillText(entry.title, 0, y);
+    y += titleSpace - 10;
+    context.drawImage(entry.image, 0, y, entry.width, entry.height);
+    y += entry.height + gap;
+  }
+
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+  return true;
 }

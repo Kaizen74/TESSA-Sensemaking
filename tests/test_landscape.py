@@ -15,9 +15,11 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 from backend import landscape as landscape_maths
 from backend.landscape import GRID, Landscape, stories_in_region
+from tests.conftest import median_ms
 from tests.patterns_fixtures import GOLDEN_DEFINITION, build_golden_dataset
 from tests.queue_fixtures import make_framework, proposed_import
 
@@ -475,6 +477,82 @@ def test_a_thousand_stories_still_answer_inside_the_budget(client: TestClient, s
     # a single spike measures the neighbours, not the code. A real regression
     # slows every sample, so six of seven is still a tight net.
     assert samples[-2] < 500, f"second worst {samples[-2]:.0f}ms of {[round(s) for s in samples]}"
+
+
+def test_five_thousand_stories_cost_almost_nothing_beyond_the_estimate(
+    client: TestClient, session: Session
+) -> None:
+    """PRD §4 sizes the landscape budget at 5,000 anecdotes, so measure there.
+
+    The test is written around what the app controls. Most of the time at five
+    thousand stories is one call to ``scipy.stats.gaussian_kde`` — twenty
+    million kernel evaluations, which the PRD pins us to and which no amount of
+    care here makes cheaper. What the app *does* control is everything either
+    side of it: reading the answers, converting them, indexing the grid, and
+    building the response.
+
+    So the assertion is on that share. It caught nothing when it was written —
+    it exists because the version before it spent 290ms of a 455ms request
+    building SQLAlchemy entities nobody wrote to, and only a test that separates
+    our cost from scipy's would ever have said so.
+    """
+    from backend.models import Anecdote, Signification, hour_rounded_now
+
+    framework = make_framework(client, GOLDEN_DEFINITION)
+    for index in range(5000):
+        anecdote = Anecdote(
+            framework_id=framework["id"],
+            text=f"Story {index}",
+            source_type="capture",
+            entry_mode="admin",
+            input_method="typed",
+            respondent_group=["Ops", "Deck", "Support"][index % 3],
+            created_at_hour=hour_rounded_now(),
+            status="validated",
+        )
+        session.add(anecdote)
+        session.flush()
+        a = ((index * 37) % 100) / 300
+        b = ((index * 53) % 100) / 300
+        session.add(
+            Signification(
+                anecdote_id=anecdote.id,
+                signifier_id="t1",
+                signifier_type="triad",
+                value_json={"Speed": a, "Care": b, "Cost": round(1 - a - b, 6)},
+                ai_confidence=None,
+                signified_by="respondent",
+                validated_at=hour_rounded_now(),
+            )
+        )
+    session.commit()
+
+    whole = median_ms(lambda: _landscape(client, framework["id"]), samples=5)
+
+    # The same estimate, timed on its own: five thousand points onto the same
+    # 64×64 grid, through the same scipy call the endpoint makes.
+    import numpy as np
+    from scipy.stats import gaussian_kde
+
+    view = _landscape(client, framework["id"])
+    panel = view["panels"][0]
+    coordinates = np.array(
+        [[p["x"] for p in panel["points"]], [p["y"] for p in panel["points"]]]
+    )
+    mesh_x, mesh_y = np.meshgrid(np.array(panel["x_axis"]), np.array(panel["y_axis"]))
+    flat = np.vstack([mesh_x.ravel(), mesh_y.ravel()])
+    kernel = gaussian_kde(coordinates, bw_method="scott")
+    estimate = median_ms(lambda: kernel(flat), samples=5)
+
+    ours = whole - estimate
+
+    assert view["total"] == 5000
+    assert panel["has_surface"] is True
+    assert len(panel["points"]) == 5000
+    assert ours < 120, (
+        f"the app's own share is {ours:.0f}ms of {whole:.0f}ms "
+        f"(the density estimate alone is {estimate:.0f}ms)"
+    )
 
 
 # --------------------------------------------------------------------------

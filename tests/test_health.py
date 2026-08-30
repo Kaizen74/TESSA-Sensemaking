@@ -65,6 +65,11 @@ EXPECTED_API_PATHS = {
     "/api/export/brief",
     # Phase 9 — the summary that goes back to the respondents
     "/api/export/heard",
+    # PRD §1.6 and §5.4 — the story browser. In scope for v1.3 and the one
+    # scope item §6 never assigned to a phase; built in the post-Phase-9
+    # completeness pass.
+    "/api/stories/{framework_id}",
+    "/api/stories/{anecdote_id}/marks",
     # Phase 8 — the landscape suite
     "/api/landscape/{framework_id}/{triad_id}",
     "/api/explorer/{framework_id}",

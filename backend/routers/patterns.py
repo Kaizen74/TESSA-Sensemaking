@@ -27,6 +27,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from backend import dataset, errors
+from backend.dataset import AnswerRow, StoryRow
 from backend.db import get_session
 from backend.framework_schema import FrameworkDefinition
 from backend.models import Anecdote, Framework, Signification
@@ -89,26 +90,40 @@ def load_rows(
     *,
     mixed: bool,
     filters: dict[str, str],
-) -> tuple[list[Anecdote], list[Signification]]:
+) -> tuple[list[StoryRow], list[AnswerRow]]:
     """The validated stories in scope, and their placements.
 
     The one place a pattern view decides which stories it is about. The exports
     read through it too, so a downloaded CSV is exactly the rows the charts on
     screen were drawn from — including the version scope and every filter.
+
+    Rows rather than mapped objects (:data:`backend.dataset.StoryRow`). Every
+    reader here only ever asks a story for its columns, and at five thousand
+    stories the entities SQLAlchemy built so they could be written to — which
+    nothing on this path does — cost more than all the arithmetic together.
     """
     ids = scoped_ids(session, framework, mixed)
 
-    statement = dataset.only_validated(select(Anecdote)).where(
+    statement = dataset.only_validated(select(*dataset.STORY_COLUMNS)).where(
         Anecdote.framework_id.in_(ids)
     )
     for field, value in filters.items():
         statement = statement.where(getattr(Anecdote, field) == value)
 
-    anecdotes = list(session.scalars(statement.order_by(Anecdote.id)).all())
+    anecdotes = list(session.execute(statement.order_by(Anecdote.id)).all())
     placements = (
         list(
-            session.scalars(
-                select(Signification)
+            session.execute(
+                select(
+                    Signification.id,
+                    Signification.anecdote_id,
+                    Signification.signifier_id,
+                    Signification.signifier_type,
+                    Signification.value_json,
+                    Signification.ai_confidence,
+                    Signification.signified_by,
+                    Signification.validated_at,
+                )
                 .where(Signification.anecdote_id.in_([a.id for a in anecdotes]))
                 .order_by(Signification.id)
             ).all()
@@ -117,6 +132,64 @@ def load_rows(
         else []
     )
     return anecdotes, placements
+
+
+def load_answers(
+    session: Session,
+    framework: Framework,
+    *,
+    mixed: bool,
+    filters: dict[str, str],
+    signifier_id: str,
+) -> tuple[list[tuple[int, dict]], int]:
+    """One question's answers, and how many stories are in scope for them.
+
+    Same scope as :func:`load_rows` — same version rule, same filters, the same
+    ``only_validated`` — but it reads two columns instead of building an object
+    for every story and every placement in the framework. The landscape needs
+    one triangle: at five thousand stories, hydrating the other four questions'
+    answers to draw it was most of the time the endpoint spent (PRD §4's 200ms
+    at 5,000 anecdotes).
+    """
+    ids = scoped_ids(session, framework, mixed)
+
+    scope = dataset.only_validated(select(Anecdote.id)).where(Anecdote.framework_id.in_(ids))
+    for field, value in filters.items():
+        scope = scope.where(getattr(Anecdote, field) == value)
+    in_scope = scope.subquery()
+
+    total = session.scalar(select(func.count()).select_from(in_scope)) or 0
+    rows = session.execute(
+        select(Signification.anecdote_id, Signification.value_json)
+        .join(in_scope, in_scope.c.id == Signification.anecdote_id)
+        .where(Signification.signifier_id == signifier_id)
+        .order_by(Signification.id)
+    ).all()
+    return [(anecdote_id, value) for anecdote_id, value in rows], int(total)
+
+
+def distinct_values(
+    session: Session,
+    framework: Framework,
+    *,
+    mixed: bool,
+    filters: dict[str, str],
+    field: str,
+) -> list[str]:
+    """The values a field actually takes in scope — what a split can split by.
+
+    A ``SELECT DISTINCT`` rather than reading every story to look at one column
+    of it, for the same reason :func:`load_answers` exists.
+    """
+    ids = scoped_ids(session, framework, mixed)
+    statement = dataset.only_validated(select(getattr(Anecdote, field))).where(
+        Anecdote.framework_id.in_(ids)
+    )
+    for name, value in filters.items():
+        statement = statement.where(getattr(Anecdote, name) == value)
+
+    found = session.scalars(statement.distinct()).all()
+    return sorted(value for value in found if value)
 
 
 def load_view(

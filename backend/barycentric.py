@@ -52,16 +52,26 @@ class BarycentricError(ValueError):
     """Raised when a placement cannot be read as a triad answer."""
 
 
+def _placed(weights: tuple[float, float, float]) -> tuple[float, float]:
+    """The conversion itself, on weights already known to be usable.
+
+    Kept apart from :func:`to_cartesian` only so a caller that has just
+    validated its weights need not have them validated again. It is one
+    definition of the maths, not two — everything below calls this.
+    """
+    a, b, c = weights
+    x = a * CORNER_0[0] + b * CORNER_1[0] + c * CORNER_2[0]
+    y = a * CORNER_0[1] + b * CORNER_1[1] + c * CORNER_2[1]
+    return (round(x, POINT_DECIMALS), round(y, POINT_DECIMALS))
+
+
 def to_cartesian(weights: tuple[float, float, float]) -> tuple[float, float]:
     """Convert three corner weights into a point inside the triangle.
 
     >>> to_cartesian((1.0, 0.0, 0.0))
     (0.0, 0.0)
     """
-    a, b, c = _validated(weights)
-    x = a * CORNER_0[0] + b * CORNER_1[0] + c * CORNER_2[0]
-    y = a * CORNER_0[1] + b * CORNER_1[1] + c * CORNER_2[1]
-    return (round(x, POINT_DECIMALS), round(y, POINT_DECIMALS))
+    return _placed(_validated(weights))
 
 
 def to_barycentric(point: tuple[float, float]) -> tuple[float, float, float]:
@@ -153,3 +163,16 @@ def from_value_json(value_json: dict, corner_ids: tuple[str, str, str]) -> tuple
             f"a triad placement must carry all three corners {corner_ids}; got {value_json!r}"
         ) from exc
     return _validated(weights)  # type: ignore[arg-type]
+
+
+def point_from_value_json(
+    value_json: dict, corner_ids: tuple[str, str, str]
+) -> tuple[float, float]:
+    """A stored answer straight to its point in the triangle.
+
+    Exactly ``to_cartesian(from_value_json(...))``, with the weights checked
+    once instead of twice. Every triad answer in the dataset goes through here
+    on every patterns and landscape request, and at five thousand stories the
+    second check was costing more than the conversion (PRD §4, 200ms).
+    """
+    return _placed(from_value_json(value_json, corner_ids))  # type: ignore[arg-type]

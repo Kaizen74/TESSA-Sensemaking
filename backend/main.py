@@ -30,6 +30,7 @@ from backend.routers import (
     patterns,
     public,
     queue,
+    stories,
 )
 
 log = logging.getLogger("narrative_lens")
@@ -44,6 +45,7 @@ app.include_router(queue.router)
 app.include_router(patterns.router)
 app.include_router(landscape.router)
 app.include_router(exports.router)
+app.include_router(stories.router)
 app.include_router(public.router)
 
 

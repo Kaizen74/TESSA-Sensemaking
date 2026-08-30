@@ -26,8 +26,8 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 from scipy.cluster.vq import kmeans2
 
+from backend.dataset import AnswerRow, StoryRow
 from backend.framework_schema import FrameworkDefinition
-from backend.models import Anecdote, Signification
 
 #: PRD §9 assumption 8 pins the seed. Nothing here may vary between runs.
 SEED = 42
@@ -158,7 +158,7 @@ def dimensions_of(definition: FrameworkDefinition) -> list[Dimension]:
 
 
 def _values(
-    definition: FrameworkDefinition, placements: list[Signification]
+    definition: FrameworkDefinition, placements: list[AnswerRow]
 ) -> dict[str, float]:
     """One story's answers, flattened onto the dimension ids."""
     values: dict[str, float] = {}
@@ -190,14 +190,14 @@ def _values(
 
 def explorer(
     definition: FrameworkDefinition,
-    anecdotes: list[Anecdote],
-    significations: list[Signification],
+    anecdotes: list[StoryRow],
+    significations: list[AnswerRow],
     *,
     framework_id: int,
     framework_version: int,
 ) -> ExplorerSet:
     """Every story's numeric answers, ready to plot on any three axes."""
-    by_anecdote: dict[int, list[Signification]] = {}
+    by_anecdote: dict[int, list[AnswerRow]] = {}
     keep = {anecdote.id for anecdote in anecdotes}
     for placement in significations:
         if placement.anecdote_id in keep:

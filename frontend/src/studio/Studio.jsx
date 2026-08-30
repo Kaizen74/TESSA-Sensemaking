@@ -15,6 +15,7 @@ import { api, ApiError } from "../api.js";
 import { EditKindDialog } from "./EditKindDialog.jsx";
 import { PhonePreview, orderedSignifiers } from "./PhonePreview.jsx";
 import { Field, TextArea, SignifierEditor } from "./Fields.jsx";
+import { ActiveLinkQr } from "./ActiveLinkQr.jsx";
 import { describePath } from "./editLog.js";
 import "./studio.css";
 
@@ -205,6 +206,8 @@ export function Studio() {
             </ol>
           </section>
         )}
+
+        <ActiveLinkQr />
       </aside>
 
       {draft ? (

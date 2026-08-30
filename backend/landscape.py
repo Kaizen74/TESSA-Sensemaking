@@ -145,12 +145,19 @@ def _axes() -> tuple[np.ndarray, np.ndarray]:
 
 
 def _cell_index(value: float, axis: np.ndarray) -> int:
-    """Which grid cell a coordinate falls in — the region drill's whole basis."""
+    """Which grid cell a coordinate falls in — the region drill's whole basis.
+
+    Plain arithmetic rather than ``np.clip``: this runs once per story per axis,
+    and a numpy call on a single scalar costs more than the whole calculation.
+    At five thousand stories that difference was a third of PRD §4's budget for
+    the endpoint.
+    """
     if len(axis) < 2:
         return 0
-    step = axis[1] - axis[0]
-    index = int(round((value - axis[0]) / step))
-    return int(np.clip(index, 0, len(axis) - 1))
+    origin = float(axis[0])
+    step = float(axis[1]) - origin
+    index = int(round((float(value) - origin) / step))
+    return min(max(index, 0), len(axis) - 1)
 
 
 def _local_maxima(density: np.ndarray, floor: float) -> list[tuple[int, int, float]]:

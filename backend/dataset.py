@@ -20,13 +20,47 @@ that do.
 
 from __future__ import annotations
 
-from sqlalchemy import Select
+from typing import Any
+
+from sqlalchemy import Row, Select
 
 from backend.models import Anecdote
 
 STATUS_PENDING = "pending_validation"
 STATUS_VALIDATED = "validated"
 STATUS_REJECTED = "rejected"
+
+#: How the read path carries a story and an answer: a row of columns rather than
+#: a mapped object.
+#:
+#: Attribute access is identical — ``row.id``, ``row.respondent_group``,
+#: ``row.value_json`` — which is why every reader downstream works the same way
+#: on either. What differs is that SQLAlchemy builds no instrumented entity per
+#: row, and at five thousand stories building twenty thousand of them was most
+#: of what a patterns request spent its time on (PRD §4's 200ms budget).
+#:
+#: Writers still use the mapped classes. This is the read side only.
+StoryRow = Row[Any]
+AnswerRow = Row[Any]
+
+#: The columns a story is read with — every column of the table, because the
+#: CSV export carries the whole provenance record (constraint 3) and reads
+#: through the same loader as the charts.
+STORY_COLUMNS = (
+    Anecdote.id,
+    Anecdote.framework_id,
+    Anecdote.text,
+    Anecdote.title_auto,
+    Anecdote.source_type,
+    Anecdote.entry_mode,
+    Anecdote.input_method,
+    Anecdote.source_file,
+    Anecdote.source_locator,
+    Anecdote.import_job_id,
+    Anecdote.respondent_group,
+    Anecdote.created_at_hour,
+    Anecdote.status,
+)
 
 
 def only_validated(statement: Select) -> Select:

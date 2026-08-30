@@ -337,3 +337,40 @@
   color: var(--nl-grey);
   font-size: var(--nl-text-sm);
 }
+
+/* ---- The active link's QR, on the screen the app opens on (§1.8) ---- */
+
+.nl-homeqr {
+  margin-top: var(--nl-space-8);
+  padding-top: var(--nl-space-4);
+  border-top: 1px solid var(--nl-grey-line);
+}
+
+.nl-homeqr__title {
+  font-size: var(--nl-text-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nl-grey);
+  margin: 0 0 var(--nl-space-3);
+}
+
+.nl-homeqr__code {
+  display: block;
+  width: 140px;
+  height: 140px;
+  image-rendering: pixelated;
+  background: #ffffff;
+}
+
+.nl-homeqr__meta {
+  margin: var(--nl-space-2) 0 0;
+  font-size: var(--nl-text-sm);
+}
+
+.nl-homeqr__url,
+.nl-homeqr__empty {
+  margin: var(--nl-space-1) 0 0;
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+  overflow-wrap: anywhere;
+}

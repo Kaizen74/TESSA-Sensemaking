@@ -20,6 +20,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from backend import errors
 from backend.db import get_session
 from backend.exports import dataset_csv, pattern_brief, what_we_heard
 from backend.framework_schema import FrameworkDefinition
@@ -41,6 +42,27 @@ def _slug(text: str) -> str:
     return "".join(kept).strip("-").replace("--", "-") or "narrative-lens"
 
 
+def _selected(ids: str | None) -> set[int] | None:
+    """The story ids an "export selected" asked for, or None for all of them."""
+    if ids is None:
+        return None
+    chosen: set[int] = set()
+    for part in ids.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if not part.isdigit():
+            raise errors.bad_request(
+                "unreadable_selection",
+                "That download asked for stories by a name Narrative Lens does "
+                "not recognise.",
+                "Go back to the story list, tick the stories you want, and "
+                "download again.",
+            )
+        chosen.add(int(part))
+    return chosen
+
+
 @router.get("/csv", response_class=PlainTextResponse)
 def export_csv(
     session: Annotated[Session, Depends(get_session)],
@@ -50,11 +72,23 @@ def export_csv(
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    ids: Annotated[str | None, Query()] = None,
 ) -> PlainTextResponse:
-    """The filtered dataset, one row per story, full provenance (constraint 3)."""
+    """The filtered dataset, one row per story, full provenance (constraint 3).
+
+    ``ids`` narrows it to a chosen few — the story browser's "export selected"
+    (PRD §1.7). It is the same code path and the same provenance columns, so a
+    selection cannot quietly become a different kind of export.
+    """
     framework = load_framework(session, framework_id)
     filters = applied_filters(respondent_group, input_method, entry_mode, source_type)
     anecdotes, placements = load_rows(session, framework, mixed=mixed, filters=filters)
+
+    chosen = _selected(ids)
+    if chosen is not None:
+        anecdotes = [row for row in anecdotes if row.id in chosen]
+        keep = {row.id for row in anecdotes}
+        placements = [row for row in placements if row.anecdote_id in keep]
 
     names = {
         row.id: (row.name, row.version)
@@ -69,7 +103,8 @@ def export_csv(
         placements,
         names,
     )
-    filename = f"{_slug(framework.name)}-v{framework.version}-stories.csv"
+    kind = "selected-stories" if chosen is not None else "stories"
+    filename = f"{_slug(framework.name)}-v{framework.version}-{kind}.csv"
     return PlainTextResponse(
         content=body,
         media_type="text/csv; charset=utf-8",

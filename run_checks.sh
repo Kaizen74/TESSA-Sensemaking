@@ -288,6 +288,51 @@ case "$heard_out" in
         ;;
 esac
 
+# The story browser (PRD §1.6): the stories themselves, searched, marked, and
+# exported as a selection through the same CSV path as everything else.
+browse="http://127.0.0.1:${SMOKE_PORT}/api/stories/${framework_id}"
+story_id="$(curl -sf "$browse" | $PYTHON -c '
+import json, sys
+
+page = json.load(sys.stdin)
+assert page["total"] == 1, page["total"]          # only the accepted story
+assert page["matched"] == 1, page["matched"]
+print(page["stories"][0]["anecdote_id"])
+')" || {
+    echo "  FAIL: the story browser did not list the validated story"
+    exit 1
+}
+
+curl -sf -X PUT "http://127.0.0.1:${SMOKE_PORT}/api/stories/${story_id}/marks" \
+    -H 'Content-Type: application/json' \
+    -d '{"starred": true, "tags": ["handover"]}' >/dev/null || {
+    echo "  FAIL: a story could not be starred"
+    exit 1
+}
+
+curl -sf "${browse}?starred=true&q=deadline" | $PYTHON -c '
+import json, sys
+
+page = json.load(sys.stdin)
+assert page["matched"] == 1, page["matched"]
+assert page["stories"][0]["starred"] is True, page["stories"][0]
+assert page["stories"][0]["tags"] == ["handover"], page["stories"][0]
+print("  story browser: searched, starred and tagged")
+' || {
+    echo "  FAIL: the story browser lost a mark or a search"
+    exit 1
+}
+
+selected="$(curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/export/csv?framework_id=${framework_id}&ids=${story_id}")" || {
+    echo "  FAIL: the selected export did not answer"
+    exit 1
+}
+if [[ "$(printf '%s' "$selected" | grep -c .)" != "2" ]]; then
+    echo "  FAIL: a selection of one story did not export one row"
+    exit 1
+fi
+echo "  export selected: one story, with the same provenance header"
+
 # Constraint 7 on the paths nobody wrote a message for: a mistyped address must
 # come back as a sentence in the one error shape, never as framework wording.
 missing="$(curl -s "http://127.0.0.1:${SMOKE_PORT}/api/no-such-thing")"

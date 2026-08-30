@@ -584,3 +584,130 @@
   color: var(--nl-grey);
   max-width: 60ch;
 }
+
+/* ---- The story browser (§1.6) ---- */
+
+.nl-browser__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--nl-space-4);
+  margin-bottom: var(--nl-space-4);
+}
+
+.nl-browser__search {
+  flex: 1 1 20rem;
+}
+
+.nl-browser__field {
+  flex: 0 1 12rem;
+}
+
+.nl-browser__input {
+  width: 100%;
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-3);
+  font-family: inherit;
+  font-size: var(--nl-text-base);
+  color: var(--nl-ink);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+}
+
+.nl-browser__selection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nl-space-4);
+  margin-bottom: var(--nl-space-4);
+  padding: var(--nl-space-3) var(--nl-space-4);
+  border-left: 3px solid var(--nl-accent);
+  background: var(--nl-surface);
+}
+
+.nl-browser__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nl-space-4);
+}
+
+/* A story reads as prose, not as a table row: full measure, quiet chrome. */
+.nl-story {
+  padding: var(--nl-space-4);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  background: var(--nl-surface);
+}
+
+.nl-story__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nl-space-3);
+  margin-bottom: var(--nl-space-2);
+}
+
+.nl-story__tick {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-2);
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  cursor: pointer;
+}
+
+.nl-story__star {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-3);
+  background: var(--nl-paper);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-ink);
+  cursor: pointer;
+}
+
+/* The accent's one job on this screen. */
+.nl-story__star--on {
+  border-color: var(--nl-accent);
+  color: var(--nl-accent);
+}
+
+.nl-story__text {
+  margin: 0 0 var(--nl-space-3);
+  max-width: 70ch;
+  line-height: var(--nl-leading-body);
+}
+
+.nl-story__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nl-space-3);
+  margin: 0 0 var(--nl-space-3);
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+}
+
+.nl-story__tags {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-2);
+  max-width: 32rem;
+}
+
+.nl-story__tags-label {
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+}
+
+.nl-browser__pages {
+  display: flex;
+  gap: var(--nl-space-3);
+  margin-top: var(--nl-space-6);
+}
