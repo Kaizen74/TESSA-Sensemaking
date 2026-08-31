@@ -1,0 +1,19 @@
+# The operator's local database and any local artefacts (constraint 4).
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node (from Phase 2 onward)
+node_modules/
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,376 @@
+/*
+ * Studio layout: version rail · editing surface · live preview.
+ *
+ * Everything here is quiet by design. The landscape in Phase 8 is the app's one
+ * bold element (constraint 13a), so the Studio uses weight and space for
+ * hierarchy rather than colour.
+ */
+
+.nl-studio {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr) auto;
+  gap: var(--nl-space-8);
+  align-items: start;
+  padding: var(--nl-space-8);
+  max-width: 96rem;
+  margin: 0 auto;
+}
+
+@media (max-width: 68rem) {
+  .nl-studio {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--nl-space-4);
+    gap: var(--nl-space-6);
+  }
+}
+
+/* ---- Version rail ---- */
+
+.nl-studio__rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nl-space-2);
+  margin-bottom: var(--nl-space-3);
+}
+
+.nl-studio__rail-title {
+  font-size: var(--nl-text-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nl-grey);
+}
+
+.nl-versions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nl-version {
+  display: block;
+  width: 100%;
+  text-align: left;
+  min-height: var(--nl-tap-target);
+  padding: var(--nl-space-3);
+  margin-bottom: var(--nl-space-2);
+  background: none;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: var(--nl-radius);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: inherit;
+}
+
+.nl-version:hover {
+  background: var(--nl-grey-faint);
+}
+
+/* Accent marks the selected thing, and nothing else (§5b). */
+.nl-version--current {
+  border-left-color: var(--nl-accent);
+  background: var(--nl-surface);
+}
+
+.nl-version__name {
+  display: block;
+  font-weight: var(--nl-weight-medium);
+}
+
+.nl-version__meta {
+  display: flex;
+  gap: var(--nl-space-3);
+  color: var(--nl-grey);
+  font-size: var(--nl-text-xs);
+  margin-top: var(--nl-space-1);
+}
+
+.nl-version__log {
+  display: block;
+  color: var(--nl-grey);
+  font-size: var(--nl-text-xs);
+  margin-top: var(--nl-space-1);
+}
+
+/* ---- Edit log ---- */
+
+.nl-editlog {
+  margin-top: var(--nl-space-8);
+  border-top: 1px solid var(--nl-grey-line);
+  padding-top: var(--nl-space-4);
+}
+
+.nl-editlog__title {
+  font-size: var(--nl-text-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nl-grey);
+  margin-bottom: var(--nl-space-3);
+}
+
+.nl-editlog__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nl-editlog__entry {
+  font-size: var(--nl-text-xs);
+  margin-bottom: var(--nl-space-3);
+  padding-bottom: var(--nl-space-3);
+  border-bottom: 1px solid var(--nl-grey-faint);
+}
+
+/* What was changed, in the Studio's own words rather than the schema's. */
+.nl-editlog__path {
+  display: block;
+  color: var(--nl-grey);
+  font-weight: var(--nl-weight-medium);
+  margin-bottom: var(--nl-space-1);
+}
+
+.nl-editlog__old {
+  display: block;
+  color: var(--nl-grey);
+  text-decoration: line-through;
+}
+
+.nl-editlog__new {
+  display: block;
+}
+
+/* ---- Editing surface ---- */
+
+.nl-studio__header {
+  margin-bottom: var(--nl-space-6);
+}
+
+.nl-studio__title {
+  font-size: var(--nl-text-xl);
+}
+
+.nl-studio__sub {
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+  margin: var(--nl-space-2) 0 0;
+  max-width: 44ch;
+}
+
+.nl-meter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--nl-space-3);
+  padding: var(--nl-space-3) var(--nl-space-4);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  margin-bottom: var(--nl-space-6);
+}
+
+.nl-meter__value {
+  font-size: var(--nl-text-lg);
+  font-weight: var(--nl-weight-medium);
+}
+
+.nl-meter__label {
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+}
+
+.nl-meter__warn {
+  flex-basis: 100%;
+  color: var(--nl-ink);
+  font-size: var(--nl-text-sm);
+  border-left: 3px solid var(--nl-accent);
+  padding-left: var(--nl-space-3);
+}
+
+.nl-fieldset {
+  border: 0;
+  border-top: 1px solid var(--nl-grey-line);
+  padding: var(--nl-space-6) 0 0;
+  margin: 0 0 var(--nl-space-6);
+}
+
+.nl-legend {
+  font-size: var(--nl-text-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nl-grey);
+  padding: 0;
+}
+
+.nl-signifier {
+  border-left: 2px solid var(--nl-grey-faint);
+  padding-left: var(--nl-space-4);
+  margin-bottom: var(--nl-space-6);
+}
+
+.nl-field {
+  margin-bottom: var(--nl-space-4);
+}
+
+.nl-field__label {
+  display: block;
+  font-size: var(--nl-text-sm);
+  font-weight: var(--nl-weight-medium);
+  margin-bottom: var(--nl-space-1);
+}
+
+.nl-field__hint {
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  margin: 0 0 var(--nl-space-2);
+}
+
+.nl-field__input {
+  width: 100%;
+  min-height: var(--nl-tap-target);
+  padding: var(--nl-space-2) var(--nl-space-3);
+  font-family: inherit;
+  font-size: var(--nl-text-base);
+  color: var(--nl-ink);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+}
+
+.nl-field__input--area {
+  min-height: 5rem;
+  line-height: var(--nl-leading-body);
+  resize: vertical;
+}
+
+.nl-list {
+  margin-bottom: var(--nl-space-4);
+}
+
+.nl-list__title {
+  font-size: var(--nl-text-sm);
+  font-weight: var(--nl-weight-medium);
+  margin: 0 0 var(--nl-space-2);
+}
+
+.nl-check {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-2);
+  min-height: var(--nl-tap-target);
+  font-size: var(--nl-text-sm);
+}
+
+/* ---- Actions ---- */
+
+.nl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nl-space-3);
+  border-top: 1px solid var(--nl-grey-line);
+  padding-top: var(--nl-space-4);
+}
+
+.nl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-4);
+  border-radius: var(--nl-radius);
+  border: var(--nl-border);
+  background: var(--nl-surface);
+  color: var(--nl-ink);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color var(--nl-motion-fast) var(--nl-ease);
+}
+
+.nl-btn:hover:not(:disabled) {
+  border-color: var(--nl-data);
+}
+
+.nl-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.nl-btn--primary {
+  background: var(--nl-data);
+  border-color: var(--nl-data);
+  color: #fff;
+  font-weight: var(--nl-weight-medium);
+}
+
+.nl-btn--quiet {
+  font-size: var(--nl-text-sm);
+}
+
+.nl-status {
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+}
+
+.nl-empty {
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+}
+
+.nl-error {
+  border-left: 3px solid var(--nl-accent);
+  background: var(--nl-surface);
+  padding: var(--nl-space-3) var(--nl-space-4);
+  margin-bottom: var(--nl-space-6);
+}
+
+.nl-error__message {
+  margin: 0 0 var(--nl-space-2);
+  font-weight: var(--nl-weight-medium);
+}
+
+.nl-error__action {
+  margin: 0;
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+}
+
+/* ---- The active link's QR, on the screen the app opens on (§1.8) ---- */
+
+.nl-homeqr {
+  margin-top: var(--nl-space-8);
+  padding-top: var(--nl-space-4);
+  border-top: 1px solid var(--nl-grey-line);
+}
+
+.nl-homeqr__title {
+  font-size: var(--nl-text-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nl-grey);
+  margin: 0 0 var(--nl-space-3);
+}
+
+.nl-homeqr__code {
+  display: block;
+  width: 140px;
+  height: 140px;
+  image-rendering: pixelated;
+  background: #ffffff;
+}
+
+.nl-homeqr__meta {
+  margin: var(--nl-space-2) 0 0;
+  font-size: var(--nl-text-sm);
+}
+
+.nl-homeqr__url,
+.nl-homeqr__empty {
+  margin: var(--nl-space-1) 0 0;
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+  overflow-wrap: anywhere;
+}

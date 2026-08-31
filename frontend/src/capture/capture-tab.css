@@ -1,0 +1,102 @@
+.nl-capture {
+  padding: var(--nl-space-6) var(--nl-space-4) var(--nl-space-12);
+}
+
+.nl-capture__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--nl-space-4);
+  max-width: 72rem;
+  margin: 0 auto var(--nl-space-6);
+  padding-bottom: var(--nl-space-4);
+  border-bottom: 1px solid var(--nl-grey-line);
+}
+
+.nl-capture__field-label {
+  display: block;
+  font-size: var(--nl-text-sm);
+  font-weight: var(--nl-weight-medium);
+  margin-bottom: var(--nl-space-1);
+}
+
+.nl-capture__select {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-3);
+  font-family: inherit;
+  font-size: var(--nl-text-base);
+  color: var(--nl-ink);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+}
+
+.nl-capture__modes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nl-space-2);
+}
+
+.nl-capture__mode {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-4);
+  background: none;
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  cursor: pointer;
+}
+
+.nl-capture__mode--current {
+  color: var(--nl-ink);
+  background: var(--nl-surface);
+  border-color: var(--nl-accent);
+  font-weight: var(--nl-weight-medium);
+}
+
+/* Kiosk hides the admin chrome: the next person at the keyboard is a
+   respondent, not the operator. */
+.nl-kiosk {
+  position: relative;
+  min-height: 60vh;
+}
+
+.nl-kiosk__exit {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-3);
+  background: none;
+  border: 0;
+  color: var(--nl-grey);
+  font-family: inherit;
+  font-size: var(--nl-text-xs);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.nl-capture__empty {
+  max-width: 44ch;
+  margin: var(--nl-space-12) auto;
+  color: var(--nl-grey);
+  text-align: center;
+}
+
+.nl-capture__error {
+  max-width: 44ch;
+  margin: var(--nl-space-8) auto;
+  border-left: 3px solid var(--nl-accent);
+  background: var(--nl-surface);
+  padding: var(--nl-space-3) var(--nl-space-4);
+}
+
+.nl-capture__error-action {
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+  margin: var(--nl-space-2) 0 0;
+}

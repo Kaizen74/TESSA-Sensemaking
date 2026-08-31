@@ -1,0 +1,68 @@
+.nl-app {
+  min-height: 100vh;
+}
+
+.nl-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-8);
+  padding: var(--nl-space-4) var(--nl-space-8);
+  border-bottom: 1px solid var(--nl-grey-line);
+  background: var(--nl-surface);
+}
+
+/* The one h1 on the page. Sized as a brand mark rather than as a heading:
+   the tabs below it are the h2s, and constraint 13a keeps the landscape the
+   only thing on screen allowed to be loud. */
+.nl-nav__brand {
+  margin: 0;
+  font-weight: var(--nl-weight-bold);
+  font-size: var(--nl-text-base);
+}
+
+.nl-nav__list {
+  display: flex;
+  /* Wraps rather than overflowing: constraint 10 requires a clean 375px, and
+     four tab labels do not fit on one line at that width. */
+  flex-wrap: wrap;
+  gap: var(--nl-space-2) var(--nl-space-6);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.nl-nav__tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--nl-tap-target);
+  padding: 0;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  cursor: pointer;
+}
+
+.nl-nav__tab[aria-disabled="true"] {
+  cursor: default;
+}
+
+.nl-nav__tab--current {
+  color: var(--nl-ink);
+  font-weight: var(--nl-weight-medium);
+  box-shadow: inset 0 -2px 0 var(--nl-accent);
+}
+
+@media (max-width: 48rem) {
+  .nl-nav {
+    flex-wrap: wrap;
+    gap: var(--nl-space-3);
+    padding: var(--nl-space-3) var(--nl-space-4);
+  }
+
+  .nl-nav__list {
+    gap: var(--nl-space-4);
+  }
+}

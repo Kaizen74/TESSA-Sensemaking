@@ -1,0 +1,42 @@
+{
+  "t1": [
+    {
+      "count": 4,
+      "nearest_corner": "Speed",
+      "x": 0.380952,
+      "y": 0.109971
+    },
+    {
+      "count": 4,
+      "nearest_corner": "Care",
+      "x": 0.507937,
+      "y": 0.178704
+    },
+    {
+      "count": 4,
+      "nearest_corner": "Cost",
+      "x": 0.492063,
+      "y": 0.343661
+    }
+  ],
+  "t2": [
+    {
+      "count": 5,
+      "nearest_corner": "My team",
+      "x": 0.761905,
+      "y": 0.137464
+    },
+    {
+      "count": 5,
+      "nearest_corner": "Someone else",
+      "x": 0.507937,
+      "y": 0.343661
+    },
+    {
+      "count": 5,
+      "nearest_corner": "Me",
+      "x": 0.396825,
+      "y": 0.178704
+    }
+  ]
+}

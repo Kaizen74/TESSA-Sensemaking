@@ -1,0 +1,42 @@
+/*
+ * The respondent's page. Nothing here belongs to the operator: no navigation,
+ * no branding beyond the app's own quiet palette, nothing to distract from the
+ * one thing being asked.
+ */
+
+.nl-public {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: var(--nl-space-6) var(--nl-space-2) var(--nl-space-12);
+}
+
+.nl-public__notice {
+  max-width: var(--nl-phone-width);
+  margin: var(--nl-space-12) auto;
+  padding: var(--nl-space-6);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-left: 3px solid var(--nl-accent);
+  border-radius: var(--nl-radius);
+}
+
+.nl-public__title {
+  font-size: var(--nl-text-lg);
+  font-weight: var(--nl-weight-medium);
+  margin-bottom: var(--nl-space-3);
+}
+
+.nl-public__action {
+  margin: 0;
+  color: var(--nl-grey);
+  font-size: var(--nl-text-base);
+}
+
+.nl-public__loading {
+  max-width: var(--nl-phone-width);
+  margin: var(--nl-space-12) auto;
+  text-align: center;
+  color: var(--nl-grey);
+}

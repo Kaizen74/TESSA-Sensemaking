@@ -1,0 +1,532 @@
+/*
+ * Import & Validate (PRD §5.3), to the §5b grammar.
+ *
+ * Quiet by construction: one data hue, the accent reserved for the amber
+ * low-confidence flag and for the primary action, grey for everything that is
+ * context. Nothing here competes with the landscape (constraint 13a).
+ */
+
+.nl-import {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: var(--nl-space-6) var(--nl-space-4) var(--nl-space-12);
+}
+
+.nl-import__head {
+  margin-bottom: var(--nl-space-6);
+}
+
+.nl-import__title {
+  font-size: var(--nl-text-xl);
+  margin: 0;
+}
+
+.nl-import__sub {
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+  margin: var(--nl-space-2) 0 0;
+  max-width: 60ch;
+}
+
+.nl-import__back {
+  min-height: var(--nl-tap-target);
+  padding: 0;
+  margin-bottom: var(--nl-space-2);
+  background: none;
+  border: 0;
+  color: var(--nl-grey);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  cursor: pointer;
+}
+
+/* The file picker is the one thing to do on an empty screen, so it is the one
+   thing that looks clickable. */
+.nl-import__upload {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-4);
+  background: var(--nl-data);
+  color: #fff;
+  border-radius: var(--nl-radius);
+  font-size: var(--nl-text-sm);
+  font-weight: var(--nl-weight-medium);
+  cursor: pointer;
+}
+
+.nl-import__file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Keyboard users get the same visible focus as everywhere else (§5b). */
+.nl-import__upload:focus-within {
+  outline: var(--nl-focus-ring);
+  outline-offset: var(--nl-focus-offset);
+}
+
+.nl-import__formats {
+  color: var(--nl-grey);
+  font-size: var(--nl-text-xs);
+  margin: var(--nl-space-2) 0 var(--nl-space-8);
+}
+
+.nl-import__section {
+  font-size: var(--nl-text-lg);
+  margin: var(--nl-space-8) 0 var(--nl-space-3);
+}
+
+.nl-import__empty,
+.nl-import__note {
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+  max-width: 60ch;
+  margin-top: var(--nl-space-8);
+  padding-top: var(--nl-space-4);
+  border-top: 1px solid var(--nl-grey-line);
+}
+
+.nl-import__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nl-job {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nl-space-4);
+  padding: var(--nl-space-4);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  background: var(--nl-surface);
+  margin-bottom: var(--nl-space-3);
+}
+
+.nl-job__main {
+  min-width: 0;
+}
+
+.nl-job__name {
+  margin: 0 0 var(--nl-space-1);
+  font-weight: var(--nl-weight-medium);
+  overflow-wrap: anywhere;
+}
+
+.nl-job__meta {
+  margin: 0;
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+}
+
+.nl-job__problem {
+  margin: var(--nl-space-2) 0 0;
+  font-size: var(--nl-text-sm);
+  border-left: 3px solid var(--nl-accent);
+  padding-left: var(--nl-space-3);
+}
+
+.nl-job__open {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-3);
+  background: var(--nl-paper);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-ink);
+  cursor: pointer;
+}
+
+.nl-import__step {
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  background: var(--nl-surface);
+  padding: var(--nl-space-4);
+}
+
+.nl-import__step-text {
+  max-width: 60ch;
+  font-size: var(--nl-text-sm);
+  margin: 0 0 var(--nl-space-4);
+}
+
+.nl-import__primary {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-4);
+  background: var(--nl-data);
+  color: #fff;
+  border: 1px solid var(--nl-data);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  font-weight: var(--nl-weight-medium);
+  cursor: pointer;
+}
+
+.nl-import__primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.nl-import__error {
+  border-left: 3px solid var(--nl-accent);
+  background: var(--nl-surface);
+  padding: var(--nl-space-3) var(--nl-space-4);
+  margin-bottom: var(--nl-space-4);
+}
+
+.nl-import__error-message {
+  margin: 0 0 var(--nl-space-2);
+  font-weight: var(--nl-weight-medium);
+}
+
+.nl-import__error-action {
+  margin: 0;
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+}
+
+/* A bar-only wrapper, so the queue below it starts its own page. */
+.nl-import--bar {
+  padding-bottom: 0;
+}
+
+.nl-import__views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nl-space-2);
+  margin-bottom: var(--nl-space-6);
+}
+
+.nl-import__view {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-4);
+  background: none;
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  cursor: pointer;
+}
+
+.nl-import__view--current {
+  color: var(--nl-ink);
+  background: var(--nl-surface);
+  border-color: var(--nl-accent);
+  font-weight: var(--nl-weight-medium);
+}
+
+.nl-import__choose {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--nl-space-3);
+}
+
+/* ---- Constraint 2: amber flags, identical routing ---- */
+
+.nl-amber {
+  display: inline-block;
+  padding: 0 var(--nl-space-2);
+  border: 1px solid var(--nl-accent);
+  border-radius: var(--nl-radius);
+  color: var(--nl-accent);
+  font-size: var(--nl-text-xs);
+  font-weight: var(--nl-weight-medium);
+  white-space: nowrap;
+}
+
+/* ---- Mapping: one block per sheet ---- */
+
+.nl-sheet {
+  border-top: 1px solid var(--nl-grey-line);
+  padding-top: var(--nl-space-4);
+  margin-bottom: var(--nl-space-6);
+}
+
+.nl-sheet__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--nl-space-3);
+}
+
+.nl-sheet__name {
+  margin: 0;
+  font-size: var(--nl-text-base);
+}
+
+.nl-sheet__meta {
+  margin: 0;
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+}
+
+.nl-sheet__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nl-space-4);
+  margin: var(--nl-space-3) 0;
+}
+
+.nl-sheet__field-label {
+  display: block;
+  font-size: var(--nl-text-sm);
+  font-weight: var(--nl-weight-medium);
+  margin-bottom: var(--nl-space-1);
+}
+
+.nl-sheet__select {
+  min-height: var(--nl-tap-target);
+  max-width: 100%;
+  padding: 0 var(--nl-space-3);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-ink);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+}
+
+/* A wide sheet scrolls inside its own box rather than pushing the page out —
+   constraint 10's 375px bar applies to every screen, not only the phone. */
+.nl-sheet__preview {
+  overflow-x: auto;
+}
+
+.nl-preview {
+  border-collapse: collapse;
+  font-size: var(--nl-text-xs);
+}
+
+.nl-preview__head,
+.nl-preview__cell {
+  border: 1px solid var(--nl-grey-line);
+  padding: var(--nl-space-1) var(--nl-space-2);
+  text-align: left;
+  vertical-align: top;
+  max-width: 24ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nl-preview__head {
+  background: var(--nl-grey-faint);
+  font-weight: var(--nl-weight-medium);
+}
+
+.nl-preview__cell {
+  color: var(--nl-grey);
+}
+
+/* ---- The reconciliation (constraint 12) ---- */
+
+.nl-tally {
+  border-collapse: collapse;
+  margin-bottom: var(--nl-space-4);
+  /* Wide enough that the figures sit in their own column, but never wider than
+     the screen — a 375px phone must not scroll sideways (constraint 10). */
+  min-width: min(22rem, 100%);
+  max-width: 100%;
+}
+
+.nl-tally__caption {
+  text-align: left;
+  font-size: var(--nl-text-sm);
+  font-weight: var(--nl-weight-medium);
+  padding-bottom: var(--nl-space-2);
+}
+
+.nl-tally__label {
+  text-align: left;
+  font-weight: var(--nl-weight-normal);
+  font-size: var(--nl-text-sm);
+  padding: var(--nl-space-1) var(--nl-space-4) var(--nl-space-1) 0;
+}
+
+.nl-tally__count {
+  font-family: var(--nl-font-data);
+  font-size: var(--nl-text-sm);
+  text-align: right;
+  padding: var(--nl-space-1) 0;
+}
+
+.nl-tally__label--total,
+.nl-tally__count--total {
+  border-top: 1px solid var(--nl-ink);
+  font-weight: var(--nl-weight-medium);
+  padding-top: var(--nl-space-2);
+}
+
+/* ---- The passage checklist ---- */
+
+.nl-segments__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nl-space-2);
+  margin-bottom: var(--nl-space-3);
+}
+
+.nl-segments__all {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-3);
+  background: var(--nl-paper);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-ink);
+  cursor: pointer;
+}
+
+.nl-segments__count {
+  color: var(--nl-grey);
+  font-size: var(--nl-text-sm);
+}
+
+.nl-segments {
+  list-style: none;
+  margin: 0 0 var(--nl-space-4);
+  padding: 0;
+}
+
+.nl-segment {
+  border-top: 1px solid var(--nl-grey-line);
+  padding: var(--nl-space-3) 0;
+}
+
+.nl-segment__pick {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-2);
+  min-height: var(--nl-tap-target);
+  cursor: pointer;
+}
+
+.nl-segment__locator {
+  font-family: var(--nl-font-data);
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+}
+
+.nl-segment__text {
+  margin: 0;
+  padding-left: var(--nl-space-6);
+  max-width: 70ch;
+  font-size: var(--nl-text-sm);
+  line-height: var(--nl-leading-body);
+}
+
+/* ---- The validation queue: one story, and a judgement about it ---- */
+
+.nl-verify {
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  background: var(--nl-surface);
+  padding: var(--nl-space-4);
+}
+
+.nl-verify__progress {
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  margin: 0 0 var(--nl-space-4);
+}
+
+.nl-verify__progress strong {
+  font-family: var(--nl-font-data);
+  color: var(--nl-ink);
+}
+
+.nl-verify__story {
+  padding-bottom: var(--nl-space-4);
+  border-bottom: 1px solid var(--nl-grey-line);
+  margin-bottom: var(--nl-space-4);
+}
+
+/* The story is what the judgement is about, so it reads like prose rather than
+   like a field on a form. */
+.nl-verify__text {
+  margin: 0;
+  max-width: 70ch;
+  font-size: var(--nl-text-base);
+  line-height: var(--nl-leading-body);
+  white-space: pre-wrap;
+}
+
+.nl-verify__provenance {
+  margin: var(--nl-space-3) 0 0;
+  font-family: var(--nl-font-data);
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+  overflow-wrap: anywhere;
+}
+
+.nl-verify__placements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nl-space-6);
+}
+
+.nl-verify__signifier {
+  flex: 1 1 18rem;
+  min-width: 0;
+  max-width: 26rem;
+}
+
+/* The confidence sits above the widget's own question, at label weight, so the
+   question stays the thing you read first. */
+.nl-verify__signifier > :first-child {
+  display: inline-block;
+  margin-bottom: var(--nl-space-1);
+}
+
+.nl-verify__confidence,
+.nl-verify__nothing {
+  font-family: var(--nl-font-data);
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+}
+
+.nl-verify__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nl-space-2);
+  margin-top: var(--nl-space-6);
+  padding-top: var(--nl-space-4);
+  border-top: 1px solid var(--nl-grey-line);
+}
+
+.nl-verify__button {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-4);
+  background: var(--nl-paper);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-ink);
+  cursor: pointer;
+}
+
+/* Setting a story aside is a real choice but not the usual one, so it recedes
+   rather than sitting at the same weight as keeping it. */
+.nl-verify__button--quiet {
+  border-color: transparent;
+  color: var(--nl-grey);
+  text-decoration: underline;
+}
+
+.nl-verify__button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

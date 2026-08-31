@@ -1,0 +1,172 @@
+/*
+ * Narrative Lens design tokens — PRD §5b, binding as constraint 13.
+ *
+ * The palette is deliberately small and deliberately quiet. Constraint 13a says
+ * the landscape is the ONE bold element in the app; everything the Studio draws
+ * is support, so nothing here competes with the terrain that arrives in Phase 8.
+ *
+ * Colours, per §5b: one ink, one paper, one data hue, one accent (highlight and
+ * selected state only), grey for context. The data hue and the terrain scale are
+ * drawn from cividis — colourblind-safe, monotonic in lightness, and therefore
+ * still readable in a grayscale screenshot (§5b, acceptance criterion 10).
+ * Never red/green as a primary encoding.
+ *
+ * The palette comes from the subject's world rather than a default library: the
+ * ink is a cool near-black like printer's ink on paper, the paper is a faintly
+ * warm off-white rather than pure #fff, and the data hue is the deep blue end of
+ * cividis. This is not the "AI look" — no cream-and-terracotta, no dark mode
+ * with an acid accent.
+ *
+ * Type, per §5b: two faces by role. A readable UI/body face and a
+ * tabular-numerals face for data labels, so figures line up in columns. No
+ * decorative display font.
+ */
+
+:root {
+  /* ---- Colour: six values, and that is the whole palette ---- */
+
+  /* Ink — body text, rules, widget strokes. */
+  --nl-ink: #16181d;
+  /* Paper — the page. Faintly warm so long editing sessions are easier. */
+  --nl-paper: #fbfaf7;
+  /* Surface — cards and rails, one step off the paper. */
+  --nl-surface: #ffffff;
+  /* Data hue — the deep end of cividis. Every chart's single data colour. */
+  --nl-data: #00366d;
+  /* Accent — highlight and selected state ONLY. Never decoration. §5b caps
+     this at roughly a tenth of the canvas. */
+  --nl-accent: #a37b18;
+  /* Grey — context, secondary text, borders. */
+  --nl-grey: #6b6f76;
+
+  /* Derived greys. Kept as tokens so no component invents its own. */
+  --nl-grey-line: #dcdad4;
+  --nl-grey-faint: #eeece7;
+
+  /* ---- Terrain scale (Phase 8 uses it; declared once, here) ----
+     cividis, five stops. Monotonic lightness = survives grayscale. */
+  --nl-terrain-0: #00204d;
+  --nl-terrain-1: #31446b;
+  --nl-terrain-2: #666970;
+  --nl-terrain-3: #a19669;
+  --nl-terrain-4: #e2cb52;
+
+  /* ---- Quiet test (§5b) ----
+     If a supporting element draws the eye before the landscape does, reduce it.
+     Secondary data sits at 65%, its labels at 45%. */
+  --nl-quiet-data: 0.65;
+  --nl-quiet-label: 0.45;
+
+  /* ---- Type: two faces by role ---- */
+  --nl-font-ui:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  /* Tabular numerals for data labels, so figures align in a column. */
+  --nl-font-data:
+    ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas,
+    monospace;
+
+  /* Modular scale — five sizes, and no more. §5b floors chart text at 12px and
+     anything the operator must read at 16px. */
+  --nl-text-xs: 0.75rem;  /* 12px — chart text floor */
+  --nl-text-sm: 0.875rem; /* 14px — secondary labels */
+  --nl-text-base: 1rem;   /* 16px — body */
+  --nl-text-lg: 1.25rem;  /* 20px — section heads */
+  --nl-text-xl: 1.75rem;  /* 28px — page title */
+
+  --nl-leading-tight: 1.25;
+  --nl-leading-body: 1.6;
+
+  --nl-weight-normal: 400;
+  --nl-weight-medium: 500;
+  --nl-weight-bold: 700;
+
+  /* ---- Spacing: one base unit, everything a multiple of it ---- */
+  --nl-space-1: 0.25rem;
+  --nl-space-2: 0.5rem;
+  --nl-space-3: 0.75rem;
+  --nl-space-4: 1rem;
+  --nl-space-6: 1.5rem;
+  --nl-space-8: 2rem;
+  --nl-space-12: 3rem;
+
+  /* ---- Shape ---- */
+  --nl-radius: 4px;
+  --nl-radius-lg: 8px;
+  --nl-border: 1px solid var(--nl-grey-line);
+
+  /* ---- Interaction ----
+     Constraint 10: tap targets ≥44px. This is the floor everywhere, not just
+     on the phone. */
+  --nl-tap-target: 44px;
+  --nl-focus-ring: 2px solid var(--nl-data);
+  --nl-focus-offset: 2px;
+
+  /* ---- Motion ----
+     One quiet micro-interaction budget. Excess motion is the tell of generated
+     design, and §5b requires reduced-motion be respected. */
+  --nl-motion-fast: 120ms;
+  --nl-motion-base: 200ms;
+  --nl-ease: cubic-bezier(0.2, 0, 0.2, 1);
+
+  /* The phone frame in the Studio preview is exactly the bar constraint 10
+     sets: 375px clean. */
+  --nl-phone-width: 375px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --nl-motion-fast: 0ms;
+    --nl-motion-base: 0ms;
+  }
+}
+
+/* Base element styling. Kept minimal — components own their own layout. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--nl-paper);
+  color: var(--nl-ink);
+  font-family: var(--nl-font-ui);
+  font-size: var(--nl-text-base);
+  line-height: var(--nl-leading-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  line-height: var(--nl-leading-tight);
+  margin: 0;
+}
+
+/* Visible keyboard focus everywhere (§5b accessibility floor). */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: var(--nl-focus-ring);
+  outline-offset: var(--nl-focus-offset);
+}
+
+/* Numbers line up in columns wherever they are read as data. */
+.nl-numeric {
+  font-family: var(--nl-font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Screen-reader-only text, for labels a sighted user gets from context. */
+.nl-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
