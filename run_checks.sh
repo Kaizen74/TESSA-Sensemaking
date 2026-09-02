@@ -418,6 +418,36 @@ print("  clusters carry their seed and their caveat")
     exit 1
 }
 
+# The design linter: the one AI call that reads the questions rather than the
+# answers. Runs on the mock here (NL_MOCK_AI=1), and must leave the framework
+# exactly as it found it.
+before_lint="$(curl -sf "${base}/${framework_id}")"
+lint_out="$(curl -sf -X POST "${base}/${framework_id}/lint")" || {
+    echo "  FAIL: the design linter did not answer"
+    exit 1
+}
+printf '%s' "$lint_out" | $PYTHON -c '
+import json, sys
+
+report = json.load(sys.stdin)
+assert report["findings"], "the linter returned nothing at all"
+for finding in report["findings"]:
+    assert finding["severity"] in ("info", "warning"), finding
+    for field in ("location", "finding", "suggestion"):
+        assert finding[field].strip(), finding
+print("  design linter: %d findings, every one with a field and a suggestion"
+      % len(report["findings"]))
+' || {
+    echo "  FAIL: the linter returned findings the panel could not render"
+    exit 1
+}
+
+if [[ "$(curl -sf "${base}/${framework_id}")" != "$before_lint" ]]; then
+    echo "  FAIL: linting changed the question set"
+    exit 1
+fi
+echo "  linting left the question set byte-identical"
+
 # The data-quality signals. One validated story here, and its markers were
 # placed by Stage B rather than by whoever told it — so under the default the
 # panel has nothing of the storytellers own to count, and says so in numbers

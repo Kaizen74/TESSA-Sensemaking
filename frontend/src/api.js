@@ -89,6 +89,12 @@ export const api = {
         ...(name ? { name } : {}),
       }),
     }),
+  // The design linter (delta phase C). AI-calling, and the only model call in
+  // the app that never sees a story — POST because it costs money and happens
+  // when somebody clicks, never on a page load.
+  lintFramework: (frameworkId) =>
+    request(`/api/frameworks/${frameworkId}/lint`, { method: "POST" }),
+
   paperPackUrl: (id) => `/api/frameworks/${id}/paper-pack`,
   capture: (submission) =>
     request("/api/capture", { method: "POST", body: JSON.stringify(submission) }),

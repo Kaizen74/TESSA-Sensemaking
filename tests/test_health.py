@@ -77,6 +77,9 @@ EXPECTED_API_PATHS = {
     # Meaningfulness delta, phase B — the data-quality signals. Pure local
     # counting; nothing on this path can reach a language model.
     "/api/quality/{framework_id}",
+    # Meaningfulness delta, phase C — the framework design linter. The one AI
+    # call that reads the questions rather than the answers.
+    "/api/frameworks/{framework_id}/lint",
 }
 
 

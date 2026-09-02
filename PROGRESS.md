@@ -337,11 +337,17 @@ own regression list.
   (30), including the frontend visual-grammar assertions and a budget test
   measured against the patterns endpoint in the same run. Gate green: ruff clean,
   eslint clean, 1160 passed, frontend built, smoke test end-to-end.
-- [ ] **Phase C — Framework design linter.** (item 3) The lint call in
-  `ai_client.py` with its mock fixture, `/api/frameworks/{id}/lint`, and the
-  Studio panel. Advisory only: it can never block publishing, never edits the
-  framework, and never receives story text. Test: `test_design_linter.py`.
-  Commit: `delta-C: framework design linter`.
+- [x] **Phase C — Framework design linter.** (item 3) — **complete 2026-09-02**
+  `backend/lint.py` and `POST /api/frameworks/{id}/lint`, going out through the
+  one `ai_client.request_json` like both ingestion stages. It reads
+  `definition_json` and nothing else — the one model call in this app that never
+  sees data. Findings carry severity · location · finding · suggestion; the
+  Studio renders them in a quiet panel grouped by severity, each naming its
+  field, each suggestion copyable text and never a button. It writes nothing,
+  bumps no version, and blocks nothing. New: `tests/test_design_linter.py` (27),
+  including the prompt-contents assertion the delta names, the one-repair-then-
+  plain-English path, and the panel's visual-grammar checks. Gate green: ruff
+  clean, eslint clean, 1190 passed, frontend built, smoke test end-to-end.
 - [ ] **Phase D — Collective sense-making mode.** (item 5) Migration 005.
   `/api/interpretations` GET/POST, the projector view, the interpretation list,
   and the brief's interpretations section. Test: `test_interpretations.py`,
@@ -964,6 +970,33 @@ simpler option was taken unless noted.
      same scope query, same filter, same rows, already budgeted at 200ms by the
      PRD — and this endpoint does strictly less, so it must come in under it. It
      measured 246ms against patterns' 670ms here, about a third.
+
+### Delta phase C
+
+116. **The mock reply ships in `backend/fixtures/`, not `tests/fixtures/`.** The
+     delta names `tests/fixtures/mock_lint_response.json`, but `NL_MOCK_AI=1` is
+     a mode the *backend* implements (constraint 6), exactly as Stage A and
+     Stage B keep their mocks in `backend/`. A mock the app could only find when
+     the test tree happened to be installed beside it would make "runs
+     everything with zero network" untrue of a real install. Same file, same
+     name, one directory over.
+117. **The mock is static, not derived from the framework being linted.** A mock
+     that computed plausible findings would be a second, worse linter, and the
+     thing worth exercising offline is the path, the shape and the panel — not a
+     judgement only the live model can make. `tests/test_design_linter.py` is
+     explicit that the mock proves rendering and that the *prompt-contents*
+     tests prove the model would be asked the right question.
+118. **`POST`, not `GET`.** The call costs money and takes a moment, so it
+     happens when somebody clicks and never on a page load. It is still a pure
+     read of the framework — a test asserts the row is byte-identical afterwards.
+119. **Two severities, and neither of them stops anything.** `info` and
+     `warning`, with no third level and no threshold. Constraint 2's amber has
+     no equivalent here because a finding is not a confidence: the delta's rule
+     is that the linter can never block publishing, so there is nothing for a
+     higher severity to escalate *to*.
+120. **The panel clears when the question set changes.** Findings belong to the
+     version they were asked about; carrying them across would attach advice to
+     wording it was never about.
 
 ---
 

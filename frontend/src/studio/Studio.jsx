@@ -40,6 +40,12 @@ export function Studio() {
   const [error, setError] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  // The design critique, when one has been asked for. Kept apart from `error`
+  // so that a linter that could not be reached never takes the Studio down with
+  // it — the panel says what happened and everything else still works.
+  const [lint, setLint] = useState(null);
+  const [linting, setLinting] = useState(false);
+  const [lintError, setLintError] = useState(null);
 
   const selected = frameworks.find((f) => f.id === selectedId) ?? null;
 
@@ -64,6 +70,21 @@ export function Studio() {
     refresh();
   }, [refresh]);
 
+  async function checkDesign() {
+    setLinting(true);
+    setLintError(null);
+    try {
+      setLint(await api.lintFramework(selectedId));
+    } catch (caught) {
+      // Constraint 4: not being able to reach the service is an ordinary state
+      // of the app. Nothing was written, so there is nothing to undo.
+      setLintError(caught instanceof ApiError ? caught : null);
+      setLint(null);
+    } finally {
+      setLinting(false);
+    }
+  }
+
   function selectFramework(id) {
     const chosen = frameworks.find((row) => row.id === id);
     if (!chosen) return;
@@ -71,6 +92,11 @@ export function Studio() {
     setDraft(structuredClone(chosen.definition));
     setName(chosen.name);
     setStatus(null);
+    // Findings belong to the version they were asked about. Carrying them over
+    // to a different question set would attach advice to wording it was never
+    // about.
+    setLint(null);
+    setLintError(null);
     setError(null);
   }
 
@@ -306,6 +332,17 @@ export function Studio() {
               >
                 {busy ? "Saving…" : "Save changes"}
               </button>
+              {/* Beside the save control, and never in front of it: findings
+                  are advice, and the delta is explicit that the linter can
+                  never block publishing. */}
+              <button
+                type="button"
+                className="nl-btn nl-btn--quiet"
+                onClick={checkDesign}
+                disabled={linting}
+              >
+                {linting ? "Checking…" : "Check this design"}
+              </button>
               <a
                 className="nl-btn nl-btn--quiet"
                 href={api.paperPackUrl(selectedId)}
@@ -321,6 +358,15 @@ export function Studio() {
               )}
               {!dirty && !status && <span className="nl-status">No unsaved changes.</span>}
             </div>
+
+            <LintPanel
+              report={lint}
+              error={lintError}
+              onDismiss={() => {
+                setLint(null);
+                setLintError(null);
+              }}
+            />
           </main>
 
           <aside className="nl-studio__preview" aria-label="Live preview">
@@ -342,6 +388,108 @@ export function Studio() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * The design critique (delta §5, phase C).
+ *
+ * Three things this panel is careful about.
+ *
+ * It says plainly what it is about. Every other AI surface in this app is about
+ * the data; this one is about the *questions*, and a reader who mixed those up
+ * would think the model had been reading their stories. It has not, and the
+ * panel says so.
+ *
+ * A suggestion is text, never a button. The delta is explicit: "offering the
+ * suggestion as text you can copy — never as a one-click apply". The operator
+ * knows the workforce; the model is guessing at them. One click to accept a
+ * guess is how a question set drifts away from the people answering it.
+ *
+ * It cannot block anything. The panel has no bearing on saving, and a failed
+ * check leaves it usable — a sentence about what went wrong, and the Studio
+ * carries on (constraint 4).
+ */
+function LintPanel({ report, error, onDismiss }) {
+  if (!report && !error) return null;
+
+  if (error) {
+    return (
+      <section className="nl-lint" aria-label="Design check">
+        <div className="nl-lint__head">
+          <h3 className="nl-lint__title">The design check could not run</h3>
+          <button type="button" className="nl-lint__close" onClick={onDismiss}>
+            Close
+          </button>
+        </div>
+        <p className="nl-lint__message">{error.message}</p>
+        {error.action && <p className="nl-lint__note">{error.action}</p>}
+        <p className="nl-lint__note">
+          Nothing was changed, and nothing else depends on this. Your question
+          set is exactly as you left it, and you can save and publish as normal.
+        </p>
+      </section>
+    );
+  }
+
+  const warnings = report.findings.filter((f) => f.severity === "warning");
+  const notes = report.findings.filter((f) => f.severity === "info");
+
+  return (
+    <section className="nl-lint" aria-label="Design check">
+      <div className="nl-lint__head">
+        <h3 className="nl-lint__title">
+          {report.findings.length === 0
+            ? "Nothing stood out in this design"
+            : `${report.findings.length} thing${
+                report.findings.length === 1 ? "" : "s"
+              } worth a look`}
+        </h3>
+        <button type="button" className="nl-lint__close" onClick={onDismiss}>
+          Close
+        </button>
+      </div>
+
+      <p className="nl-lint__note">
+        These are suggestions about how the <strong>questions</strong> are
+        worded — not about your data. No stories were read to produce them; none
+        may even have been collected yet. Nothing here has changed your question
+        set, and none of it stops you publishing.
+      </p>
+
+      {report.findings.length === 0 ? (
+        <p className="nl-lint__message">
+          Worth remembering that this is one reading, not a verdict. You know the
+          people answering these questions and it does not.
+        </p>
+      ) : (
+        <>
+          {[
+            ["Worth changing", warnings],
+            ["Worth a second look", notes],
+          ].map(([heading, group]) =>
+            group.length === 0 ? null : (
+              <div key={heading} className="nl-lint__group">
+                <h4 className="nl-lint__group-title">{heading}</h4>
+                <ul className="nl-lint__list">
+                  {group.map((finding, index) => (
+                    <li key={`${finding.location}-${index}`} className="nl-lint__finding">
+                      <code className="nl-lint__where">{finding.location}</code>
+                      <p className="nl-lint__what">{finding.finding}</p>
+                      {/* Text, selectable, and not a button. */}
+                      <p className="nl-lint__try">
+                        <span className="nl-lint__try-label">Try instead:</span>{" "}
+                        {finding.suggestion}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ),
+          )}
+        </>
+      )}
+    </section>
   );
 }
 

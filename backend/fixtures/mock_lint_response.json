@@ -1,0 +1,28 @@
+{
+  "findings": [
+    {
+      "severity": "warning",
+      "location": "prompt_text",
+      "finding": "The question names the answer it wants, so people will tell you about the thing you asked for rather than what actually happened to them.",
+      "suggestion": "Try asking for a moment that stuck with them and letting them say why, rather than naming the reason in the question."
+    },
+    {
+      "severity": "warning",
+      "location": "triads[0].corners",
+      "finding": "One corner reads as the obviously right answer, which turns the other two into decoys nobody will choose.",
+      "suggestion": "Reword the three so that each is a real cost as well as a real gain, and none of them is the one a good worker is supposed to pick."
+    },
+    {
+      "severity": "warning",
+      "location": "dyads[0]",
+      "finding": "One end of this slider is plainly good and the other plainly bad, so it will collect agreement rather than experience.",
+      "suggestion": "Make both ends things a reasonable person might want, so the placement records a trade-off instead of a verdict."
+    },
+    {
+      "severity": "info",
+      "location": "triads[0].title",
+      "finding": "This label runs longer than about six words, which is more than most people read on a phone before placing a marker.",
+      "suggestion": "Shorten it to the few words that carry the question, and leave the rest to the corners."
+    }
+  ]
+}

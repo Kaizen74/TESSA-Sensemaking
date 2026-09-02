@@ -2,8 +2,36 @@
 
 **Updated:** 2026-09-02
 **Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; meaningfulness
-delta phases A and B of F complete
-**Status:** green (1160 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+delta phases A, B and C of F complete
+**Status:** green (1190 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+
+---
+
+## The meaningfulness delta — phase C is done
+
+The Studio will now critique your questions before anybody answers them.
+
+**"Check this design"**, beside the save button. It sends the question set — the
+wording, the corners, the poles, nothing else — and comes back with what a
+respondent might trip over:
+
+- a triad with one corner that reads as the *right* answer, which quietly turns
+  the other two into decoys nobody picks;
+- a slider with one end obviously good and the other obviously bad, which
+  collects agreement instead of experience;
+- a prompting question with the answer already inside it;
+- labels too long, or pitched above a plain reading level.
+
+Three things it deliberately cannot do. **It never sees a story** — it is the
+only AI call in this app that reads the questions rather than the answers, and
+there are tests that capture a story first and then assert the exact string sent
+to the model contains none of it. **It never edits your question set** — every
+suggestion is text you can read and copy, never a button that applies it,
+because you know the workforce and the model is guessing at them. **It never
+blocks publishing** — you can leave every finding standing and save anyway.
+
+If the AI cannot be reached, the panel says so in a sentence and everything else
+carries on. Nothing was written, so there is nothing to undo.
 
 ---
 
@@ -190,15 +218,15 @@ directions.
 
 ## Next step
 
-**Delta phase C — the framework design linter.** The first new AI call since
-Phase 7: `/api/frameworks/{id}/lint` sends a question set's own definition to
-Claude and gets back a critique of the *design* — decoy corners, evaluative dyad
-poles, leading prompts, labels too long to read. Findings are advisory: the
-linter can never block publishing and never edits the framework. A test asserts
-the prompt receives `definition_json` and no story text, ever. Delta §4a and §6
-have the spec and the test list.
+**Delta phase D — collective sense-making mode.** Migration 005 and
+`/api/interpretations`: a projector-friendly view where a room reads its own
+landscape at full screen and types what it concludes, captured with the filter
+state and signifier it was looking at. Per constraint 16 what the room writes is
+an *artefact*, not data — it never becomes a signification, never enters the KDE,
+and the guard test is that the landscape output stays byte-identical before and
+after one is recorded. Delta §5 and §6 have the spec and the test list.
 
-Nothing in the PRD itself is unbuilt; everything left is delta phases C–F.
+Nothing in the PRD itself is unbuilt; everything left is delta phases D–F.
 
 ## How to resume
 
@@ -243,6 +271,7 @@ and the text after it, which silently runs two words together.
 | Include readings you or the AI made | Patterns → **Whose interpretation** → *Both* |
 | Let people name their own story | It is already there — the line under the story box, and on the printed card |
 | Check whether a question actually worked | Patterns → **Supporting charts** → open **Check the questions** at the bottom |
+| Get a second opinion on your wording, before you collect anything | Studio → **Check this design** |
 | Save a picture for a document | Patterns → **Save the contour as a picture** |
 | Get the data out | Patterns → **Download the stories (CSV)** |
 | Get a written summary | Patterns → **Download the Pattern Brief** |
