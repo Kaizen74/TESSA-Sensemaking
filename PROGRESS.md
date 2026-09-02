@@ -348,11 +348,20 @@ own regression list.
   including the prompt-contents assertion the delta names, the one-repair-then-
   plain-English path, and the panel's visual-grammar checks. Gate green: ruff
   clean, eslint clean, 1190 passed, frontend built, smoke test end-to-end.
-- [ ] **Phase D — Collective sense-making mode.** (item 5) Migration 005.
-  `/api/interpretations` GET/POST, the projector view, the interpretation list,
-  and the brief's interpretations section. Test: `test_interpretations.py`,
-  including the constraint-16 guard that a recorded interpretation leaves the
-  landscape byte-identical. Commit: `delta-D: collective sense-making mode`.
+- [x] **Phase D — Collective sense-making mode.** (item 5) — **complete 2026-09-02**
+  Migration 003 adds `interpretations` — a table defined as much by what it
+  lacks as by what it holds: no `anecdote_id`, no signification linkage, so an
+  interpretation has no column through which it could reach a landscape.
+  `GET/POST /api/interpretations`; a projector view reachable from the rail with
+  the controls gone and Escape to leave; the room's words listed beneath the
+  landscape with the filters they were made under; and their own section in the
+  Pattern Brief, quoted verbatim and attributed to the room. New:
+  `tests/test_interpretations.py` (32), including the constraint-16 guard —
+  the landscape's whole response, serialised, byte-identical before and after
+  recording — which is now on the regression list. Mutation-checked by letting
+  an interpretation reach the terrain's count; the guard failed as intended.
+  Gate green: ruff clean, eslint clean, 1235 passed, frontend built, smoke test
+  end-to-end.
 - [ ] **Phase E — Language of record.** (item 6, part 1) Migration 003.
   Per-framework language list, language on capture and on every story display,
   language in the CSV and the filters. Test: `test_language_capture.py`.
@@ -382,6 +391,10 @@ Green in every phase from introduction onward:
   `tests/test_patterns_golden.py`; regenerate deliberately with
   `python -m tests.regenerate_golden`, never automatically)*
 - landscape peaks ±0.02 *(live since Phase 8 — `tests/test_landscape_golden.py`)*
+- landscape unchanged by an interpretation *(added delta phase D —
+  `tests/test_interpretations.py`; the whole landscape response serialised and
+  compared character for character before and after recording one. Constraint
+  16's guard, and the delta puts it on this list by name.)*
 - surface / contour single-source *(live since Phase 8 —
   `tests/test_landscape.py`)*
 - whole-app integration *(added Phase 8 — `tests/test_whole_app.py`, one run
@@ -997,6 +1010,38 @@ simpler option was taken unless noted.
 120. **The panel clears when the question set changes.** Findings belong to the
      version they were asked about; carrying them across would attach advice to
      wording it was never about.
+
+### Delta phase D
+
+121. **The migration is numbered 003, not the delta's 005.** The delta's §3
+     says "four new migrations, applied in phase order", and phase D lands
+     before E and F — so this is the third migration applied and the third
+     revision in the chain. Alembic follows `down_revision` rather than the
+     filename, but a chain that ran 001 → 002 → 005 → 003 would be a puzzle for
+     whoever maintains this next. E and F become 004 and 005.
+122. **`recorded_at` is exact, not hour-rounded.** Constraint 9's rounding
+     protects respondents from being correlated by submission time, and this row
+     carries no respondent link at all. A facilitator wants the order the room
+     said things in, which rounding to the hour would destroy. Consistent with
+     `frameworks.created_at` and `import_jobs.created_at`, which are also
+     operator-side and also exact.
+123. **An interpretation belongs to one framework version unless asked
+     otherwise.** `mixed` spans the lineage exactly as it does everywhere else.
+     A room reading version 1's wording was reading a different question, so
+     carrying its conclusion onto version 2 by default would attach words to a
+     question nobody said them about.
+124. **`signifier_id` is validated against the framework; `filter_state` is
+     not.** A signifier that does not exist would point a conclusion at a
+     question that never existed. A filter value that no longer matches anything
+     is just a filter that now returns nothing — it is a true record of what was
+     on screen, and rejecting it would lose that record.
+125. **The brief gets its own section rather than a line among the findings.**
+     "What the figures say" is arithmetic and "What the room made of it" is
+     judgement; a reader has to tell them apart at a glance. A test asserts the
+     room's words never appear inside the findings section.
+126. **"What we heard" does not carry them.** A conclusion nine people drew in a
+     workshop is not something to hand back to everyone who told a story as
+     though it were their own finding. The respondents' copy is unchanged.
 
 ---
 

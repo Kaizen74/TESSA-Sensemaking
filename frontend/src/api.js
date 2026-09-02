@@ -167,6 +167,14 @@ export const api = {
   getClusters: (frameworkId, params = {}) =>
     request(`/api/clusters/${frameworkId}${queryString(params)}`),
 
+  // Collective interpretations (delta phase D). What a room concluded, stored
+  // beside the pattern and never merged into it — there is no endpoint here
+  // that could fold one into a figure, because there is no such operation.
+  listInterpretations: (frameworkId, params = {}) =>
+    request(`/api/interpretations${queryString({ framework_id: frameworkId, ...params })}`),
+  recordInterpretation: (body) =>
+    request("/api/interpretations", { method: "POST", body: JSON.stringify(body) }),
+
   // The data-quality signals (delta phase B). Counted locally like everything
   // else on this tab — no AI is reachable from that endpoint at all.
   getQuality: (frameworkId, params = {}) =>

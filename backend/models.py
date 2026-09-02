@@ -52,6 +52,9 @@ SIGNIFIER_TYPES = ("triad", "dyad", "stones", "mcq")
 #: framework row rather than a log entry (PRD §3).
 EDIT_LOG_KINDS = ("wording_fix",)
 
+#: Which picture a room was looking at when it wrote something down (delta §3).
+INTERPRETATION_VIEW_KINDS = ("landscape", "contour", "supporting")
+
 
 def _in_clause(column: str, allowed: tuple[str, ...]) -> str:
     """Render a SQL ``IN`` predicate for a CHECK constraint."""
@@ -198,6 +201,58 @@ class ImportJob(Base):
     segments_found: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
+
+
+class Interpretation(Base):
+    """What a room concluded about a pattern, in the room's own words.
+
+    Constraint 16 in table form. Note what is *absent*: no ``anecdote_id``, no
+    ``signification_id``, no numeric value, no place for a marker. That absence
+    is the design. An interpretation is an artefact recorded alongside a
+    pattern, never a reading merged into one — it cannot enter the KDE because
+    there is no column through which it could.
+
+    What it does carry is enough to say what was on screen when the room spoke:
+    the framework version, the signifier being looked at, the filters in force
+    and the moment. Six months later that is the difference between a sentence
+    somebody wrote and a sentence you can put back in front of the picture it
+    was about.
+
+    ``interpretation_text`` is free text on purpose (delta §9 assumption 5). A
+    room's conclusion resists a schema, and forcing one would be the same error
+    as machine-coding a story.
+    """
+
+    __tablename__ = "interpretations"
+    __table_args__ = (
+        CheckConstraint(
+            _in_clause("view_kind", INTERPRETATION_VIEW_KINDS), name="view_kind"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    #: The exact framework version the room was reading. No lineage pooling: a
+    #: conclusion about version 1's wording is not about version 2's.
+    framework_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("frameworks.id"), nullable=False
+    )
+    #: Which triad or question was on screen. Null for the supporting charts,
+    #: which are about the set rather than about one signifier.
+    signifier_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    #: The filters in force, exactly as the endpoint received them.
+    filter_state_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    view_kind: Mapped[str] = mapped_column(String(20), nullable=False)
+    #: What the room called itself — "Ops workshop, March". Optional.
+    session_label: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    interpretation_text: Mapped[str] = mapped_column(Text, nullable=False)
+    #: Exact, not hour-rounded. Constraint 9 protects respondents, and this row
+    #: carries no respondent link at all; a facilitator wants the order the room
+    #: said things in.
+    recorded_at: Mapped[dt.datetime] = mapped_column(
+        DateTime, nullable=False, default=utcnow
+    )
+    #: How many people were in the room, when anybody counted.
+    participant_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class Tag(Base):

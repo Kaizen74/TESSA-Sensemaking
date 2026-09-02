@@ -20,6 +20,7 @@ import { BarChart, DyadChart, StonesChart } from "./Charts.jsx";
 import { ExplorerView } from "./Explorer.jsx";
 import { StoryBrowser } from "./StoryBrowser.jsx";
 import { LandscapeView } from "./Landscape.jsx";
+import { SessionMode } from "./SessionMode.jsx";
 import {
   chartsFilename,
   saveChartsSnapshot,
@@ -162,6 +163,10 @@ export function PatternsTab() {
   const [explorer, setExplorer] = useState(null);
   const [clusters, setClusters] = useState(null);
   const [signals, setSignals] = useState(null);
+  // Delta phase D. `session` is the projector view; `rooms` is what previous
+  // rooms concluded, listed beneath the landscape in normal mode.
+  const [session, setSession] = useState(false);
+  const [rooms, setRooms] = useState([]);
   const [k, setK] = useState(3);
   const [showClusters, setShowClusters] = useState(false);
   const [region, setRegion] = useState(null);
@@ -213,6 +218,22 @@ export function PatternsTab() {
   useEffect(() => {
     loadQuality();
   }, [loadQuality]);
+
+  // Interpretations belong to a question set, not to a filter: a room's words
+  // stay readable whatever you narrow the picture to afterwards. So this
+  // reloads on the framework and the version scope, and on nothing else.
+  const loadRooms = useCallback(async () => {
+    if (selectedId === null) return;
+    try {
+      setRooms(await api.listInterpretations(selectedId, { mixed }));
+    } catch {
+      setRooms([]);
+    }
+  }, [selectedId, mixed]);
+
+  useEffect(() => {
+    loadRooms();
+  }, [loadRooms]);
 
   // The triad the landscape is about. Defaults to the first, which is what
   // §5b's "zero clicks to a meaningful default" asks for.
@@ -292,6 +313,23 @@ export function PatternsTab() {
   const selected = frameworks.find((row) => row.id === selectedId) ?? frameworks[0];
   const family = lineageOf(frameworks, selected);
   const options = optionsFrom(view);
+
+  // Session mode replaces the page rather than sitting inside it: the delta
+  // asks for the landscape at full screen with the controls hidden, and a
+  // projector view with a filter rail beside it is not that.
+  if (session && subView === VIEW_LANDSCAPE && land) {
+    return (
+      <SessionMode
+        framework={selected}
+        land={land}
+        view={view}
+        triadId={currentTriad}
+        filters={filters}
+        onClose={() => setSession(false)}
+        onRecorded={loadRooms}
+      />
+    );
+  }
 
   return (
     <div className="nl-patterns">
@@ -406,6 +444,15 @@ export function PatternsTab() {
               “What we heard” is the one to give back: no stories, no history,
               nothing fewer than five people said.
             </p>
+            {subView === VIEW_LANDSCAPE && land && (
+              <button
+                type="button"
+                className="nl-rail__clear"
+                onClick={() => setSession(true)}
+              >
+                Open session mode
+              </button>
+            )}
             {subView === VIEW_LANDSCAPE && land?.panels?.[0]?.has_surface && (
               <button
                 type="button"
@@ -527,6 +574,7 @@ export function PatternsTab() {
                           onClose={() => setRegion(null)}
                         />
                       )}
+                      <RoomsList rooms={rooms} />
                       <AnalystNotes count={view.total} />
                     </>
                   )}
@@ -777,6 +825,58 @@ function QualityPanel({ signals }) {
         number means about a question is yours to judge.
       </p>
     </details>
+  );
+}
+
+/**
+ * What rooms have concluded, beneath the landscape (delta §5, constraint 16).
+ *
+ * Their words, timestamped, and labelled with the filter they were made under —
+ * because "most of these are about being told to hurry" means something
+ * different if the room was looking at one shift than at everybody.
+ *
+ * Reported alongside the pattern and never merged into it. Nothing in this list
+ * is counted, scored, or drawn; it is quoted. The heading says whose words they
+ * are, so a reader never mistakes a room's judgement for a figure.
+ */
+function RoomsList({ rooms }) {
+  if (!rooms || rooms.length === 0) return null;
+
+  return (
+    <section className="nl-rooms" aria-label="What rooms concluded">
+      <h3 className="nl-rooms__title">What rooms made of this</h3>
+      <p className="nl-rooms__note">
+        Conclusions people reached together while looking at this pattern — their
+        words, recorded beside the figures and forming no part of them.
+      </p>
+      <ul className="nl-rooms__list">
+        {rooms.map((room) => (
+          <li key={room.id} className="nl-rooms__item">
+            <blockquote className="nl-rooms__quote">
+              {room.interpretation_text}
+            </blockquote>
+            <p className="nl-rooms__meta">
+              {room.session_label && <span>{room.session_label}</span>}
+              <span>{new Date(room.recorded_at).toLocaleDateString()}</span>
+              {room.participant_count ? (
+                <span>
+                  {room.participant_count}{" "}
+                  {room.participant_count === 1 ? "person" : "people"}
+                </span>
+              ) : null}
+              {room.signifier_id && <span>looking at {room.signifier_id}</span>}
+              <span>
+                {Object.keys(room.filter_state).length === 0
+                  ? "no filters"
+                  : Object.entries(room.filter_state)
+                      .map(([field, value]) => `${field.replace(/_/g, " ")} = ${value}`)
+                      .join(", ")}
+              </span>
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

@@ -418,6 +418,42 @@ print("  clusters carry their seed and their caveat")
     exit 1
 }
 
+# Constraint 16 over the wire: a room records what it concluded, and the
+# landscape is the same picture afterwards. This is the delta phase D guard.
+interp="http://127.0.0.1:${SMOKE_PORT}/api/interpretations"
+land_before="$(curl -sf "$land")"
+curl -sf -X POST "$interp" -H 'Content-Type: application/json' \
+    -d "{\"framework_id\": ${framework_id}, \"interpretation_text\": \"The room said the checklist assumes two free hands.\", \"view_kind\": \"landscape\", \"signifier_id\": \"t1\", \"filter_state\": {}, \"participant_count\": 9}" >/dev/null || {
+    echo "  FAIL: an interpretation could not be recorded"
+    exit 1
+}
+
+if [[ "$(curl -sf "$land")" != "$land_before" ]]; then
+    echo "  FAIL: recording an interpretation changed the landscape (constraint 16)"
+    exit 1
+fi
+echo "  interpretation recorded; the landscape is byte-identical (constraint 16)"
+
+curl -sf "${interp}?framework_id=${framework_id}" | $PYTHON -c '
+import json, sys
+
+rows = json.load(sys.stdin)
+assert len(rows) == 1, rows
+assert rows[0]["interpretation_text"].startswith("The room said"), rows[0]
+assert rows[0]["signifier_id"] == "t1", rows[0]
+print("  the room list quotes it back verbatim, with the question it was about")
+' || {
+    echo "  FAIL: the interpretation did not come back as recorded"
+    exit 1
+}
+
+curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/export/brief?framework_id=${framework_id}" \
+    | grep -q "What the room made of it" || {
+    echo "  FAIL: the Pattern Brief did not carry the room's words"
+    exit 1
+}
+echo "  the Pattern Brief quotes the room in its own section"
+
 # The design linter: the one AI call that reads the questions rather than the
 # answers. Runs on the mock here (NL_MOCK_AI=1), and must leave the framework
 # exactly as it found it.

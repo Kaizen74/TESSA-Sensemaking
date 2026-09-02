@@ -20,6 +20,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from backend import interpretations
 from backend.db import get_session
 from backend.exports import dataset_csv, pattern_brief, what_we_heard
 from backend.framework_schema import FrameworkDefinition
@@ -125,9 +126,18 @@ def export_brief(
         signified_by=applied_signified_by(signified_by),
     )
 
+    # Constraint 16: reported alongside the pattern, never merged into it. The
+    # brief gets them as a separate section; the figures above are untouched.
+    rooms = [
+        interpretations.to_out(row)
+        for row in interpretations.for_framework(
+            session, scoped_ids(session, framework, mixed)
+        )
+    ]
+
     filename = f"{_slug(framework.name)}-v{framework.version}-brief.md"
     return PlainTextResponse(
-        content=pattern_brief(patterns, utcnow()),
+        content=pattern_brief(patterns, utcnow(), rooms),
         media_type="text/markdown; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

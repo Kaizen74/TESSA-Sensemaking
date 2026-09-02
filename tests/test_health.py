@@ -80,6 +80,9 @@ EXPECTED_API_PATHS = {
     # Meaningfulness delta, phase C — the framework design linter. The one AI
     # call that reads the questions rather than the answers.
     "/api/frameworks/{framework_id}/lint",
+    # Meaningfulness delta, phase D — what a room concluded, stored beside the
+    # pattern and never merged into it (constraint 16).
+    "/api/interpretations",
 }
 
 

@@ -2,8 +2,37 @@
 
 **Updated:** 2026-09-02
 **Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; meaningfulness
-delta phases A, B and C of F complete
-**Status:** green (1190 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+delta phases A, B, C and D of F complete
+**Status:** green (1235 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+
+---
+
+## The meaningfulness delta — phase D is done
+
+A room can now interpret its own pattern, and what it concludes is kept as the
+room's words rather than folded into the figures.
+
+**Session mode**, from the rail on the Patterns tab. The landscape goes full
+screen with the filters, tabs and download links gone — it is built for a
+projector, not a desk — and a panel on the right is where somebody types what
+the room is saying. Escape gets you out, and the button says so.
+
+- **Recording captures what was on screen.** Which question, which filters, the
+  time, optionally who the room was and how many. Nobody has to write that down
+  in front of nine people, which is how it would get written down wrong.
+- **It changes nothing.** This is the part worth being careful about, and the
+  app says it out loud when you record: the landscape above is the same picture
+  it was. There is a test that takes the landscape's entire response, before and
+  after, and compares it character for character — and the table itself has no
+  column that could carry a conclusion into a figure, so it is not a rule the
+  code follows, it is a shape the schema has.
+- **The words come back as words.** Listed beneath the landscape, quoted, with
+  the session and the filters they were made under. And a section of their own
+  in the Pattern Brief, verbatim, attributed to the room and kept apart from the
+  arithmetic.
+- **"What we heard" does not carry them.** A conclusion nine people drew in a
+  workshop is not something to hand back to everyone who told a story as though
+  it were their own.
 
 ---
 
@@ -218,15 +247,15 @@ directions.
 
 ## Next step
 
-**Delta phase D — collective sense-making mode.** Migration 005 and
-`/api/interpretations`: a projector-friendly view where a room reads its own
-landscape at full screen and types what it concludes, captured with the filter
-state and signifier it was looking at. Per constraint 16 what the room writes is
-an *artefact*, not data — it never becomes a signification, never enters the KDE,
-and the guard test is that the landscape output stays byte-identical before and
-after one is recorded. Delta §5 and §6 have the spec and the test list.
+**Delta phase E — the original language of record.** Migration 004 adds
+`language_code` and `language_source` to stories. A short language list per
+question set (English alone by default, so nothing changes for what you already
+have), the language shown wherever a story is, and it added to the CSV and the
+filters. Per constraint 15 the story is signified in the language it was told
+in and nothing else: Stage B receives the original text only, and a story's
+language never affects any computation. Delta §5 and §6 have the spec.
 
-Nothing in the PRD itself is unbuilt; everything left is delta phases D–F.
+Nothing in the PRD itself is unbuilt; everything left is delta phases E and F.
 
 ## How to resume
 
@@ -272,6 +301,9 @@ and the text after it, which silently runs two words together.
 | Let people name their own story | It is already there — the line under the story box, and on the printed card |
 | Check whether a question actually worked | Patterns → **Supporting charts** → open **Check the questions** at the bottom |
 | Get a second opinion on your wording, before you collect anything | Studio → **Check this design** |
+| Run a workshop around the landscape | Patterns → **Open session mode** (Esc to leave) |
+| Record what a room concluded | Session mode → type it → **Record what the room said** |
+| Read back what rooms have said | Patterns → **Landscape** → scroll to **What rooms made of this** |
 | Save a picture for a document | Patterns → **Save the contour as a picture** |
 | Get the data out | Patterns → **Download the stories (CSV)** |
 | Get a written summary | Patterns → **Download the Pattern Brief** |

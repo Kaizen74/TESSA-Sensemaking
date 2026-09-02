@@ -26,6 +26,7 @@ import io
 
 from backend.dataset import AnswerRow, StoryRow
 from backend.framework_schema import FrameworkDefinition
+from backend.interpretations import InterpretationOut
 from backend.patterns import PatternSet
 
 #: A triad whose average placement puts this much weight on one corner is
@@ -368,12 +369,69 @@ def headline(patterns: PatternSet) -> str:
     return found[0]
 
 
-def pattern_brief(patterns: PatternSet, generated_at: dt.datetime) -> str:
+def _interpretation_section(rooms: list[InterpretationOut]) -> list[str]:
+    """What rooms concluded, verbatim and attributed to them (constraint 16).
+
+    Its own section, under its own heading, after the figures. Never folded into
+    "What the figures say" — those sentences are arithmetic and these are
+    somebody's judgement, and a reader has to be able to tell which is which.
+
+    The text is reproduced exactly as it was typed. Summarising a room's own
+    words in a document the room may read would be the same error as coding a
+    story.
+    """
+    if not rooms:
+        return []
+
+    lines = ["## What the room made of it", ""]
+    lines.append(
+        "*These are conclusions people reached together while looking at the "
+        "figures above — their words, not the analyst's and not the app's. They "
+        "are recorded alongside the pattern and form no part of it.*"
+    )
+    lines.append("")
+
+    for room in rooms:
+        context = [f"{room.recorded_at:%d %B %Y}"]
+        if room.session_label:
+            context.insert(0, room.session_label)
+        if room.participant_count:
+            context.append(
+                f"{room.participant_count} "
+                f"{'person' if room.participant_count == 1 else 'people'}"
+            )
+        if room.signifier_id:
+            context.append(f"looking at {room.signifier_id}")
+        if room.filter_state:
+            shown = ", ".join(
+                f"{field.replace('_', ' ')} = {value}"
+                for field, value in sorted(room.filter_state.items())
+            )
+            context.append(f"filtered to {shown}")
+
+        lines.append(f"> {room.interpretation_text}")
+        lines.append("")
+        lines.append(f"*— {' · '.join(context)}*")
+        lines.append("")
+
+    return lines
+
+
+def pattern_brief(
+    patterns: PatternSet,
+    generated_at: dt.datetime,
+    rooms: list[InterpretationOut] | None = None,
+) -> str:
     """The analyst's Pattern Brief as markdown.
 
     Deliberately short. It states what the figures say, records the filters and
     versions the figures came from, and repeats the caveat that reading a
     landscape is abductive rather than causal (constraint 12).
+
+    ``rooms`` adds the collective interpretations recorded against this question
+    set, in their own section and in their own words (delta §4, constraint 16).
+    Optional so that every existing caller keeps working unchanged and a brief
+    for a framework nobody has interpreted looks exactly as it always did.
     """
     lines: list[str] = []
     lines.append(f"# {headline(patterns)}")
@@ -411,6 +469,8 @@ def pattern_brief(patterns: PatternSet, generated_at: dt.datetime) -> str:
     else:
         lines.append("- Not enough answers yet to say anything worth writing down.")
     lines.append("")
+
+    lines.extend(_interpretation_section(rooms or []))
 
     lines.append("## How to read this")
     lines.append("")
