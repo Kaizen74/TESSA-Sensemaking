@@ -137,7 +137,11 @@ def test_an_imported_story_exports_its_file_and_row(client: TestClient) -> None:
     item = client.get("/api/queue").json()["items"][0]
     client.put(f"/api/queue/{item['anecdote_id']}", json={"action": "accept"})
 
-    rows, _ = _csv(client, framework["id"])
+    # ``signified_by=all`` because this story's markers were placed by the AI
+    # and confirmed by a person, and constraint 14 keeps that out of the default
+    # export. The provenance columns are what is under test here, so the view
+    # that contains them is asked for by name.
+    rows, _ = _csv(client, framework["id"], signified_by="all")
 
     assert len(rows) == 1
     assert rows[0]["source_type"] == "import"
@@ -146,6 +150,12 @@ def test_an_imported_story_exports_its_file_and_row(client: TestClient) -> None:
     assert rows[0]["source_locator"] == "Responses row 2"
     assert rows[0]["signified_by"] == "ai"
     assert rows[0]["lowest_ai_confidence"]
+
+    # And the default really does withhold them: the story is still a row —
+    # it was still told — but nobody else's reading of it comes down the wire.
+    default_rows, _ = _csv(client, framework["id"])
+    assert len(default_rows) == 1
+    assert default_rows[0]["signified_by"] == ""
 
 
 def test_a_corrected_story_says_both_hands_touched_it(client: TestClient) -> None:
@@ -165,7 +175,7 @@ def test_a_corrected_story_says_both_hands_touched_it(client: TestClient) -> Non
         },
     )
 
-    rows, _ = _csv(client, framework["id"])
+    rows, _ = _csv(client, framework["id"], signified_by="all")
 
     assert rows[0]["signified_by"] == "ai|analyst"
 

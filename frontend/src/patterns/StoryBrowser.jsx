@@ -187,6 +187,17 @@ export function StoryBrowser({ framework, params }) {
                 </button>
               </div>
 
+              {/* The name its teller gave it, when they gave it one (delta §5).
+                  Attributed out loud, because a title in the storyteller's own
+                  words is a different kind of thing from the machine's first
+                  eighty characters — and only one of them is testimony. */}
+              {story.respondent_title && (
+                <p className="nl-story__title">
+                  “{story.respondent_title}”
+                  <span className="nl-story__title-by"> — named by the storyteller</span>
+                </p>
+              )}
+
               <p className="nl-story__text">{story.text}</p>
 
               <p className="nl-story__meta">

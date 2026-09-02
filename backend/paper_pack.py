@@ -29,6 +29,12 @@ from backend.framework_schema import Dyad, FrameworkDefinition, Mcq, Stones, Tri
 #: Ruled lines on the story card. Enough for a real story, few enough to fit A4.
 STORY_RULE_COUNT = 12
 
+#: The one wording for the optional story name, shared by the paper card and the
+#: capture wizard's field (delta §5). Somebody filling in the card and somebody
+#: typing on a phone are answering the same question, so they are asked it in
+#: the same words.
+STORY_NAME_PROMPT = "If you gave this story a name, what would it be?"
+
 #: Rows in the facilitator reconciliation grid.
 RECONCILIATION_ROW_COUNT = 6
 
@@ -196,6 +202,10 @@ def _story_card(definition: FrameworkDefinition, framework_name: str) -> str:
   {alt_block}
   <p class="sheet-foot">Story number: ______</p>
   <div class="rules">{rules}</div>
+  <div class="story-name">
+    <p class="hint">{escape(STORY_NAME_PROMPT)}</p>
+    <div class="rule"></div>
+  </div>
   {group_block}
   <p class="anonymity">{escape(definition.capture_settings.anonymity_text)}</p>
 </section>
@@ -303,6 +313,11 @@ body {
 
 .rules { margin: 6mm 0; }
 .rule { border-bottom: 1px solid #000; height: 11mm; }
+
+/* The name line sits after the story, not before it: on paper as on screen,
+   the story is the thing and the name is optional. */
+.story-name { margin: 6mm 0; }
+.story-name .hint { margin: 0 0 2mm; }
 
 .tick-list { list-style: none; margin: 0; padding: 0; }
 .tick-list--inline { display: flex; flex-wrap: wrap; gap: 4mm 8mm; }

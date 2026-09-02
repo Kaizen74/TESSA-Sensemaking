@@ -106,7 +106,12 @@ def store_capture(
     anecdote = Anecdote(
         framework_id=framework.id,
         text=body.text,
+        # Both are kept. ``title_auto`` is what the machine would call this
+        # story; ``respondent_title`` is what its teller called it, and the
+        # delta's display rule prefers the second without ever erasing the
+        # first. An empty box is no name at all, not a name that is "".
         title_auto=_auto_title(body.text),
+        respondent_title=(body.respondent_title or None),
         source_type=SOURCE_TYPE_CAPTURE,
         entry_mode=entry_mode,
         capture_link_id=capture_link_id,

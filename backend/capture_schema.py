@@ -40,6 +40,12 @@ LOCAL_ENTRY_MODES = ("admin", "kiosk")
 
 MAX_STORY_CHARS = 20_000
 
+#: How long a name a respondent may give their own story (delta §4). Long
+#: enough for a real title, short enough that the field cannot quietly become a
+#: second story box — which is the one thing it must not become, because the
+#: text is what gets signified and a title is not.
+MAX_RESPONDENT_TITLE_CHARS = 120
+
 
 class CaptureError(ValueError):
     """A submitted capture that cannot be stored as given."""
@@ -70,6 +76,12 @@ class CaptureSubmission(BaseModel):
 
     framework_id: int
     text: Annotated[str, Field(min_length=1, max_length=MAX_STORY_CHARS)]
+    #: The name the storyteller gave it, if they gave it one (delta §5). Optional
+    #: everywhere and validated on nothing but length: a title somebody chose is
+    #: right by definition, and this field lives on the shared base class so all
+    #: four capture paths — admin, link, kiosk, paper entry — accept it the same
+    #: way rather than four ways.
+    respondent_title: Annotated[str, Field(max_length=MAX_RESPONDENT_TITLE_CHARS)] | None = None
     input_method: Literal["typed", "voice", "paper"] = "typed"
     respondent_group: Annotated[str, Field(max_length=200)] | None = None
     significations: list[SubmittedSignification] = Field(default_factory=list)

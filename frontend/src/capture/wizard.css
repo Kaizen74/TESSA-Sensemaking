@@ -87,6 +87,42 @@
   resize: vertical;
 }
 
+/*
+ * The optional story name (delta §5). Quiet by construction: it sits under the
+ * story box, is one line high, and carries no required marker, so on a 375px
+ * screen the story is still the first and largest thing a respondent meets.
+ */
+.nl-wizard__name {
+  margin-top: var(--nl-space-4);
+}
+
+.nl-wizard__name-label {
+  display: block;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  margin-bottom: var(--nl-space-2);
+}
+
+.nl-wizard__name-input {
+  width: 100%;
+  /* Constraint 10: tap targets >= 44px. */
+  min-height: var(--nl-tap-target);
+  padding: var(--nl-space-3);
+  font-family: inherit;
+  /* 16px keeps iOS from zooming the page when the field takes focus. */
+  font-size: var(--nl-text-base);
+  color: var(--nl-ink);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+}
+
+.nl-wizard__name-hint {
+  margin: var(--nl-space-2) 0 0;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+}
+
 /* Voice sits beside the box it writes into, never in place of it. */
 .nl-voice {
   margin-top: var(--nl-space-3);

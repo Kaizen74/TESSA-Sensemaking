@@ -138,6 +138,10 @@ class Anecdote(Base):
     )
     text: Mapped[str] = mapped_column(Text, nullable=False)
     title_auto: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    #: The name the storyteller gave their own story (delta §3, migration 002).
+    #: Kept beside ``title_auto`` rather than over it: which of the two a reader
+    #: is looking at is exactly the distinction this column exists to make.
+    respondent_title: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_type: Mapped[str] = mapped_column(String(50), nullable=False)
     entry_mode: Mapped[str] = mapped_column(String(20), nullable=False)
     capture_link_id: Mapped[int | None] = mapped_column(

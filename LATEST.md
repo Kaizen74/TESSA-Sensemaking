@@ -1,8 +1,62 @@
 # Narrative Lens — Latest
 
-**Updated:** 2026-08-17
-**Phase:** 9 of 9 complete, plus a completeness pass against PRD §1
-**Status:** green (1081 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+**Updated:** 2026-09-02
+**Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; meaningfulness
+delta phase A of F complete
+**Status:** green (1127 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+
+---
+
+## The meaningfulness delta — phase A is done
+
+`SPEC_DELTA_meaningfulness_20260902.md` adds six changes to the PRD, and the
+first of them is in. It is the one that makes the app's central claim visible
+rather than merely recorded: **the default view is now the storytellers' own
+readings, and nothing else.**
+
+- **Whose interpretation, chosen in the rail.** A three-way control — storyteller
+  / expert-validated / both — sitting above the other filters, because the choice
+  changes what the picture *means*, not just which slice of it you see. It
+  defaults to the storyteller, and every read on the page carries that default:
+  patterns, landscape, 3D Explorer, clusters, and all three downloads. When you
+  pick anything else, a quiet line appears above the figures saying what you are
+  looking at and how many marks are not in it.
+- **Nothing mixes silently.** A story an analyst marked up is still a story and
+  still counted as one — it was still told. What the default withholds is
+  somebody else's reading of it. Asking for an unfamiliar value is refused rather
+  than quietly widened, which is the way this promise would otherwise fail.
+- **Storytellers can name their own story.** One optional line under the story
+  box — "If you gave this story a name, what would it be?" — on the wizard, the
+  remote link, kiosk, and paper entry, and printed on the paper story card in the
+  same words. Where it exists it is what the app shows and what the search box
+  finds; the machine's own title is kept beside it, never overwritten, and both
+  are in the CSV.
+- **The two goldens did not move.** Delta §6 forbids regenerating them, so their
+  tests now ask for `signified_by=all` by name and the stored files are
+  byte-identical to what they were. A new `patterns_20_anecdotes_participant.json`
+  pins the new default beside them, and a test asserts the two agree on every
+  figure — the evidence that the default changed the view and nothing else.
+
+Before any of that: **the base was red and had to be fixed first**, and the
+first fix was wrong too. The 5,000-story budget test asserted an absolute
+millisecond ceiling on the app's own share of a landscape request. Subtracting
+scipy's cost made that look machine-independent; it is not. This container is
+slower than the one the threshold was written on — scipy alone took 224ms here
+against 165ms there — so the test failed with nothing wrong.
+
+Replacing it with a ratio looked green, but only because it landed exactly on
+this machine's boundary; run repeatedly it failed about one time in three. The
+two halves do not scale together — ours is Python and SQLite, scipy's is
+vectorised arithmetic. The bound now has real headroom, and both sides are warmed
+before timing. **The honest cost is that the test is coarser than intended:** on
+this container it no longer detects the specific regression it was written for.
+That is written down in PROGRESS.md "Fixed" entry 0 rather than left implied. It
+is worth a look on the operator's own machine, where the PRD's 200ms can actually
+be measured.
+
+Phase A itself was ruled out as a cause while investigating: its extra query
+costs 3ms of a 412ms request, and the same benchmark on pre-delta code gave
+380ms.
 
 ---
 
@@ -103,8 +157,13 @@ directions.
 
 ## Next step
 
-There is no next phase, and no scope item left unbuilt. What remains is real
-use: run a session, and let what breaks decide what gets built next.
+**Delta phase B — data-quality signals.** `backend/quality.py` and
+`/api/quality/{framework_id}`: centre-parking and skip-rate detection, reported
+as counts and proportions in a collapsed panel below the supporting charts. No
+schema change — a skip is an absent signification row. Pure local computation,
+no AI. Delta §6 has the spec and the test list.
+
+Nothing in the PRD itself is unbuilt; everything left is delta phases B–F.
 
 ## How to resume
 
@@ -145,6 +204,9 @@ and the text after it, which silently runs two words together.
 | Read the landscape precisely | Patterns → **Contour** |
 | See the stories under a peak | Patterns → click a peak under the picture |
 | Compare two groups | Patterns → **Side by side** in the rail |
+| See only what storytellers said themselves | Patterns → **Whose interpretation** → *Storyteller* (this is the default) |
+| Include readings you or the AI made | Patterns → **Whose interpretation** → *Both* |
+| Let people name their own story | It is already there — the line under the story box, and on the printed card |
 | Save a picture for a document | Patterns → **Save the contour as a picture** |
 | Get the data out | Patterns → **Download the stories (CSV)** |
 | Get a written summary | Patterns → **Download the Pattern Brief** |

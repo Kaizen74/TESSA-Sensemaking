@@ -190,6 +190,78 @@
   color: var(--nl-grey);
 }
 
+/* ---- Whose interpretation (constraint 14) ---- */
+
+/*
+ * A segmented control, not a dropdown: the choice changes what the picture
+ * means, so all three readings stay visible without a click. Quiet weight
+ * throughout — the landscape is the one bold element (13a) — and the current
+ * option is marked by a filled ground and a weight change rather than by
+ * colour alone, so it survives greyscale (13c).
+ */
+.nl-provenance {
+  display: flex;
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  overflow: hidden;
+  margin-bottom: var(--nl-space-2);
+}
+
+.nl-provenance__option {
+  flex: 1;
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-2);
+  background: var(--nl-paper);
+  border: 0;
+  border-right: 1px solid var(--nl-grey-line);
+  font-family: inherit;
+  font-size: var(--nl-text-xs);
+  color: var(--nl-ink);
+  cursor: pointer;
+}
+
+.nl-provenance__option:last-child {
+  border-right: 0;
+}
+
+.nl-provenance__option--current {
+  background: var(--nl-surface);
+  font-weight: var(--nl-weight-medium);
+  box-shadow: inset 0 -3px 0 var(--nl-accent);
+}
+
+/*
+ * The persistent label above the figures, shown only when the view is not the
+ * default. Context weight: a rule and quiet text, never an alert box — this
+ * says what the picture is, not that something is wrong with it.
+ */
+.nl-provenance-note {
+  margin: 0 0 var(--nl-space-4);
+  padding-left: var(--nl-space-3);
+  border-left: 3px solid var(--nl-grey-line);
+  font-size: var(--nl-text-sm);
+  line-height: var(--nl-leading-body);
+  color: var(--nl-grey);
+}
+
+/*
+ * A storyteller's own title for their story. Slightly heavier than the text
+ * beneath it because it is a heading, and no heavier than that, because the
+ * story is still the thing.
+ */
+.nl-story__title {
+  margin: 0 0 var(--nl-space-2);
+  font-size: var(--nl-text-base);
+  font-weight: var(--nl-weight-medium);
+  line-height: var(--nl-leading-body);
+}
+
+.nl-story__title-by {
+  font-weight: 400;
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+}
+
 /* ---- The version chip (§5.4) ---- */
 
 .nl-version-chip {
@@ -499,13 +571,24 @@
   cursor: pointer;
 }
 
+/*
+ * One story per row rather than a wrapped run of chips: once a row can carry a
+ * name, a grid of numbers is harder to read than a list of stories.
+ */
 .nl-region__list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--nl-space-2);
   list-style: none;
   margin: var(--nl-space-3) 0;
   padding: 0;
+}
+
+.nl-region__story {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--nl-space-2);
 }
 
 .nl-region__id {
@@ -515,6 +598,17 @@
   border: var(--nl-border);
   border-radius: var(--nl-radius);
   padding: var(--nl-space-1) var(--nl-space-2);
+}
+
+.nl-region__name {
+  font-size: var(--nl-text-sm);
+  line-height: var(--nl-leading-body);
+}
+
+/* Said, not implied: a title in the storyteller's words is attributed. */
+.nl-region__by {
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
 }
 
 .nl-region__note {

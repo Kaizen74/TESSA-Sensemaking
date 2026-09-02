@@ -43,6 +43,7 @@ def browse_stories(
     q: Annotated[str, Query(max_length=200)] = "",
     tag: Annotated[str | None, Query(max_length=stories.MAX_TAG_CHARS)] = None,
     starred: Annotated[bool, Query()] = False,
+    ids: Annotated[str | None, Query()] = None,
     offset: Annotated[int, Query(ge=0)] = 0,
     mixed: Annotated[bool, Query()] = False,
     respondent_group: Annotated[str | None, Query()] = None,
@@ -50,16 +51,23 @@ def browse_stories(
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
 ) -> stories.StoryPage:
-    """One page of stories: searched, filtered, newest first."""
+    """One page of stories: searched, filtered, newest first.
+
+    ``ids`` asks for a named few rather than a search — how the landscape's
+    region drill reads the stories under a hill. It narrows the same scope
+    everything else does, so a drill can never surface a story the current
+    version rule or the validated rule excludes.
+    """
     framework = load_framework(session, framework_id)
     filters = applied_filters(respondent_group, input_method, entry_mode, source_type)
-    ids = scoped_ids(session, framework, mixed)
+    scope = scoped_ids(session, framework, mixed)
+    chosen = stories.selected_ids(ids)
 
     matching = stories.stories_in_scope(
-        session, ids, filters=filters, query=q, tag=tag, starred_only=starred
+        session, scope, filters=filters, query=q, tag=tag, starred_only=starred, ids=chosen
     )
     everything = stories.stories_in_scope(
-        session, ids, filters={}, query="", tag=None, starred_only=False
+        session, scope, filters={}, query="", tag=None, starred_only=False
     )
 
     matched = session.scalar(select(func.count()).select_from(matching.subquery())) or 0
@@ -75,7 +83,7 @@ def browse_stories(
     answered = stories.answer_counts(session, anecdote_ids)
     versions = {
         row.id: row.version
-        for row in session.scalars(select(Framework).where(Framework.id.in_(ids))).all()
+        for row in session.scalars(select(Framework).where(Framework.id.in_(scope))).all()
     }
 
     return stories.StoryPage(
@@ -93,7 +101,8 @@ def browse_stories(
                 anecdote_id=row.id,
                 framework_id=row.framework_id,
                 framework_version=versions.get(row.framework_id, framework.version),
-                title=row.title_auto or "",
+                title=stories.display_title(row),
+                respondent_title=row.respondent_title,
                 text=row.text,
                 respondent_group=row.respondent_group,
                 created_at_hour=row.created_at_hour,
@@ -108,7 +117,7 @@ def browse_stories(
             )
             for row in rows
         ],
-        known_tags=stories.known_tags(session, ids),
+        known_tags=stories.known_tags(session, scope),
     )
 
 
@@ -151,7 +160,8 @@ def set_marks(
         anecdote_id=anecdote.id,
         framework_id=anecdote.framework_id,
         framework_version=framework.version if framework else 0,
-        title=anecdote.title_auto or "",
+        title=stories.display_title(anecdote),
+        respondent_title=anecdote.respondent_title,
         text=anecdote.text,
         respondent_group=anecdote.respondent_group,
         created_at_hour=anecdote.created_at_hour,

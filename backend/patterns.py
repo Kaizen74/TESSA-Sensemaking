@@ -46,7 +46,70 @@ HISTOGRAM_BINS = 10
 
 #: The provenance fields a pattern view may be filtered on (PRD §1.5 filter
 #: rail). Every one of them is a column that carries no respondent identity.
+#:
+#: These are *story* fields: they filter which anecdotes a view is about, they
+#: are the demographic breakdowns, and they are what a landscape may be split
+#: by. ``signified_by`` is not among them because it is not one of them — it
+#: lives on the signification, and it filters which *placements* count rather
+#: than which stories do. It has its own vocabulary below.
 FILTERABLE = ("respondent_group", "input_method", "entry_mode", "source_type")
+
+# --------------------------------------------------------------------------
+# Whose interpretation a view is showing (delta §1 item 1, constraint 14)
+# --------------------------------------------------------------------------
+#
+# The database records who placed each marker: ``respondent`` when the person
+# who lived the story placed it themselves, ``ai`` for a Stage B proposal an
+# analyst accepted as it stood, ``analyst`` for one they moved. The delta asks
+# views to speak in two words rather than three, because the distinction that
+# matters to a reader is not which of the two expert routes a point took — it is
+# whether the meaning came from the storyteller or from somebody else.
+
+#: Placed by the person whose story it is.
+SIGNIFIED_BY_PARTICIPANT = "participant"
+
+#: Placed on their behalf and validated by an expert — an accepted AI proposal
+#: or an analyst's own correction. Both are somebody else's reading.
+SIGNIFIED_BY_AI_VALIDATED = "ai_validated"
+
+#: Both, together, and never silently: constraint 14 requires a view that mixes
+#: them to say so.
+SIGNIFIED_BY_ALL = "all"
+
+SIGNIFIED_BY_CHOICES = (
+    SIGNIFIED_BY_PARTICIPANT,
+    SIGNIFIED_BY_AI_VALIDATED,
+    SIGNIFIED_BY_ALL,
+)
+
+#: Constraint 14: participant-signified only, unless the reader asks otherwise.
+SIGNIFIED_BY_DEFAULT = SIGNIFIED_BY_PARTICIPANT
+
+#: The stored ``significations.signified_by`` values each choice covers.
+SIGNIFIED_BY_STORED = {
+    SIGNIFIED_BY_PARTICIPANT: ("respondent",),
+    SIGNIFIED_BY_AI_VALIDATED: ("ai", "analyst"),
+}
+
+
+class SignifiedByCounts(BaseModel):
+    """How many placements each provenance holds, before the filter is applied.
+
+    Reported on every aggregating view so the screen can say what it is showing
+    *and* what it is leaving out — the second half of constraint 14. Counted in
+    placements rather than in stories because a single story can hold both: the
+    validation queue's "correct" action stamps the markers the analyst moved as
+    ``analyst`` and leaves the rest as the AI proposed them.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    participant: int = 0
+    ai_validated: int = 0
+
+    @property
+    def total(self) -> int:
+        return self.participant + self.ai_validated
 
 
 class Bar(BaseModel):
@@ -166,6 +229,11 @@ class PatternSet(BaseModel):
     mixed: bool
     versions: list[VersionCount] = Field(default_factory=list)
     filters: dict[str, str] = Field(default_factory=dict)
+    #: Whose interpretation these figures are, and what the other choice holds
+    #: (constraint 14). Always present, so a screen can never draw this view
+    #: without having been told what it is looking at.
+    signified_by_applied: str = SIGNIFIED_BY_DEFAULT
+    counts_by_signified_by: SignifiedByCounts = Field(default_factory=SignifiedByCounts)
     triads: list[TriadChart] = Field(default_factory=list)
     dyads: list[DyadChart] = Field(default_factory=list)
     stones: StonesChart | None = None
@@ -399,12 +467,16 @@ def aggregate(
     mixed: bool = False,
     versions: list[VersionCount] | None = None,
     filters: dict[str, str] | None = None,
+    signified_by: str = SIGNIFIED_BY_DEFAULT,
+    counts_by_signified_by: SignifiedByCounts | None = None,
 ) -> PatternSet:
     """Compute every supporting chart for one view of the data.
 
     Takes the stories and their placements already filtered by the caller, so
     this function has no opinion about which stories count — only about what the
-    ones it was given add up to.
+    ones it was given add up to. ``signified_by`` and its counts are carried
+    through rather than applied here for the same reason: the filtering happened
+    in the query, and this reports what was asked for so the screen can say it.
     """
     by_signifier = placements_by_signifier(anecdotes, significations)
     total = len(anecdotes)
@@ -416,6 +488,8 @@ def aggregate(
         mixed=mixed,
         versions=versions or [],
         filters=filters or {},
+        signified_by_applied=signified_by,
+        counts_by_signified_by=counts_by_signified_by or SignifiedByCounts(),
         triads=[
             _triad_chart(triad, by_signifier.get(triad.id, []), total)
             for triad in definition.triads

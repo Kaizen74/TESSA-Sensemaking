@@ -29,6 +29,16 @@ import "./wizard.css";
 
 export { fromStored, toSubmission };
 
+/*
+ * The optional story name (delta §5). The wording is the same sentence printed
+ * on the paper story card (`backend/paper_pack.py`), and the limit is the same
+ * number the server enforces (`backend/capture_schema.py`) — somebody writing on
+ * paper and somebody typing on a phone are answering one question, so they are
+ * asked it in one set of words and held to one length.
+ */
+export const STORY_NAME_PROMPT = "If you gave this story a name, what would it be?";
+export const MAX_RESPONDENT_TITLE_CHARS = 120;
+
 const STEP_WELCOME = "welcome";
 const STEP_STORY = "story";
 const STEP_SIGNIFIER = "signifier";
@@ -69,6 +79,10 @@ export function Wizard({ framework, onFinished = null, submit: submitOverride = 
 
   const [index, setIndex] = useState(0);
   const [text, setText] = useState("");
+  // Optional, and it stays optional: nothing gates on it and nothing validates
+  // it beyond length (delta §5). A name somebody chose for their own story is
+  // right by definition.
+  const [respondentTitle, setRespondentTitle] = useState("");
   const [values, setValues] = useState({});
   const [group, setGroup] = useState(null);
   const [restorable, setRestorable] = useState(null);
@@ -102,12 +116,13 @@ export function Wizard({ framework, onFinished = null, submit: submitOverride = 
       if (submittedRef.current) return;
       saveDraft(storage, framework.id, {
         text: next.text ?? text,
+        respondentTitle: next.respondentTitle ?? respondentTitle,
         values: next.values ?? values,
         respondentGroup: next.respondentGroup ?? group,
         step: next.step ?? index,
       });
     },
-    [storage, framework.id, text, values, group, index],
+    [storage, framework.id, text, respondentTitle, values, group, index],
   );
 
   const step = steps[Math.min(index, steps.length - 1)];
@@ -131,6 +146,7 @@ export function Wizard({ framework, onFinished = null, submit: submitOverride = 
 
   function restore() {
     setText(restorable.text);
+    setRespondentTitle(restorable.respondentTitle ?? "");
     setValues(restorable.values);
     setGroup(restorable.respondentGroup);
     setIndex(Math.min(restorable.step, steps.length - 1));
@@ -148,6 +164,10 @@ export function Wizard({ framework, onFinished = null, submit: submitOverride = 
     try {
       const payload = {
         text,
+        // An empty box is no name, not a name of "". The server keeps its own
+        // machine title either way; this only decides whether there is a
+        // storyteller's one to prefer over it.
+        respondent_title: respondentTitle.trim() || null,
         input_method: usedVoice ? "voice" : "typed",
         respondent_group: group,
         significations: toSubmission(definition, values),
@@ -172,6 +192,7 @@ export function Wizard({ framework, onFinished = null, submit: submitOverride = 
   function startAgain() {
     submittedRef.current = false;
     setText("");
+    setRespondentTitle("");
     setValues({});
     setGroup(null);
     setResult(null);
@@ -274,6 +295,28 @@ export function Wizard({ framework, onFinished = null, submit: submitOverride = 
               onUsed={() => setUsedVoice(true)}
             />
           )}
+          {/*
+            Beneath the story box, never above it: at 375px the story must still
+            be the first thing on the screen, and this must not add a screen of
+            its own (delta §5). One line, skippable, no error state to hit.
+          */}
+          <div className="nl-wizard__name">
+            <label className="nl-wizard__name-label" htmlFor="nl-story-name">
+              {STORY_NAME_PROMPT}
+            </label>
+            <input
+              id="nl-story-name"
+              type="text"
+              className="nl-wizard__name-input"
+              maxLength={MAX_RESPONDENT_TITLE_CHARS}
+              value={respondentTitle}
+              onChange={(event) => {
+                setRespondentTitle(event.target.value);
+                persist({ respondentTitle: event.target.value });
+              }}
+            />
+            <p className="nl-wizard__name-hint">Optional — leave it blank if you would rather not.</p>
+          </div>
           <div className="nl-wizard__actions">
             <button type="button" className="nl-wizard__back" onClick={() => go(index - 1)}>
               Back

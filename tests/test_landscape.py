@@ -23,6 +23,13 @@ from tests.conftest import median_ms
 from tests.patterns_fixtures import GOLDEN_DEFINITION, build_golden_dataset
 from tests.queue_fixtures import make_framework, proposed_import
 
+#: How much of the density estimate the app's own share may cost, measured in
+#: the same run (see the budget test's docstring for why this is a ratio and
+#: what it can and cannot resolve). Healthy code has measured 0.35x and 0.7x on
+#: two different containers; this leaves room above both without waving through
+#: a doubling.
+OWN_SHARE_CEILING = 1.5
+
 
 def _landscape(client: TestClient, framework_id: int, triad_id: str = "t1", **params) -> dict:
     response = client.get(f"/api/landscape/{framework_id}/{triad_id}", params=params)
@@ -491,10 +498,25 @@ def test_five_thousand_stories_cost_almost_nothing_beyond_the_estimate(
     side of it: reading the answers, converting them, indexing the grid, and
     building the response.
 
-    So the assertion is on that share. It caught nothing when it was written —
-    it exists because the version before it spent 290ms of a 455ms request
-    building SQLAlchemy entities nobody wrote to, and only a test that separates
-    our cost from scipy's would ever have said so.
+    So the assertion is on that share, *relative to the estimate measured in the
+    same run on the same machine*. An absolute millisecond ceiling looked
+    machine-independent because scipy's cost had been subtracted, but our share
+    scales with the machine exactly as scipy's does — and, worse, not by the same
+    factor, because our half is Python and SQLite while scipy's is vectorised
+    arithmetic. Measured across two containers, the same unchanged code sat at
+    0.35× the estimate on one and 0.7× on the other, while the estimate itself
+    moved from 165ms to 225ms. A ratio survives that; a number in milliseconds
+    does not.
+
+    **What this test is and is not.** It is a coarse guard against the app's own
+    share running away — it exists because the version before it spent 290ms of a
+    455ms request building SQLAlchemy entities nobody wrote to, which was 1.8× the
+    estimate against the 0.35× that replaced it. It is not a precise budget, and
+    on a container where the two halves are closer together it cannot resolve a
+    small regression: reinstating that same ORM hydration for one signifier moves
+    the ratio here from about 0.7 to about 1.1, which is inside the bound below.
+    The tight statement of the budget is PRD §4's 200ms, and that can only be
+    checked on the machine the operator actually runs.
     """
     from backend.models import Anecdote, Signification, hour_rounded_now
 
@@ -527,6 +549,11 @@ def test_five_thousand_stories_cost_almost_nothing_beyond_the_estimate(
         )
     session.commit()
 
+    # Once through before timing anything. The first request compiles the SQL,
+    # builds the response validators and warms the JSON encoder, and none of
+    # that is what a 5,000-story request costs in use.
+    _landscape(client, framework["id"])
+
     whole = median_ms(lambda: _landscape(client, framework["id"]), samples=5)
 
     # The same estimate, timed on its own: five thousand points onto the same
@@ -542,6 +569,7 @@ def test_five_thousand_stories_cost_almost_nothing_beyond_the_estimate(
     mesh_x, mesh_y = np.meshgrid(np.array(panel["x_axis"]), np.array(panel["y_axis"]))
     flat = np.vstack([mesh_x.ravel(), mesh_y.ravel()])
     kernel = gaussian_kde(coordinates, bw_method="scott")
+    kernel(flat)  # warmed the same way, so the two numbers are comparable
     estimate = median_ms(lambda: kernel(flat), samples=5)
 
     ours = whole - estimate
@@ -549,9 +577,9 @@ def test_five_thousand_stories_cost_almost_nothing_beyond_the_estimate(
     assert view["total"] == 5000
     assert panel["has_surface"] is True
     assert len(panel["points"]) == 5000
-    assert ours < 120, (
-        f"the app's own share is {ours:.0f}ms of {whole:.0f}ms "
-        f"(the density estimate alone is {estimate:.0f}ms)"
+    assert ours < OWN_SHARE_CEILING * estimate, (
+        f"the app's own share is {ours:.0f}ms of {whole:.0f}ms — more than "
+        f"{OWN_SHARE_CEILING}x the {estimate:.0f}ms density estimate it wraps"
     )
 
 

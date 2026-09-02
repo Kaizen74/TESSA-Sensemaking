@@ -234,10 +234,18 @@ import json, sys
 view = json.load(sys.stdin)
 assert view["total"] == 1, view["total"]          # only the accepted story
 assert view["mixed"] is False, view
+# Constraint 14: asked nothing, the endpoint answers with the storytellers own
+# readings, and says so. This story was marked up by Stage B and confirmed by a
+# person, so the default view holds none of its placements.
+assert view["signified_by_applied"] == "participant", view["signified_by_applied"]
+held = view["counts_by_signified_by"]
+assert held["participant"] == 0, held
+assert held["ai_validated"] > 0, held
 for chart in view["mcqs"] + view["demographics"]:
     counts = [bar["count"] for bar in chart["bars"]]
     assert counts == sorted(counts, reverse=True), chart["id"]
 print("  patterns count only validated stories, bars sorted by value")
+print("  patterns default to the storytellers own readings, and name the view")
 ' || {
     echo "  FAIL: the patterns endpoint broke its own grammar"
     exit 1
@@ -369,6 +377,32 @@ count = panel["count"]
 print("  landscape: 64x64 grid, %d stories, one grid for both readings" % count)
 ' || {
     echo "  FAIL: the landscape endpoint broke one of its own guarantees"
+    exit 1
+}
+
+# Constraint 14 over the wire, on the view it matters most for: the terrain
+# drawn by default holds nobody elses reading of anybody, and asking for both
+# is what puts the expert-validated story on the map.
+curl -sf "${land}" | $PYTHON -c '
+import json, sys
+
+view = json.load(sys.stdin)
+assert view["signified_by_applied"] == "participant", view["signified_by_applied"]
+assert view["panels"][0]["count"] == 0, view["panels"][0]["count"]
+' || {
+    echo "  FAIL: the default landscape drew a placement nobody told it to"
+    exit 1
+}
+
+curl -sf "${land}?signified_by=all" | $PYTHON -c '
+import json, sys
+
+view = json.load(sys.stdin)
+assert view["signified_by_applied"] == "all", view["signified_by_applied"]
+assert view["panels"][0]["count"] == 1, view["panels"][0]["count"]
+print("  landscape: default holds only self-signified marks; \"all\" adds the rest")
+' || {
+    echo "  FAIL: asking for both did not put the expert-validated story on the map"
     exit 1
 }
 

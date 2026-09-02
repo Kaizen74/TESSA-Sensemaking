@@ -46,6 +46,85 @@ const FILTERS = [
   { id: "entry_mode", label: "Where it came from" },
 ];
 
+/*
+ * Whose interpretation a figure is made of (constraint 14).
+ *
+ * A segmented control rather than a dropdown, because the choice is epistemic:
+ * which of these three you are looking at changes what the picture *means*, and
+ * that should be readable without opening anything.
+ */
+const SIGNIFIED_BY_DEFAULT = "participant";
+
+const PROVENANCE_CHOICES = [
+  {
+    id: "participant",
+    label: "Storyteller",
+    description: "Told and interpreted by the storyteller",
+  },
+  {
+    id: "ai_validated",
+    label: "Expert-validated",
+    description: "Interpreted by someone else and confirmed by you",
+  },
+  { id: "all", label: "Both", description: "Both kinds together" },
+];
+
+function provenanceChoice(id) {
+  return PROVENANCE_CHOICES.find((choice) => choice.id === id) ?? PROVENANCE_CHOICES[0];
+}
+
+/** The three-way choice, in the rail. */
+function ProvenanceControl({ value, onChange }) {
+  return (
+    <div className="nl-rail__field">
+      <span className="nl-rail__label" id="nl-provenance-label">
+        Whose interpretation
+      </span>
+      <div className="nl-provenance" role="radiogroup" aria-labelledby="nl-provenance-label">
+        {PROVENANCE_CHOICES.map((choice) => (
+          <button
+            key={choice.id}
+            type="button"
+            role="radio"
+            aria-checked={value === choice.id}
+            className={
+              value === choice.id
+                ? "nl-provenance__option nl-provenance__option--current"
+                : "nl-provenance__option"
+            }
+            onClick={() => onChange(choice.id)}
+          >
+            {choice.label}
+          </button>
+        ))}
+      </div>
+      <p className="nl-rail__aside">{provenanceChoice(value).description}.</p>
+    </div>
+  );
+}
+
+/**
+ * What the figures above are made of, said out loud (constraint 14).
+ *
+ * Only when the view is not the default: the storytellers' own readings need no
+ * disclaimer, and a banner on every screen would be one nobody reads. Context
+ * weight, not an alert — this is a fact about the picture, not a problem with it.
+ */
+function ProvenanceLabel({ applied, counts }) {
+  if (!applied || applied === SIGNIFIED_BY_DEFAULT) return null;
+  const held = counts ?? { participant: 0, ai_validated: 0 };
+  const other = applied === "all" ? null : held.participant;
+  return (
+    <p className="nl-provenance-note" role="status">
+      {provenanceChoice(applied).description}.{" "}
+      {applied === "all"
+        ? `${held.participant} of these marks were placed by the storyteller and ` +
+          `${held.ai_validated} by somebody reading their story.`
+        : `${other} marks placed by storytellers themselves are not in this view.`}
+    </p>
+  );
+}
+
 /** Every framework sharing a version chain with this one. */
 function lineageOf(frameworks, framework) {
   if (!framework) return [];
@@ -70,6 +149,10 @@ export function PatternsTab() {
   const [frameworks, setFrameworks] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [filters, setFilters] = useState({});
+  // Constraint 14: the default is the storytellers' own readings, and nothing
+  // else. Every request on this screen carries it, so no view can drift into
+  // showing a mixture without the reader having asked for one.
+  const [signifiedBy, setSignifiedBy] = useState(SIGNIFIED_BY_DEFAULT);
   const [mixed, setMixed] = useState(false);
   const [splitBy, setSplitBy] = useState("");
   const [subView, setSubView] = useState(VIEW_LANDSCAPE);
@@ -94,7 +177,10 @@ export function PatternsTab() {
       .catch((caught) => setError(caught instanceof ApiError ? caught : null));
   }, []);
 
-  const params = useMemo(() => ({ ...filters, mixed }), [filters, mixed]);
+  const params = useMemo(
+    () => ({ ...filters, mixed, signified_by: signifiedBy }),
+    [filters, mixed, signifiedBy],
+  );
 
   const loadPatterns = useCallback(async () => {
     if (selectedId === null) return;
@@ -222,6 +308,8 @@ export function PatternsTab() {
               ))}
             </select>
           </label>
+
+          <ProvenanceControl value={signifiedBy} onChange={setSignifiedBy} />
 
           {FILTERS.map((filter) => (
             <label key={filter.id} className="nl-rail__field">
@@ -356,6 +444,11 @@ export function PatternsTab() {
 
           {view.mixed && view.versions.length > 1 && <VersionChip versions={view.versions} />}
 
+          <ProvenanceLabel
+            applied={view.signified_by_applied}
+            counts={view.counts_by_signified_by}
+          />
+
           {view.total === 0 ? (
             <p className="nl-patterns__empty">
               No validated stories match this. Collect some under{" "}
@@ -411,6 +504,8 @@ export function PatternsTab() {
                         <RegionDrawer
                           region={region}
                           view={view}
+                          frameworkId={selected.id}
+                          params={params}
                           onClose={() => setRegion(null)}
                         />
                       )}
@@ -499,8 +594,33 @@ export function PatternsTab() {
  * The ids come from the landscape's own grid cells, so this list is exactly
  * what is under that hill — not a re-query that might round differently.
  */
-function RegionDrawer({ region, view, onClose }) {
-  const ids = new Set(region.anecdote_ids ?? []);
+function RegionDrawer({ region, view, frameworkId, params, onClose }) {
+  const ids = useMemo(() => [...new Set(region.anecdote_ids ?? [])], [region]);
+  const [named, setNamed] = useState(null);
+
+  // The names, fetched for exactly these ids. The landscape's cells decide
+  // *which* stories are here; this only asks what they are called, so a slow or
+  // failed lookup leaves the list of ids standing rather than emptying it.
+  useEffect(() => {
+    let live = true;
+    if (frameworkId === null || ids.length === 0) {
+      setNamed(null);
+      return undefined;
+    }
+    api
+      .browseStories(frameworkId, { ...params, ids: ids.join(",") })
+      .then((page) => {
+        if (!live) return;
+        setNamed(new Map(page.stories.map((story) => [story.anecdote_id, story])));
+      })
+      .catch(() => {
+        if (live) setNamed(null);
+      });
+    return () => {
+      live = false;
+    };
+  }, [frameworkId, ids, params]);
+
   return (
     <aside className="nl-region" aria-label="Stories in this region">
       <div className="nl-region__head">
@@ -513,14 +633,21 @@ function RegionDrawer({ region, view, onClose }) {
         </button>
       </div>
       <ul className="nl-region__list">
-        {[...ids].map((id) => (
-          <li key={id} className="nl-region__story">
-            <span className="nl-region__id">#{id}</span>
-          </li>
-        ))}
+        {ids.map((id) => {
+          const story = named?.get(id) ?? null;
+          return (
+            <li key={id} className="nl-region__story">
+              <span className="nl-region__id">#{id}</span>
+              {story?.title && <span className="nl-region__name">{story.title}</span>}
+              {story?.respondent_title && (
+                <span className="nl-region__by">named by the storyteller</span>
+              )}
+            </li>
+          );
+        })}
       </ul>
       <p className="nl-region__note">
-        These are the {ids.size} stories whose marks sit under that peak, out of{" "}
+        These are the {ids.length} stories whose marks sit under that peak, out of{" "}
         {view.total} in this view. Open the CSV to read them in full.
       </p>
     </aside>

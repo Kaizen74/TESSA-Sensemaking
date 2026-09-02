@@ -58,6 +58,7 @@ PROVENANCE_COLUMNS = [
     "framework_name",
     "framework_version",
     "title",
+    "respondent_title",
     "text",
     "respondent_group",
     "created_at_hour",
@@ -158,7 +159,13 @@ def dataset_csv(
             "framework_id": anecdote.framework_id,
             "framework_name": name,
             "framework_version": version,
+            # Two columns, never one. ``title`` keeps meaning exactly what it
+            # has always meant — the machine's first words of the story — and
+            # the name its teller gave it sits beside it rather than on top of
+            # it. A spreadsheet that silently swapped one for the other would
+            # lose the distinction the second column exists to record.
             "title": anecdote.title_auto or "",
+            "respondent_title": anecdote.respondent_title or "",
             "text": anecdote.text,
             "respondent_group": anecdote.respondent_group or "",
             "created_at_hour": _stamp(anecdote.created_at_hour),

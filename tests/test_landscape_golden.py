@@ -29,8 +29,24 @@ PEAKS_GOLDEN = Path(__file__).resolve().parent / "golden" / "landscape_peaks.jso
 TOLERANCE = 0.02
 
 
-def peaks_of(client: TestClient, framework_id: int, triad_id: str) -> list[dict]:
-    response = client.get(f"/api/landscape/{framework_id}/{triad_id}")
+def peaks_of(
+    client: TestClient,
+    framework_id: int,
+    triad_id: str,
+    signified_by: str = "all",
+) -> list[dict]:
+    """The peaks of one triangle, under a stated provenance choice.
+
+    ``all`` by default, because this golden was written before the delta gave
+    the endpoint a choice at all, and back then it drew every placement. Saying
+    so explicitly keeps the stored peaks measuring the population they were
+    measured on, rather than silently following the new default (delta §6,
+    baseline block).
+    """
+    response = client.get(
+        f"/api/landscape/{framework_id}/{triad_id}",
+        params={"signified_by": signified_by},
+    )
     assert response.status_code == 200, response.text
     panel = response.json()["panels"][0]
     return [
@@ -87,6 +103,25 @@ def test_the_golden_holds_real_peaks() -> None:
             assert peak["count"] > 0
             assert 0.0 <= peak["x"] <= 1.0
             assert 0.0 <= peak["y"] <= 1.0
+
+
+def test_the_new_default_finds_the_same_peaks_on_this_fixture(client: TestClient) -> None:
+    """The delta changed which placements are drawn, not where they land.
+
+    Every story in the golden set was signified by the person who told it, so
+    the participant default and ``all`` cover the same points and must produce
+    the same terrain — exactly, not within tolerance, because it is the same
+    arithmetic on the same numbers. This is the evidence that the stored peaks
+    did not move when the default flipped; if it ever fails, the filter is
+    dropping placements a storyteller made.
+    """
+    stored = json.loads(PEAKS_GOLDEN.read_text(encoding="utf-8"))
+    framework = build_golden_dataset(client)
+
+    for triad_id in stored:
+        assert peaks_of(client, framework["id"], triad_id, signified_by="participant") == peaks_of(
+            client, framework["id"], triad_id, signified_by="all"
+        ), triad_id
 
 
 def test_the_same_stories_give_the_same_peaks_twice(client: TestClient) -> None:
