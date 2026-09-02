@@ -74,6 +74,9 @@ EXPECTED_API_PATHS = {
     "/api/landscape/{framework_id}/{triad_id}",
     "/api/explorer/{framework_id}",
     "/api/clusters/{framework_id}",
+    # Meaningfulness delta, phase B — the data-quality signals. Pure local
+    # counting; nothing on this path can reach a language model.
+    "/api/quality/{framework_id}",
 }
 
 

@@ -161,6 +161,7 @@ export function PatternsTab() {
   const [land, setLand] = useState(null);
   const [explorer, setExplorer] = useState(null);
   const [clusters, setClusters] = useState(null);
+  const [signals, setSignals] = useState(null);
   const [k, setK] = useState(3);
   const [showClusters, setShowClusters] = useState(false);
   const [region, setRegion] = useState(null);
@@ -195,6 +196,23 @@ export function PatternsTab() {
   useEffect(() => {
     loadPatterns();
   }, [loadPatterns]);
+
+  // The quality signals travel with the same scope as the charts they sit
+  // under, so the panel can never describe a different set of stories than the
+  // figures above it. A failure here leaves the charts alone: this is a panel
+  // you open on purpose, not something the page depends on.
+  const loadQuality = useCallback(async () => {
+    if (selectedId === null) return;
+    try {
+      setSignals(await api.getQuality(selectedId, params));
+    } catch {
+      setSignals(null);
+    }
+  }, [selectedId, params]);
+
+  useEffect(() => {
+    loadQuality();
+  }, [loadQuality]);
 
   // The triad the landscape is about. Defaults to the first, which is what
   // §5b's "zero clicks to a meaningful default" asks for.
@@ -516,7 +534,8 @@ export function PatternsTab() {
               )}
 
               {subView === VIEW_CHARTS && (
-                <div ref={chartsRef}>
+                <>
+                  <div ref={chartsRef}>
                   <section className="nl-patterns__band">
                     <h3 className="nl-patterns__band-title">What people said</h3>
                     {/* A question set can be a prompt and nothing else, and then
@@ -560,7 +579,14 @@ export function PatternsTab() {
                         ))}
                     </div>
                   </section>
-                </div>
+                  </div>
+
+                  {/* Below the charts, and below them on purpose (delta §5).
+                      It is a check on the questions, read after the answers —
+                      and per constraint 13a it stays quiet: closed until asked
+                      for, no colour, no alarm. */}
+                  <QualityPanel signals={signals} />
+                </>
               )}
 
               {subView === VIEW_EXPLORER &&
@@ -651,6 +677,106 @@ function RegionDrawer({ region, view, frameworkId, params, onClose }) {
         {view.total} in this view. Open the CSV to read them in full.
       </p>
     </aside>
+  );
+}
+
+/**
+ * The data-quality panel (delta §5, phase B).
+ *
+ * Two signals per question, and no opinion about either. Centre-parking is the
+ * share of placements sitting in the middle of the triangle — the shape a
+ * question makes when nobody could trade its three corners off against each
+ * other, and the one shape that is indistinguishable from agreement on a
+ * landscape. Skip rate is who left it blank.
+ *
+ * Constraint 11 draws the line this component sits on: it prints computed
+ * proportions and one fixed reading note written by a person. It never says
+ * what a number means for *this* data, and nothing here is generated.
+ *
+ * Quiet by construction (13a): closed until opened, no colour encoding, no
+ * emphasis on any row. A number worth acting on is worth finding by reading,
+ * not by being shouted at.
+ */
+function QualityPanel({ signals }) {
+  if (!signals || signals.signifiers.length === 0) return null;
+
+  const evenly = Math.round(signals.centre_share_if_even * 100);
+
+  return (
+    <details className="nl-quality">
+      <summary className="nl-quality__summary">
+        Check the questions: centre-parking and skips
+      </summary>
+
+      <p className="nl-quality__note">
+        Two counts per question, from the {signals.total}{" "}
+        {signals.total === 1 ? "story" : "stories"} in this view.{" "}
+        <strong>In the middle</strong> is how many placements sit in a small
+        circle at the centre of the triangle — if placements were spread evenly
+        across it, about {evenly}% would land there. High centre-clustering
+        often means the question did not fit the stories, and on a landscape it
+        looks the same as agreement. <strong>Skipped</strong> is how many
+        stories left the question blank.
+      </p>
+
+      <div className="nl-quality__scroll">
+        <table className="nl-quality__table">
+          <thead>
+            <tr>
+              <th scope="col">Question</th>
+              <th scope="col" className="nl-quality__figure">
+                Answered
+              </th>
+              <th scope="col" className="nl-quality__figure">
+                Skipped
+              </th>
+              <th scope="col" className="nl-quality__figure">
+                In the middle
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {signals.signifiers.map((row) => (
+              <tr key={row.signifier_id}>
+                <th scope="row" className="nl-quality__name">
+                  {row.title}
+                  <span className="nl-quality__kind"> · {row.signifier_type}</span>
+                </th>
+                <td className="nl-quality__figure nl-numeric">{row.answered}</td>
+                <td className="nl-quality__figure nl-numeric">
+                  {row.skipped}
+                  <span className="nl-quality__share">
+                    {" "}
+                    ({Math.round(row.skip_rate * 100)}%)
+                  </span>
+                </td>
+                <td className="nl-quality__figure nl-numeric">
+                  {row.centre_parked === null ? (
+                    <span className="nl-quality__na" title="Only a triangle has a centre">
+                      —
+                    </span>
+                  ) : (
+                    <>
+                      {row.centre_parked}
+                      <span className="nl-quality__share">
+                        {" "}
+                        ({Math.round(row.centre_parked_rate * 100)}%)
+                      </span>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="nl-quality__note">
+        A dash means the question has no middle to park in — only a triangle asks
+        for a three-way trade-off. These are counts, not verdicts: what a high
+        number means about a question is yours to judge.
+      </p>
+    </details>
   );
 }
 

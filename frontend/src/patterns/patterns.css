@@ -642,6 +642,87 @@
   color: var(--nl-grey);
 }
 
+/* ---- The data-quality panel (delta phase B) ----
+ *
+ * Quiet, and quiet on purpose (constraint 13a): the landscape is the one bold
+ * element, and this is a check you open rather than a warning that finds you.
+ * No colour carries meaning here — every figure is a number and a percentage,
+ * so the panel survives greyscale by never having relied on hue (13c).
+ */
+
+.nl-quality {
+  border-top: 1px solid var(--nl-grey-line);
+  padding-top: var(--nl-space-4);
+  margin-top: var(--nl-space-6);
+}
+
+.nl-quality__summary {
+  font-size: var(--nl-text-sm);
+  font-weight: var(--nl-weight-medium);
+  cursor: pointer;
+  min-height: var(--nl-tap-target);
+  display: flex;
+  align-items: center;
+}
+
+.nl-quality__note {
+  max-width: 66ch;
+  font-size: var(--nl-text-sm);
+  line-height: var(--nl-leading-body);
+  color: var(--nl-grey);
+  margin: 0 0 var(--nl-space-4);
+}
+
+/* A table is wide before a phone is. It scrolls inside its own box rather than
+   pushing the page sideways — constraint 10's clean-375px bar. */
+.nl-quality__scroll {
+  overflow-x: auto;
+  margin-bottom: var(--nl-space-4);
+}
+
+.nl-quality__table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: min(30rem, 100%);
+  /* 12px is the floor for chart text (13e); this is the floor for table text
+     too, since it is read the same way. */
+  font-size: var(--nl-text-sm);
+}
+
+.nl-quality__table th,
+.nl-quality__table td {
+  border-bottom: 1px solid var(--nl-grey-line);
+  padding: var(--nl-space-2) var(--nl-space-3);
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.nl-quality__table thead th {
+  font-weight: var(--nl-weight-medium);
+  color: var(--nl-grey);
+  white-space: nowrap;
+}
+
+.nl-quality__name {
+  font-weight: 400;
+}
+
+.nl-quality__kind,
+.nl-quality__share,
+.nl-quality__na {
+  color: var(--nl-grey);
+}
+
+.nl-quality__kind {
+  font-size: var(--nl-text-xs);
+}
+
+/* Numbers line up under each other or they cannot be compared down a column. */
+.nl-quality__figure {
+  text-align: right;
+  white-space: nowrap;
+}
+
 /* ---- Explorer ---- */
 
 .nl-explorer__axes {

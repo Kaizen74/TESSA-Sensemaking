@@ -2,8 +2,41 @@
 
 **Updated:** 2026-09-02
 **Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; meaningfulness
-delta phase A of F complete
-**Status:** green (1127 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+delta phases A and B of F complete
+**Status:** green (1160 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+
+---
+
+## The meaningfulness delta — phase B is done
+
+The Patterns tab can now tell you when a question didn't work.
+
+There is one way this app could mislead you that nothing in it could previously
+catch. A tight cluster in the middle of a landscape looks like agreement — but
+it is also exactly what you get when a triangle asked for a trade-off nobody's
+story could make, and the honest response was to leave the marker where it
+started. Those two look identical on the terrain. Now they don't.
+
+- **Two counts per question, in a panel that stays shut until you open it.**
+  *In the middle* is how many placements sit in a small circle at the centre of
+  the triangle. *Skipped* is how many stories left the question blank — which
+  nothing else in the app could see, because a skip leaves no record behind.
+- **The circle is a tenth of the triangle, and the panel says so.** A "small
+  radius" is not a measurement, so it is fixed by area instead: if placements
+  were scattered at random, about 10% would fall inside. That single sentence is
+  what turns a percentage into something you can read. Anything well above 10%
+  is worth a second look at how the question was worded.
+- **It counts, and stops.** No colour, no flags, no threshold that decides a
+  number is bad. What a high figure means about your question is your call —
+  constraint 11 — and there are tests asserting the panel never grows an opinion.
+- **A dash where the question has no middle.** Only a triangle asks for a
+  three-way trade-off, so sliders, squares and multiple-choice show a dash
+  rather than a zero. Zero would have meant "nobody parked in the centre", which
+  is a different and untrue claim.
+
+Nothing on this path can reach a language model, and that is checked two ways:
+with the mock switched off and no API key present, and structurally, by asserting
+the modules import nothing AI-shaped.
 
 ---
 
@@ -157,13 +190,15 @@ directions.
 
 ## Next step
 
-**Delta phase B — data-quality signals.** `backend/quality.py` and
-`/api/quality/{framework_id}`: centre-parking and skip-rate detection, reported
-as counts and proportions in a collapsed panel below the supporting charts. No
-schema change — a skip is an absent signification row. Pure local computation,
-no AI. Delta §6 has the spec and the test list.
+**Delta phase C — the framework design linter.** The first new AI call since
+Phase 7: `/api/frameworks/{id}/lint` sends a question set's own definition to
+Claude and gets back a critique of the *design* — decoy corners, evaluative dyad
+poles, leading prompts, labels too long to read. Findings are advisory: the
+linter can never block publishing and never edits the framework. A test asserts
+the prompt receives `definition_json` and no story text, ever. Delta §4a and §6
+have the spec and the test list.
 
-Nothing in the PRD itself is unbuilt; everything left is delta phases B–F.
+Nothing in the PRD itself is unbuilt; everything left is delta phases C–F.
 
 ## How to resume
 
@@ -207,6 +242,7 @@ and the text after it, which silently runs two words together.
 | See only what storytellers said themselves | Patterns → **Whose interpretation** → *Storyteller* (this is the default) |
 | Include readings you or the AI made | Patterns → **Whose interpretation** → *Both* |
 | Let people name their own story | It is already there — the line under the story box, and on the printed card |
+| Check whether a question actually worked | Patterns → **Supporting charts** → open **Check the questions** at the bottom |
 | Save a picture for a document | Patterns → **Save the contour as a picture** |
 | Get the data out | Patterns → **Download the stories (CSV)** |
 | Get a written summary | Patterns → **Download the Pattern Brief** |

@@ -418,5 +418,31 @@ print("  clusters carry their seed and their caveat")
     exit 1
 }
 
+# The data-quality signals. One validated story here, and its markers were
+# placed by Stage B rather than by whoever told it — so under the default the
+# panel has nothing of the storytellers own to count, and says so in numbers
+# rather than by failing.
+curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/quality/${framework_id}?signified_by=all" \
+    | $PYTHON -c '
+import json, sys
+
+view = json.load(sys.stdin)
+assert view["total"] == 1, view["total"]
+assert view["signified_by_applied"] == "all", view["signified_by_applied"]
+# The circle is a tenth of the triangle by area, and the radius says so.
+import math
+assert abs(math.pi * view["centre_radius"] ** 2 / (math.sqrt(3) / 4) - 0.10) < 1e-9
+rows = {row["signifier_id"]: row for row in view["signifiers"]}
+assert rows, "no signifiers reported"
+for row in rows.values():
+    assert row["answered"] + row["skipped"] == view["total"], row
+    # Only a triangle has a middle to park in.
+    assert (row["centre_parked"] is None) == (row["signifier_type"] != "triad"), row
+print("  quality signals: every question accounted for, centre only on triads")
+' || {
+    echo "  FAIL: the quality endpoint broke one of its own guarantees"
+    exit 1
+}
+
 echo
 echo "ALL CHECKS PASSED"

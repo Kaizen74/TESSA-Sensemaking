@@ -161,6 +161,11 @@ export const api = {
   getClusters: (frameworkId, params = {}) =>
     request(`/api/clusters/${frameworkId}${queryString(params)}`),
 
+  // The data-quality signals (delta phase B). Counted locally like everything
+  // else on this tab — no AI is reachable from that endpoint at all.
+  getQuality: (frameworkId, params = {}) =>
+    request(`/api/quality/${frameworkId}${queryString(params)}`),
+
   // The respondent's path. The token carries everything — no framework id is
   // ever sent from here, so a browser cannot retarget its own story.
   publicFramework: (token) => request(`/api/public/capture/${token}`),

@@ -326,10 +326,17 @@ own regression list.
   the figures when the view is not the default, and the optional story-name field
   on the capture wizard and paper entry. Gate green: ruff clean, eslint clean,
   1127 passed, frontend built, smoke test through every path.
-- [ ] **Phase B — Data-quality signals.** (item 4) `backend/quality.py` and
-  `/api/quality/{framework_id}`; centre-parking and skip-rate detection; the
-  quiet panel below the supporting charts. Test:
-  `test_quality_signals.py`. Commit: `delta-B: data-quality signals`.
+- [x] **Phase B — Data-quality signals.** (item 4) — **complete 2026-09-02**
+  `backend/quality.py` and `/api/quality/{framework_id}`, both free of any route
+  to a language model. Two signals per signifier: the share of triad placements
+  inside a circle at the centre of the triangle, and the share of stories that
+  left the question blank. No schema change — a skip is an absent signification
+  row. The circle is derived from an area share rather than a hard-coded radius,
+  so the panel can state what an even spread would look like. The quiet panel
+  sits collapsed below the supporting charts. New: `tests/test_quality_signals.py`
+  (30), including the frontend visual-grammar assertions and a budget test
+  measured against the patterns endpoint in the same run. Gate green: ruff clean,
+  eslint clean, 1160 passed, frontend built, smoke test end-to-end.
 - [ ] **Phase C — Framework design linter.** (item 3) The lint call in
   `ai_client.py` with its mock fixture, `/api/frameworks/{id}/lint`, and the
   Studio panel. Advisory only: it can never block publishing, never edits the
@@ -924,6 +931,39 @@ simpler option was taken unless noted.
 110. **The story name is searchable.** The browser already searched the story and
      its machine title; leaving the one title a person chose out of the search
      box would have made it the only title the operator could not find by.
+
+### Delta phase B
+
+111. **Centre-parking is measured on triads only.** The delta names the triad
+     centroid, and the signal means something precise there: a three-way
+     trade-off is what people duck when a question does not fit. A dyad's
+     midpoint and a stones grid's middle are real places, but "parked" would be
+     a different claim about each. The other kinds report `null` rather than
+     `0` — "does not apply", not "nobody parked", which would be false.
+112. **The radius comes from an area share, not from a number somebody liked.**
+     "A small radius" is not a measurement. The circle is fixed at a tenth of
+     the triangle's area and the radius derived from it (≈0.117 of a side), so
+     the panel can say the one thing that makes a proportion readable: an even
+     spread would put about 10% in this circle, and this is more. A test checks
+     the circle really is a tenth, and that it fits inside the triangle so the
+     share is not clipped.
+113. **`/api/quality` takes the provenance filter, though delta §4 does not list
+     it there.** Constraint 14 governs "every view that aggregates
+     significations", and this one does. A skip rate pooled across the
+     storytellers' own readings and somebody else's would be exactly the silent
+     mixture the constraint forbids, so the endpoint takes the same choice with
+     the same default and reports `signified_by_applied` like the others.
+114. **"Answered" counts stories, not rows.** The stones signifier stores one
+     row per chip, so counting rows would report three answers from one story —
+     and then a negative skip count. Counted with `COUNT(DISTINCT anecdote_id)`,
+     with a test that places three chips and expects one answer.
+115. **The budget test is a ratio against the patterns endpoint in the same
+     run.** Carrying forward what phase A learned the hard way: an absolute
+     millisecond ceiling is not machine-independent, and these containers differ
+     by a factor of three on Python work. Patterns is the right yardstick —
+     same scope query, same filter, same rows, already budgeted at 200ms by the
+     PRD — and this endpoint does strictly less, so it must come in under it. It
+     measured 246ms against patterns' 670ms here, about a third.
 
 ---
 
