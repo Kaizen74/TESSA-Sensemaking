@@ -89,6 +89,11 @@ export const api = {
         ...(name ? { name } : {}),
       }),
     }),
+  // Read-time translation (delta phase F). Display-only: the reply carries the
+  // original alongside so a screen cannot show the translation unlabelled.
+  translateStory: (anecdoteId, target) =>
+    request(`/api/stories/${anecdoteId}/translation${queryString({ target })}`),
+
   // The languages the Studio can offer (delta phase E). A fixed local list —
   // constraint 4 permits no network for this.
   knownLanguages: () => request("/api/frameworks/languages"),

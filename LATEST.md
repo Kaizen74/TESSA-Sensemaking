@@ -1,9 +1,47 @@
 # Narrative Lens — Latest
 
-**Updated:** 2026-09-02
-**Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; meaningfulness
-delta phases A–E of F complete
-**Status:** green (1268 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+**Updated:** 2026-09-03
+**Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; the
+meaningfulness delta complete — all six phases A–F
+**Status:** green (1322 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+
+---
+
+## The meaningfulness delta — phase F is done, and the delta is complete
+
+A story told in Tamil can now be read in English without ever stopping being a
+Tamil story.
+
+**"Read it in English"**, in the story browser, under a story that was told in
+something else. Tap it and the translation appears below the original at quieter
+weight, with a line above it that says what it is: *translated by <model> from
+Tamil — the original is above, and it is what was actually said.*
+
+The whole of this feature is the four things it refuses to do.
+
+- **It is never stored as the story.** `anecdotes.text` is the record and no
+  branch of the translation path writes to it. What is cached lives in its own
+  table, keyed by the story rather than part of it.
+- **It is never signified.** Nobody places a marker against a translation.
+  Stage B is given the story as told; a test captures a story, translates it,
+  then reads the exact bytes sent over the wire and asserts the translated
+  sentence is not among them.
+- **It never computes anything.** This is the claim worth proving bluntly, so
+  it is proved twice. *Behaviourally:* every figure the app draws — patterns,
+  landscape, explorer, clusters, quality, both exports and the browser — is
+  serialised, every cached row is deleted, and everything is serialised again
+  and compared character for character. Delete the cache and the app is correct,
+  only slower. *Structurally:* no module that computes anything can so much as
+  name the cache, its table or its model, checked by reading the source.
+- **It is never shown unlabelled.** The response carries `is_translation` and
+  the original text, always, so a screen physically cannot render one without
+  the other. On the page the label and the text are one block with one switch
+  between them — not two siblings a later edit could separate.
+
+And when the translation cannot be fetched, nothing is lost: the story stays
+exactly where it was, in the language it was told in, and the app says why in a
+sentence. That is the honest failure, because the original was always the one
+that counted.
 
 ---
 
@@ -276,14 +314,25 @@ directions.
 
 ## Next step
 
-**Delta phase F — read-time translation.** Migration 005 adds a `translations`
-cache, and `/api/stories/{id}/translation` returns a translation with
-`is_translation: true` and the original alongside, so the UI cannot show one
-unlabelled. The guard is that deleting every cached row changes nothing except
-speed — a test proves it — because the cache is display-only and the original
-stays the record. Delta §4a and §6 have the spec.
+**Nothing is unbuilt.** The PRD's nine phases are done, the completeness pass
+against §1 is done, and the meaningfulness delta's six phases are done. Every
+one of the sixteen binding constraints now has a test that would fail if it were
+broken — including the three the delta added, each of which is on the regression
+list by name.
 
-Nothing in the PRD itself is unbuilt; phase F is the last of the delta.
+So the next step is not code. It is **the first real use**: a question set
+written for a real question, a room of real phones, and the two things this
+build has never been able to check itself —
+
+- **A phone over Tailscale.** The respondent's wizard has been exercised at
+  375px in a browser on this one machine. That is not a handset on the mesh.
+- **The `.bat` launcher on Windows.** Read carefully, fixed twice, never run.
+
+Both belong to the operator's own machine, and both should be tried before a
+workshop rather than during one. Anything found there is worth a session; so is
+anything the operator wants that v1.3 does not name — but that is a decision to
+take deliberately, and to write down in `PROGRESS.md` under "Decisions" before
+building.
 
 ## How to resume
 
@@ -332,6 +381,8 @@ and the text after it, which silently runs two words together.
 | Offer a question set in more than one language | Studio → **Languages offered** → e.g. `en, ms, ta` |
 | See which language a story was told in | Patterns → **Story browser** (or the CSV) |
 | Look at one language's stories only | Patterns → **Language it was told in** in the rail |
+| Read a story told in another language | Patterns → **Story browser** → **Read it in English** under the story |
+| See the original again | The same button, which now says **Hide the English translation** (the original never went anywhere) |
 | Run a workshop around the landscape | Patterns → **Open session mode** (Esc to leave) |
 | Record what a room concluded | Session mode → type it → **Record what the room said** |
 | Read back what rooms have said | Patterns → **Landscape** → scroll to **What rooms made of this** |

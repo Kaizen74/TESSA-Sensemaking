@@ -375,10 +375,26 @@ own regression list.
   demographic breakdown; the guard and both goldens failed as intended. Gate
   green: ruff clean, eslint clean, 1268 passed, frontend built, smoke test
   end-to-end.
-- [ ] **Phase F — Read-time translation.** (item 6, part 2) Migration 004. The
-  translation endpoint with its mock, the display-only cache, and the permanent
-  translation label. Test: `test_translation_readtime.py`, including the
-  cache-deletion equivalence guard. Commit: `delta-F: read-time translation`.
+- [x] **Phase F — Read-time translation.** (item 6, part 2) — **complete 2026-09-03**
+  Migration 005 adds a `translations` table: one row per story per language, a
+  cache and nothing more. `GET /api/stories/{id}/translation` returns the
+  translation *and* the original *and* `is_translation`, so a screen cannot
+  render one without the other two; the story browser shows it beneath the
+  provenance line at secondary weight with a label that is in the same block as
+  the text and cannot be turned off. A failure is an ordinary state: the
+  original stays readable and the app says why in plain English. New:
+  `tests/test_translation_readtime.py` (40), including the two guards the delta
+  asks for — the *behavioural* one (delete every cached row and every figure the
+  app draws is byte-identical) and the *structural* one (no module that computes
+  anything can name the cache, its table or its model). Mutation-checked
+  separately: letting `quality.py` count cached rows failed the first; naming
+  `"cached_translations"` in `exports.py` failed the second. Browser pass: 33
+  checks at 1440px and 375px, including a forced 502 that leaves the story
+  readable. Gate green: ruff clean, eslint clean, 1322 passed, frontend built,
+  smoke test end-to-end. Goldens byte-identical.
+
+**The delta is complete.** Phases A–F are all green, and constraints 14, 15 and
+16 each have a guard on the regression list.
 
 ---
 
@@ -404,6 +420,11 @@ Green in every phase from introduction onward:
   `tests/test_interpretations.py`; the whole landscape response serialised and
   compared character for character before and after recording one. Constraint
   16's guard, and the delta puts it on this list by name.)*
+- every figure unchanged by the translation cache *(added delta phase F —
+  `tests/test_translation_readtime.py`; patterns, landscape, explorer, clusters,
+  quality, both exports and the story browser serialised, every cached row
+  deleted, then serialised again and compared character for character. Half of
+  constraint 15's guard; the other half is structural, in the same file.)*
 - surface / contour single-source *(live since Phase 8 —
   `tests/test_landscape.py`)*
 - whole-app integration *(added Phase 8 — `tests/test_whole_app.py`, one run
@@ -1083,6 +1104,39 @@ simpler option was taken unless noted.
      there is no way to ask for "stories with no language". The CSV carries the
      blank and an operator can sort on it; adding a sentinel value to the filter
      vocabulary would mean inventing a language code that is not one.
+
+### Delta phase F
+
+133. **The migration is numbered 005, not the delta's 004.** Same reasoning as
+     decisions 121 and 127: migrations are numbered in the order they are
+     applied, and phases D and E took 003 and 004.
+134. **The mock reply lives in `backend/fixtures/`, not `tests/fixtures/`.**
+     Same reasoning as decision 118 for the linter: `NL_MOCK_AI=1` is a backend
+     mode, and a mock the app could only find beside the test tree would make
+     "fully functional offline" untrue of a real install.
+135. **The translation endpoint is a `GET` that may write.** It reads a story;
+     the row it may leave behind is a cache entry, not a change to anything the
+     app reports. Making it a `POST` would say to a reader that translating
+     alters the dataset, which is the exact thing constraint 15 denies. The
+     cache is keyed on (story, language) and is safe to delete at any moment —
+     which the equivalence guard proves rather than asserts.
+136. **The structural guard strips docstrings only, never every string.** The
+     first version of `code_of()` blanked all string constants so a banned word
+     in prose could not fail the test. That also blinded it to a literal like
+     `"translations"` used as a column name — which is precisely the reach it
+     exists to catch. Re-running the mutation confirmed it: with all strings
+     blanked, `exports.py` naming `"cached_translations"` passed. Docstrings
+     are removed; `ast.unparse` drops comments by itself; every other literal
+     is scanned.
+137. **The toggle sits below the provenance line, not directly under the text.**
+     The words as told and the line naming the language they were told in are
+     one record; a reading aid does not get to split them. The original is still
+     above the translation, which is what constraint 15 asks for, and the card
+     now reads: story → where it came from → the aid → tags.
+138. **A story with no recorded language offers no translation.** The toggle
+     needs to name the language it is carrying *from*, and guessing "probably
+     English" would be inventing the one fact decision 130 was careful not to
+     invent. Absent stays absent.
 
 ---
 

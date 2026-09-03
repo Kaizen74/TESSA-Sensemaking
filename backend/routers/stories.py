@@ -19,10 +19,13 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from backend import errors, stories
+from backend import ai_client, errors, stories, translate
+from backend.ai_client import AiError
 from backend.db import get_session
+from backend.languages import DEFAULT_LANGUAGE, MAX_LANGUAGE_CODE_CHARS, well_formed
 from backend.models import Anecdote, Framework
 from backend.routers.patterns import applied_filters, load_framework, scoped_ids
+from backend.translate import TranslationOut
 
 router = APIRouter(prefix="/api/stories", tags=["stories"])
 
@@ -125,6 +128,61 @@ def browse_stories(
         ],
         known_tags=stories.known_tags(session, scope),
     )
+
+
+@router.get("/{anecdote_id}/translation", response_model=TranslationOut)
+def get_translation(
+    anecdote_id: int,
+    session: Annotated[Session, Depends(get_session)],
+    target: Annotated[str, Query(max_length=MAX_LANGUAGE_CODE_CHARS)] = DEFAULT_LANGUAGE,
+) -> TranslationOut:
+    """One story, carried into another language for reading only (constraint 15).
+
+    ``GET`` because it reads a story, but it may write to the cache on the way —
+    which is a cache doing its job, not the endpoint changing anything. The
+    story itself is never touched: ``anecdotes.text`` is the record, and no
+    branch of this function writes to it.
+
+    The response always carries ``is_translation`` and the original text, so a
+    screen cannot render the translation without both. A failure is an ordinary
+    state of the app (constraint 4): the story stays readable in the language it
+    was told in, which is the one that matters.
+    """
+    anecdote = session.get(Anecdote, anecdote_id)
+    if anecdote is None:
+        raise errors.not_found(
+            "story_not_found",
+            f"There is no story numbered {anecdote_id}.",
+            "Reload the list and pick a story from it.",
+        )
+
+    if not well_formed(target):
+        raise errors.bad_request(
+            "unknown_language",
+            f"'{target}' is not a language Narrative Lens can translate into.",
+            "Use the language buttons on the story rather than editing the "
+            "address.",
+        )
+
+    if anecdote.language_code == target:
+        raise errors.bad_request(
+            "already_in_that_language",
+            "That story was already told in this language.",
+            "Read it as it is — it is the original, which is always the better "
+            "text.",
+        )
+
+    hit = translate.cached(session, anecdote.id, target)
+    if hit is not None:
+        return translate.to_out(anecdote, hit, from_cache=True)
+
+    try:
+        text = translate.translate(anecdote.text, target)
+    except AiError as exc:
+        raise errors.upstream(exc.code, exc.message, exc.action) from exc
+
+    row = translate.store(session, anecdote.id, target, text, ai_client.MODEL)
+    return translate.to_out(anecdote, row, from_cache=False)
 
 
 @router.put("/{anecdote_id}/marks", response_model=stories.Story)

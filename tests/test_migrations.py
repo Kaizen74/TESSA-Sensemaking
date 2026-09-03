@@ -28,6 +28,9 @@ EXPECTED_TABLES = {
     "tags",
     # Added by the meaningfulness delta, phase D (revision 003).
     "interpretations",
+    # Added by the meaningfulness delta, phase F (revision 005). A display
+    # cache: deleting every row must leave the app correct, only slower.
+    "translations",
 }
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

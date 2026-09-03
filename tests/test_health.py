@@ -85,6 +85,9 @@ EXPECTED_API_PATHS = {
     "/api/interpretations",
     # Meaningfulness delta, phase E — the languages the Studio can offer.
     "/api/frameworks/languages",
+    # Meaningfulness delta, phase F — read-time translation. Display-only:
+    # deleting every cached row leaves the app correct, only slower.
+    "/api/stories/{anecdote_id}/translation",
 }
 
 

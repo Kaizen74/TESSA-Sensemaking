@@ -27,6 +27,7 @@ from sqlalchemy import (
     MetaData,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -267,6 +268,46 @@ class Interpretation(Base):
     )
     #: How many people were in the room, when anybody counted.
     participant_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class Translation(Base):
+    """A cached read-time translation of one story into one language.
+
+    Constraint 15 in table form, and the constraint turns almost entirely on
+    what this table *is not*. It is not the story. It is not a signification.
+    Nothing computes from it, nothing exports from it, and Stage B never sees
+    it. It exists so that reading the same story twice does not cost two API
+    calls — and that is the whole of its job.
+
+    The test of that claim is blunt and lives in
+    ``tests/test_translation_readtime.py``: delete every row here and the app
+    must be fully correct, only slower. Every pattern, every landscape, every
+    export byte-identical. A cache that failed that test would have stopped
+    being a cache and started being the record.
+
+    ``model_used`` is kept because a translation is a machine's reading of
+    somebody's words, and six months on the only honest answer to "who said
+    that?" is the name of the model that said it.
+    """
+
+    __tablename__ = "translations"
+    # One translation per story per target language, replaced rather than
+    # accumulated — which is what makes this a cache and not a log. No explicit
+    # name: the ``uq`` naming convention builds it from the columns.
+    __table_args__ = (UniqueConstraint("anecdote_id", "target_language_code"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    anecdote_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("anecdotes.id"), nullable=False
+    )
+    target_language_code: Mapped[str] = mapped_column(String(35), nullable=False)
+    translated_text: Mapped[str] = mapped_column(Text, nullable=False)
+    translated_at: Mapped[dt.datetime] = mapped_column(
+        DateTime, nullable=False, default=utcnow
+    )
+    #: Which model produced it. A translation is somebody else's reading of a
+    #: person's words, and the reader deserves to know whose.
+    model_used: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
 class Tag(Base):

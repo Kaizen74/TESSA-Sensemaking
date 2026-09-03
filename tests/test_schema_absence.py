@@ -68,7 +68,11 @@ RESPONDENT_TABLES = frozenset({"anecdotes", "significations", "tags", "capture_l
 ALL_TABLES = frozenset({"frameworks", "capture_links", "anecdotes", "significations",
                         "import_jobs", "tags",
                         # Added by the meaningfulness delta, phase D.
-                        "interpretations"})
+                        "interpretations",
+                        # Added by the meaningfulness delta, phase F. Not a
+                        # respondent table: it holds a machine's reading of a
+                        # story, keyed by the story, and no identifier.
+                        "translations"})
 
 
 def _columns(table_name: str) -> set[str]:

@@ -550,5 +550,53 @@ print("  quality signals: every question accounted for, centre only on triads")
     exit 1
 }
 
+# Constraint 15, second half: a translation is a reading aid, never the record.
+# The story is captured in Tamil, translated, and then the cache is checked to
+# have changed nothing about the story or the figures.
+ta_id="$(curl -sf -X POST "http://127.0.0.1:${SMOKE_PORT}/api/capture" \
+    -H 'Content-Type: application/json' \
+    -d "{\"framework_id\": ${framework_id}, \"text\": \"பாகங்கள் கடைசி நேரத்தில் வந்தன.\", \"significations\": []}" \
+    | $PYTHON -c 'import json,sys; print(json.load(sys.stdin)["anecdote_id"])')" || {
+    echo "  FAIL: could not capture a story to translate"
+    exit 1
+}
+
+patterns_before="$(curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/patterns/${framework_id}")"
+curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/stories/${ta_id}/translation?target=ms" \
+    | $PYTHON -c '
+import json, sys
+
+reply = json.load(sys.stdin)
+# The reply cannot be rendered unlabelled: the flag and the original travel with it.
+assert reply["is_translation"] is True, reply
+assert reply["original_text"] == "பாகங்கள் கடைசி நேரத்தில் வந்தன.", reply
+assert reply["translated_text"] != reply["original_text"], reply
+assert reply["model_used"], reply
+print("  translation carries is_translation and the original alongside it")
+' || {
+    echo "  FAIL: the translation endpoint broke its own contract"
+    exit 1
+}
+
+if [[ "$(curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/patterns/${framework_id}")" != "$patterns_before" ]]; then
+    echo "  FAIL: caching a translation changed the figures (constraint 15)"
+    exit 1
+fi
+echo "  caching a translation left every figure unchanged"
+
+curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/stories/${framework_id}" | $PYTHON -c '
+import json, sys
+
+stories = json.load(sys.stdin)["stories"]
+told = [s for s in stories if "பாகங்கள்" in s["text"]]
+assert told, "the Tamil story vanished from the browser"
+# anecdotes.text is the record and is untouched by translating it.
+assert told[0]["text"] == "பாகங்கள் கடைசி நேரத்தில் வந்தன.", told[0]
+print("  the story is still the story it was told as")
+' || {
+    echo "  FAIL: translating a story changed the story"
+    exit 1
+}
+
 echo
 echo "ALL CHECKS PASSED"

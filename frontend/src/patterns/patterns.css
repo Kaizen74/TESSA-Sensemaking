@@ -884,6 +884,67 @@
   }
 }
 
+/* ---- A story's translation, read-time and display-only (constraint 15) ----
+ *
+ * The original is the record and stays primary: full body weight, in place,
+ * unmoved. This sits beneath it in a quieter register with a rule down its
+ * left, so a reader can see at a glance which text is the story and which is a
+ * machine's reading of it. The label is never optional.
+ */
+
+.nl-translate {
+  margin: var(--nl-space-2) 0 var(--nl-space-3);
+}
+
+.nl-translate__toggle {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-3);
+  background: none;
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-ink);
+  cursor: pointer;
+}
+
+.nl-translate__toggle:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.nl-translate__body {
+  margin-top: var(--nl-space-3);
+  padding-left: var(--nl-space-3);
+  border-left: 3px solid var(--nl-grey-line);
+}
+
+/* Says what it is, every time, in the same block as the text it describes. */
+.nl-translate__label {
+  margin: 0 0 var(--nl-space-2);
+  font-size: var(--nl-text-xs);
+  line-height: var(--nl-leading-body);
+  color: var(--nl-grey);
+}
+
+/* Secondary weight: smaller and greyer than the original above it. */
+.nl-translate__text {
+  margin: 0;
+  font-size: var(--nl-text-sm);
+  line-height: var(--nl-leading-body);
+  color: var(--nl-grey);
+}
+
+.nl-translate__error {
+  margin: var(--nl-space-2) 0 0;
+  font-size: var(--nl-text-sm);
+  line-height: var(--nl-leading-body);
+}
+
+.nl-translate__note {
+  color: var(--nl-grey);
+}
+
 /* ---- What rooms concluded, beneath the landscape (constraint 16) ---- */
 
 .nl-rooms {

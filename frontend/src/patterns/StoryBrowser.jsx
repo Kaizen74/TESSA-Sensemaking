@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { api } from "../api.js";
+import { api, ApiError } from "../api.js";
 import "./patterns.css";
 
 /** Wait this long after the last keystroke before searching. */
@@ -198,6 +198,10 @@ export function StoryBrowser({ framework, params }) {
                 </p>
               )}
 
+              {/* The original is always the primary text and always comes
+                  first. The translation, when asked for, appears beneath it at
+                  secondary weight with a label that cannot be turned off
+                  (delta §5, constraint 15). */}
               <p className="nl-story__text">{story.text}</p>
 
               <p className="nl-story__meta">
@@ -213,6 +217,11 @@ export function StoryBrowser({ framework, params }) {
                 </span>
                 <span>v{story.framework_version}</span>
               </p>
+
+              {/* After the provenance line rather than before it: the words as
+                  told and the line naming the language they were told in are
+                  one record, and a reading aid does not get to split them. */}
+              <StoryTranslation story={story} />
 
               <TagEditor story={story} onSave={(tags) => mark(story, { tags })} />
             </li>
@@ -245,6 +254,90 @@ export function StoryBrowser({ framework, params }) {
 }
 
 /** The analyst's own words on one story. Comma separated, saved on blur. */
+/**
+ * A story's translation, read-time and display-only (delta §5, constraint 15).
+ *
+ * The whole design of this component is one rule: the translation and its
+ * label are the same element. There is no branch in which the text renders and
+ * the label does not — they are returned together, and the label is not
+ * conditional on anything. A reader can never be looking at a machine's reading
+ * of somebody's words while believing they are looking at the words.
+ *
+ * The original stays above and stays primary. This sits underneath at secondary
+ * weight, because it is an aid to reading the story, not the story.
+ *
+ * A failure leaves the original exactly where it was. Not being able to reach
+ * the AI is an ordinary state of this app (constraint 4), and the text that
+ * matters is the one already on screen.
+ */
+function StoryTranslation({ story }) {
+  const [shown, setShown] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Nothing to carry across: the story is already in the reading language, or
+  // nobody recorded what language it is in and guessing would be inventing.
+  if (!story.language_code || story.language_code === "en") return null;
+
+  async function fetchTranslation() {
+    if (shown) {
+      setShown(null);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      setShown(await api.translateStory(story.anecdote_id, "en"));
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught : null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="nl-translate">
+      <button
+        type="button"
+        className="nl-translate__toggle"
+        onClick={fetchTranslation}
+        disabled={busy}
+      >
+        {busy
+          ? "Translating…"
+          : shown
+            ? "Hide the English translation"
+            : "Read it in English"}
+      </button>
+
+      {error && (
+        <p className="nl-translate__error" role="alert">
+          {error.message}{" "}
+          {error.action && <span className="nl-translate__note">{error.action}</span>}{" "}
+          <span className="nl-translate__note">
+            The story above is unchanged — it is the original, and it is the one
+            that counts.
+          </span>
+        </p>
+      )}
+
+      {shown && (
+        <div className="nl-translate__body">
+          {/* Label and text together, always. Not a sibling that a later edit
+              could make conditional — they are one block, and the label is
+              first so it is read first. */}
+          <p className="nl-translate__label">
+            Translated by {shown.model_used} from{" "}
+            {shown.original_language_name} — the original is above, and it is
+            what was actually said.
+          </p>
+          <p className="nl-translate__text">{shown.translated_text}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TagEditor({ story, onSave }) {
   const [text, setText] = useState(story.tags.join(", "));
 
