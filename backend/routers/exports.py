@@ -53,6 +53,7 @@ def export_csv(
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    language_code: Annotated[str | None, Query()] = None,
     signified_by: Annotated[str | None, Query()] = None,
     ids: Annotated[str | None, Query()] = None,
 ) -> PlainTextResponse:
@@ -67,7 +68,9 @@ def export_csv(
     carries no reading anybody made on a storyteller's behalf.
     """
     framework = load_framework(session, framework_id)
-    filters = applied_filters(respondent_group, input_method, entry_mode, source_type)
+    filters = applied_filters(
+        respondent_group, input_method, entry_mode, source_type, language_code
+    )
     anecdotes, placements = load_rows(
         session,
         framework,
@@ -113,11 +116,14 @@ def export_brief(
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    language_code: Annotated[str | None, Query()] = None,
     signified_by: Annotated[str | None, Query()] = None,
 ) -> PlainTextResponse:
     """The Pattern Brief: findings in markdown, generated from the figures."""
     framework = load_framework(session, framework_id)
-    filters = applied_filters(respondent_group, input_method, entry_mode, source_type)
+    filters = applied_filters(
+        respondent_group, input_method, entry_mode, source_type, language_code
+    )
     patterns = load_view(
         session,
         framework,
@@ -152,6 +158,7 @@ def export_heard(
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    language_code: Annotated[str | None, Query()] = None,
     signified_by: Annotated[str | None, Query()] = None,
 ) -> PlainTextResponse:
     """"What We Heard": the summary that goes back to the room.
@@ -167,7 +174,9 @@ def export_heard(
     their stories, without saying so, is the failure constraint 14 names.
     """
     framework = load_framework(session, framework_id)
-    filters = applied_filters(respondent_group, input_method, entry_mode, source_type)
+    filters = applied_filters(
+        respondent_group, input_method, entry_mode, source_type, language_code
+    )
     patterns = load_view(
         session,
         framework,

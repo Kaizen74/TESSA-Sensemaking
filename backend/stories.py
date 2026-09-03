@@ -30,6 +30,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from backend import dataset, errors
+from backend.languages import UNKNOWN_LANGUAGE_LABEL, display_name
 from backend.models import Anecdote, Signification, Tag
 
 #: The tag a star is stored as. Reserved, and refused as a typed tag, so a
@@ -59,6 +60,13 @@ class Story(BaseModel):
     #: whose words the title is rather than leaving a reader to guess.
     respondent_title: str | None
     text: str
+    #: The language it was told in, and how the app came to believe that
+    #: (constraint 15). Null reads as unknown on screen, never as English.
+    language_code: str | None = None
+    language_source: str | None = None
+    #: The language written the way an operator reads it, so no screen has to
+    #: keep its own copy of the mapping.
+    language_name: str = UNKNOWN_LANGUAGE_LABEL
     respondent_group: str | None
     created_at_hour: dt.datetime | None
     source_type: str
@@ -119,6 +127,16 @@ def selected_ids(ids: str | None) -> set[int] | None:
             )
         chosen.add(int(part))
     return chosen
+
+
+def language_label(code: str | None) -> str:
+    """The language written the way a reader reads it (constraint 15).
+
+    One definition, so a story browser, a drill drawer and an export can never
+    disagree about what to call a language — and so that absent reads as
+    unknown rather than as English in every one of them.
+    """
+    return display_name(code)
 
 
 def display_title(anecdote: Anecdote) -> str:

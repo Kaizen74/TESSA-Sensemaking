@@ -29,6 +29,7 @@ from backend.capture_schema import (
 from backend.dataset import STATUS_VALIDATED
 from backend.db import get_session
 from backend.framework_schema import FrameworkDefinition
+from backend.languages import LANGUAGE_SOURCE_RESPONDENT, LANGUAGE_SOURCE_UNKNOWN
 from backend.models import Anecdote, Framework, Signification, hour_rounded_now, utcnow
 
 router = APIRouter(prefix="/api/capture", tags=["capture"])
@@ -93,6 +94,18 @@ def store_capture(
     except CaptureError as exc:
         raise errors.bad_request("capture_invalid", str(exc), exc.action) from exc
 
+    # Constraint 15: the language is part of the record, so it is checked
+    # against what this question set actually offers. A browser cannot invent a
+    # language the framework was never published in — that would be a claim
+    # about the story nobody made.
+    offered = definition.capture_settings.offered_languages()
+    if body.language_code and body.language_code not in offered:
+        raise errors.bad_request(
+            "unknown_language",
+            f"This question set is not offered in '{body.language_code}'.",
+            "Reload the page so you have the current languages, then try again.",
+        )
+
     groups = definition.capture_settings.respondent_groups
     if body.respondent_group and groups and body.respondent_group not in groups:
         raise errors.bad_request(
@@ -112,6 +125,13 @@ def store_capture(
         # first. An empty box is no name at all, not a name that is "".
         title_auto=_auto_title(body.text),
         respondent_title=(body.respondent_title or None),
+        # The language, and how we came to believe it. A story captured through
+        # the wizard was told in the language the person chose; if they chose
+        # nothing there is nothing to record, and unknown is the honest answer.
+        language_code=(body.language_code or None),
+        language_source=(
+            LANGUAGE_SOURCE_RESPONDENT if body.language_code else LANGUAGE_SOURCE_UNKNOWN
+        ),
         source_type=SOURCE_TYPE_CAPTURE,
         entry_mode=entry_mode,
         capture_link_id=capture_link_id,

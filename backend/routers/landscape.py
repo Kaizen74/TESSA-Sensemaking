@@ -124,6 +124,7 @@ def get_landscape(
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    language_code: Annotated[str | None, Query()] = None,
     signified_by: Annotated[str | None, Query()] = None,
 ) -> LandscapeSet:
     """The terrain for one triangle: surface and contour twin, from one grid.
@@ -133,7 +134,9 @@ def get_landscape(
     different claim about a workforce than a hill made of their own.
     """
     framework = load_framework(session, framework_id)
-    filters = applied_filters(respondent_group, input_method, entry_mode, source_type)
+    filters = applied_filters(
+        respondent_group, input_method, entry_mode, source_type, language_code
+    )
     provenance = applied_signified_by(signified_by)
 
     if split_by is not None and split_by not in FILTERABLE:
@@ -226,6 +229,7 @@ def get_explorer(
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    language_code: Annotated[str | None, Query()] = None,
     signified_by: Annotated[str | None, Query()] = None,
 ) -> ExplorerSet:
     """Every numeric answer, so any three can be plotted against each other.
@@ -234,7 +238,9 @@ def get_explorer(
     point in the Explorer is the same placement, seen from another angle.
     """
     framework = load_framework(session, framework_id)
-    filters = applied_filters(respondent_group, input_method, entry_mode, source_type)
+    filters = applied_filters(
+        respondent_group, input_method, entry_mode, source_type, language_code
+    )
     anecdotes, placements = load_rows(
         session,
         framework,
@@ -262,6 +268,7 @@ def get_clusters(
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    language_code: Annotated[str | None, Query()] = None,
     signified_by: Annotated[str | None, Query()] = None,
 ) -> ClusterSet:
     """k-means over the Explorer's dimensions. Deterministic, and descriptive only.

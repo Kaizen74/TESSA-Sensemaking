@@ -18,6 +18,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from backend.languages import DEFAULT_LANGUAGE, well_formed
+
 #: The anonymity statement. Every clause is enforced by the schema:
 #: no identifier columns exist (``tests/test_schema_absence.py``) and story times
 #: are hour-rounded (``backend.models.hour_rounded_now``).
@@ -143,6 +145,37 @@ class CaptureSettings(_Strict):
     reflection_enabled: bool = True
     voice_enabled: bool = True
     respondent_groups: list[LabelStr] = Field(default_factory=list, max_length=20)
+    #: The languages this question set is offered in (delta §6). Empty means
+    #: English alone, so nothing changes for a framework nobody configures —
+    #: and an existing framework's definition_json stays valid unread.
+    #:
+    #: A list rather than a boolean because the welcome screen shows exactly
+    #: these, in this order, and an operator running a Malay-and-Tamil site has
+    #: no use for a menu of fourteen.
+    languages: list[str] = Field(default_factory=list, max_length=20)
+
+    @field_validator("languages")
+    @classmethod
+    def languages_must_be_language_tags(cls, codes: list[str]) -> list[str]:
+        """Well-formed BCP-47, and each offered once.
+
+        Shape only — no registry lookup. An offline app cannot consult IANA, and
+        refusing a real language because a bundled copy was stale would be worse
+        than accepting a well-formed tag nobody uses.
+        """
+        for code in codes:
+            if not well_formed(code):
+                raise ValueError(
+                    f"'{code}' is not a language tag. Use a code like 'en', "
+                    "'ms', 'ta' or 'zh-Hans'."
+                )
+        if len({code.casefold() for code in codes}) != len(codes):
+            raise ValueError("each language needs to be listed once")
+        return codes
+
+    def offered_languages(self) -> list[str]:
+        """What the welcome screen offers: the configured list, or English."""
+        return list(self.languages) if self.languages else [DEFAULT_LANGUAGE]
 
 
 class FrameworkDefinition(_Strict):

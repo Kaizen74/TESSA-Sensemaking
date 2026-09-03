@@ -100,6 +100,7 @@ def get_quality(
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    language_code: Annotated[str | None, Query()] = None,
     signified_by: Annotated[str | None, Query()] = None,
 ) -> QualityReport:
     """Centre-parking and skip rate per signifier, for the stories in scope.
@@ -110,7 +111,9 @@ def get_quality(
     (constraint 11).
     """
     framework = load_framework(session, framework_id)
-    filters = applied_filters(respondent_group, input_method, entry_mode, source_type)
+    filters = applied_filters(
+        respondent_group, input_method, entry_mode, source_type, language_code
+    )
     provenance = applied_signified_by(signified_by)
     definition = FrameworkDefinition.model_validate(framework.definition_json)
 

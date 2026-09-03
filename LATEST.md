@@ -2,8 +2,37 @@
 
 **Updated:** 2026-09-02
 **Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; meaningfulness
-delta phases A, B, C and D of F complete
-**Status:** green (1235 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+delta phases A–E of F complete
+**Status:** green (1268 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+
+---
+
+## The meaningfulness delta — phase E is done
+
+Stories now keep the language they were told in.
+
+In the **Studio**, a question set can list the languages it is published in —
+`en, ms, ta, zh-Hans`. Leave it empty and nothing changes: English alone, no
+chooser, exactly as before.
+
+Where there is more than one, the **welcome screen** asks which language the
+person will tell it in, each written in its own script — English, Bahasa Melayu,
+தமிழ், 简体中文 — because somebody scanning for their language is looking for
+*their* word, not ours. One tap, before the story starts.
+
+- **Absent means unknown, never English.** A story nobody recorded a language
+  for reads as "Language not recorded". Assuming the majority language of
+  whoever built the app is exactly how a multilingual dataset quietly becomes a
+  monolingual one.
+- **Two columns, not one.** The tag, and *how the app came to believe it* — a
+  respondent who chose their own language and an operator guessing while typing
+  up paper are making claims of very different strength.
+- **The tag changes no figure.** It filters, splits the landscape and exports —
+  and that is all it does. There is a test that tags every story in the golden
+  set and asserts patterns, landscape, explorer, clusters and quality all come
+  back identical, character for character.
+- **Nothing is signified in translation.** Stage B is given the story as told
+  and nothing else; a test reads the exact bytes sent over the wire.
 
 ---
 
@@ -247,15 +276,14 @@ directions.
 
 ## Next step
 
-**Delta phase E — the original language of record.** Migration 004 adds
-`language_code` and `language_source` to stories. A short language list per
-question set (English alone by default, so nothing changes for what you already
-have), the language shown wherever a story is, and it added to the CSV and the
-filters. Per constraint 15 the story is signified in the language it was told
-in and nothing else: Stage B receives the original text only, and a story's
-language never affects any computation. Delta §5 and §6 have the spec.
+**Delta phase F — read-time translation.** Migration 005 adds a `translations`
+cache, and `/api/stories/{id}/translation` returns a translation with
+`is_translation: true` and the original alongside, so the UI cannot show one
+unlabelled. The guard is that deleting every cached row changes nothing except
+speed — a test proves it — because the cache is display-only and the original
+stays the record. Delta §4a and §6 have the spec.
 
-Nothing in the PRD itself is unbuilt; everything left is delta phases E and F.
+Nothing in the PRD itself is unbuilt; phase F is the last of the delta.
 
 ## How to resume
 
@@ -301,6 +329,9 @@ and the text after it, which silently runs two words together.
 | Let people name their own story | It is already there — the line under the story box, and on the printed card |
 | Check whether a question actually worked | Patterns → **Supporting charts** → open **Check the questions** at the bottom |
 | Get a second opinion on your wording, before you collect anything | Studio → **Check this design** |
+| Offer a question set in more than one language | Studio → **Languages offered** → e.g. `en, ms, ta` |
+| See which language a story was told in | Patterns → **Story browser** (or the CSV) |
+| Look at one language's stories only | Patterns → **Language it was told in** in the rail |
 | Run a workshop around the landscape | Patterns → **Open session mode** (Esc to leave) |
 | Record what a room concluded | Session mode → type it → **Record what the room said** |
 | Read back what rooms have said | Patterns → **Landscape** → scroll to **What rooms made of this** |

@@ -362,10 +362,19 @@ own regression list.
   an interpretation reach the terrain's count; the guard failed as intended.
   Gate green: ruff clean, eslint clean, 1235 passed, frontend built, smoke test
   end-to-end.
-- [ ] **Phase E — Language of record.** (item 6, part 1) Migration 003.
-  Per-framework language list, language on capture and on every story display,
-  language in the CSV and the filters. Test: `test_language_capture.py`.
-  Commit: `delta-E: original language of record`.
+- [x] **Phase E — Language of record.** (item 6, part 1) — **complete 2026-09-03**
+  Migration 004 adds `anecdotes.language_code` and `language_source`. A framework
+  publishes a short language list (empty means English alone, so an existing
+  question set needs no attention); the welcome screen offers the choice only
+  when there is one, each language written in its own script; the tag travels
+  into the story browser, the CSV and the filter rail. Absent reads as
+  *unknown*, never as English. New: `tests/test_language_capture.py` (27),
+  including the guard that a language tag changes no figure anywhere — patterns,
+  landscape, explorer, clusters and quality all serialised and compared before
+  and after tagging every story. Mutation-checked by making language a
+  demographic breakdown; the guard and both goldens failed as intended. Gate
+  green: ruff clean, eslint clean, 1268 passed, frontend built, smoke test
+  end-to-end.
 - [ ] **Phase F — Read-time translation.** (item 6, part 2) Migration 004. The
   translation endpoint with its mock, the display-only cache, and the permanent
   translation label. Test: `test_translation_readtime.py`, including the
@@ -1042,6 +1051,38 @@ simpler option was taken unless noted.
 126. **"What we heard" does not carry them.** A conclusion nine people drew in a
      workshop is not something to hand back to everyone who told a story as
      though it were their own finding. The respondents' copy is unchanged.
+
+### Delta phase E
+
+127. **The migration is numbered 004, not the delta's 003.** Same reasoning as
+     decision 121: migrations are numbered in the order they are applied, and
+     phase D landed first. Phase F becomes 005.
+128. **No CHECK constraint on `language_source`.** SQLite cannot add one to an
+     existing table without rebuilding it, which is the kind of rewrite
+     additive-only migrations exist to avoid — and it would be the first time
+     this schema rebuilt a table holding real stories. The vocabulary is
+     enforced in the schema layer, exactly where
+     `significations.signified_by`'s already is.
+129. **`language_code` joins `FILTERABLE` but not `DEMOGRAPHIC_TITLES`.** The
+     delta says to add it to `FILTERABLE`, and that is done — it filters every
+     view and splits the landscape. It is deliberately *not* a fifth demographic
+     chart: that would move `patterns_20_anecdotes.json`, which §7 acceptance 13
+     forbids. The filter rail sources its options from the question set's
+     published language list instead, which is the more honest offer anyway —
+     "we asked in Tamil and got nothing back" is worth being able to see.
+130. **A captured story always records a source; an imported one records
+     nothing.** Capture through the wizard stores `respondent_selected` when the
+     person chose and `unknown` when they did not. An imported story leaves both
+     columns null, because nobody was ever asked. "Asked and declined" and "never
+     asked" are different facts and the two are distinguishable.
+131. **The chooser appears only when the question set offers more than one
+     language.** A menu of one is a screen standing between a respondent and
+     their story (constraint 10), and it would mean every existing framework
+     grew a step overnight.
+132. **Unknown is not filterable.** `applied_filters` drops empty values, so
+     there is no way to ask for "stories with no language". The CSV carries the
+     blank and an operator can sort on it; adding a sentinel value to the filter
+     vocabulary would mean inventing a language code that is not one.
 
 ---
 

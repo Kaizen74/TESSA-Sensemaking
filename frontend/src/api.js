@@ -89,6 +89,10 @@ export const api = {
         ...(name ? { name } : {}),
       }),
     }),
+  // The languages the Studio can offer (delta phase E). A fixed local list —
+  // constraint 4 permits no network for this.
+  knownLanguages: () => request("/api/frameworks/languages"),
+
   // The design linter (delta phase C). AI-calling, and the only model call in
   // the app that never sees a story — POST because it costs money and happens
   // when somebody clicks, never on a page load.

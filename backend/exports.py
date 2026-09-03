@@ -61,6 +61,12 @@ PROVENANCE_COLUMNS = [
     "title",
     "respondent_title",
     "text",
+    # The language it was told in, and how the app came to believe that
+    # (constraint 15). Two columns, because a respondent who chose their own
+    # language and an operator who guessed while typing up paper are making
+    # claims of very different strength.
+    "language_code",
+    "language_source",
     "respondent_group",
     "created_at_hour",
     "status",
@@ -168,6 +174,8 @@ def dataset_csv(
             "title": anecdote.title_auto or "",
             "respondent_title": anecdote.respondent_title or "",
             "text": anecdote.text,
+            "language_code": anecdote.language_code or "",
+            "language_source": anecdote.language_source or "",
             "respondent_group": anecdote.respondent_group or "",
             "created_at_hour": _stamp(anecdote.created_at_hour),
             "status": anecdote.status,

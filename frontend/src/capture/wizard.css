@@ -123,6 +123,48 @@
   color: var(--nl-grey);
 }
 
+/*
+ * The language chooser on the welcome screen (delta phase E). Shown only when
+ * the question set is published in more than one, so most respondents never
+ * meet it. Each option is written in its own script, which is the whole point:
+ * somebody scanning for their language is looking for their word.
+ */
+.nl-wizard__languages {
+  margin: var(--nl-space-4) 0;
+}
+
+.nl-wizard__languages-label {
+  display: block;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+  margin-bottom: var(--nl-space-2);
+}
+
+.nl-wizard__language-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nl-space-2);
+}
+
+.nl-wizard__language {
+  min-height: var(--nl-tap-target);
+  padding: 0 var(--nl-space-3);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-base);
+  color: var(--nl-ink);
+  cursor: pointer;
+}
+
+/* Marked by a fill and an inset rule, not by colour alone (13c). */
+.nl-wizard__language--chosen {
+  border-color: var(--nl-accent);
+  box-shadow: inset 3px 0 0 var(--nl-accent);
+  font-weight: var(--nl-weight-medium);
+}
+
 /* Voice sits beside the box it writes into, never in place of it. */
 .nl-voice {
   margin-top: var(--nl-space-3);

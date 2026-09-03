@@ -418,6 +418,46 @@ print("  clusters carry their seed and their caveat")
     exit 1
 }
 
+# Constraint 15: a story keeps the language it was told in, and that tag
+# changes no figure. The framework above is English-only, so a language is
+# refused rather than silently accepted.
+lang_before="$(curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/patterns/${framework_id}")"
+lang_status="$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+    "http://127.0.0.1:${SMOKE_PORT}/api/capture" -H 'Content-Type: application/json' \
+    -d "{\"framework_id\": ${framework_id}, \"text\": \"A story in a language this set is not offered in.\", \"language_code\": \"ta\", \"significations\": []}")"
+if [[ "$lang_status" != "400" ]]; then
+    echo "  FAIL: a language the question set does not offer was accepted (got $lang_status)"
+    exit 1
+fi
+echo "  a language the question set does not offer is refused"
+
+curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/stories/${framework_id}" | $PYTHON -c '
+import json, sys
+
+page = json.load(sys.stdin)
+for story in page["stories"]:
+    # Nobody asked the person who wrote it, so it reads as unknown — not English.
+    assert story["language_code"] is None, story
+    assert story["language_name"] == "Language not recorded", story
+print("  a story with no language reads as unknown, never as English")
+' || {
+    echo "  FAIL: an unrecorded language did not read as unknown"
+    exit 1
+}
+
+curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/frameworks/languages" | $PYTHON -c '
+import json, sys
+
+offered = json.load(sys.stdin)
+codes = {entry["code"] for entry in offered}
+assert {"en", "ms", "ta", "zh-Hans"} <= codes, sorted(codes)
+assert all(entry["endonym"] for entry in offered)
+print("  the Studio can offer %d languages, each named in its own script" % len(offered))
+' || {
+    echo "  FAIL: the language list did not answer"
+    exit 1
+}
+
 # Constraint 16 over the wire: a room records what it concluded, and the
 # landscape is the same picture afterwards. This is the delta phase D guard.
 interp="http://127.0.0.1:${SMOKE_PORT}/api/interpretations"

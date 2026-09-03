@@ -64,13 +64,20 @@ def applied_filters(
     input_method: str | None,
     entry_mode: str | None,
     source_type: str | None,
+    language_code: str | None = None,
 ) -> dict[str, str]:
-    """The filters actually in force, as plain field/value pairs."""
+    """The filters actually in force, as plain field/value pairs.
+
+    ``language_code`` is last and defaults to absent so that every existing
+    caller keeps working unchanged — the delta added it in phase E, and a view
+    that never passes one behaves exactly as it did before.
+    """
     chosen = {
         "respondent_group": respondent_group,
         "input_method": input_method,
         "entry_mode": entry_mode,
         "source_type": source_type,
+        "language_code": language_code,
     }
     return {field: value for field, value in chosen.items() if value}
 
@@ -324,6 +331,7 @@ def get_patterns(
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    language_code: Annotated[str | None, Query()] = None,
     signified_by: Annotated[str | None, Query()] = None,
 ) -> PatternSet:
     """Every supporting chart for one framework version, or for its lineage.
@@ -338,7 +346,9 @@ def get_patterns(
     the app's central claim untrue in the one place it is checkable.
     """
     framework = load_framework(session, framework_id)
-    filters = applied_filters(respondent_group, input_method, entry_mode, source_type)
+    filters = applied_filters(
+        respondent_group, input_method, entry_mode, source_type, language_code
+    )
     provenance = applied_signified_by(signified_by)
 
     unknown = set(filters) - set(FILTERABLE)

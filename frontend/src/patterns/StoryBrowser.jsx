@@ -202,6 +202,9 @@ export function StoryBrowser({ framework, params }) {
 
               <p className="nl-story__meta">
                 {story.respondent_group && <span>{story.respondent_group}</span>}
+                {/* Delta phase E: the language it was told in, wherever a story
+                    is shown. Absent reads as unknown, never as English. */}
+                <span>{story.language_name}</span>
                 <span>{story.input_method}</span>
                 <span>{story.entry_mode}</span>
                 {story.source_file && <span>{story.source_file}</span>}

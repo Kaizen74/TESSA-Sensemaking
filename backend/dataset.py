@@ -52,6 +52,8 @@ STORY_COLUMNS = (
     Anecdote.text,
     Anecdote.title_auto,
     Anecdote.respondent_title,
+    Anecdote.language_code,
+    Anecdote.language_source,
     Anecdote.source_type,
     Anecdote.entry_mode,
     Anecdote.input_method,

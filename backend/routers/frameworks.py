@@ -27,6 +27,7 @@ from backend.edit_semantics import (
     rename_in_value,
 )
 from backend.framework_schema import FrameworkDefinition, default_definition
+from backend.languages import KNOWN_LANGUAGES, Language
 from backend.lint import LintFinding, lint
 from backend.models import Anecdote, Framework, Signification, utcnow
 from backend.paper_pack import render_paper_pack
@@ -155,6 +156,21 @@ def _next_version(session: Session, framework: Framework) -> int:
     ids = lineage_ids(session, framework)
     highest = session.scalar(select(func.max(Framework.version)).where(Framework.id.in_(ids)))
     return int(highest or framework.version) + 1
+
+
+@router.get("/languages", response_model=list[Language])
+def known_languages() -> list[Language]:
+    """The languages the Studio offers, named in English and in their own script.
+
+    A fixed local list (constraint 4: no network for this). A framework may
+    configure any subset, or any other well-formed tag the Studio lets an
+    operator type — this is a starting point, not a claim about which languages
+    exist.
+
+    Declared before ``/{framework_id}`` so "languages" is read as this route
+    rather than as a framework id.
+    """
+    return list(KNOWN_LANGUAGES)
 
 
 @router.get("", response_model=list[FrameworkOut])

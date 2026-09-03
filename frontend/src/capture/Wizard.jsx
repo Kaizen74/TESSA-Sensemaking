@@ -39,6 +39,11 @@ export { fromStored, toSubmission };
 export const STORY_NAME_PROMPT = "If you gave this story a name, what would it be?";
 export const MAX_RESPONDENT_TITLE_CHARS = 120;
 
+/** What a language calls itself, falling back to its tag. */
+export function endonymFor(code, languages) {
+  return languages.find((entry) => entry.code === code)?.endonym ?? code;
+}
+
 const STEP_WELCOME = "welcome";
 const STEP_STORY = "story";
 const STEP_SIGNIFIER = "signifier";
@@ -83,6 +88,11 @@ export function Wizard({ framework, onFinished = null, submit: submitOverride = 
   // it beyond length (delta §5). A name somebody chose for their own story is
   // right by definition.
   const [respondentTitle, setRespondentTitle] = useState("");
+  // Delta phase E. The language the story is being told in. Offered on the
+  // welcome screen only when the question set is published in more than one —
+  // a single-language site never sees a chooser and never sends a code.
+  const offeredLanguages = settings.languages ?? [];
+  const [language, setLanguage] = useState(null);
   const [values, setValues] = useState({});
   const [group, setGroup] = useState(null);
   const [restorable, setRestorable] = useState(null);
@@ -96,6 +106,17 @@ export function Wizard({ framework, onFinished = null, submit: submitOverride = 
   //: True from the instant a submission succeeds, so no later navigation can
   //  write the draft back. State would lag by a render; this cannot.
   const submittedRef = useRef(false);
+
+  // The names to write the languages in. A failure here is harmless: the codes
+  // themselves are shown instead, which is worse but still choosable.
+  const [languages, setLanguages] = useState([]);
+  useEffect(() => {
+    if (offeredLanguages.length < 2) return;
+    api
+      .knownLanguages()
+      .then(setLanguages)
+      .catch(() => setLanguages([]));
+  }, [offeredLanguages.length]);
 
   // On arrival, offer to pick up an unfinished story rather than silently
   // reinstating it — the respondent should know what happened.
@@ -168,6 +189,10 @@ export function Wizard({ framework, onFinished = null, submit: submitOverride = 
         // machine title either way; this only decides whether there is a
         // storyteller's one to prefer over it.
         respondent_title: respondentTitle.trim() || null,
+        // Only when the respondent actually chose. A framework offered in one
+        // language sends nothing, and the story reads as unknown rather than
+        // carrying a claim nobody made.
+        language_code: offeredLanguages.length > 1 ? language : null,
         input_method: usedVoice ? "voice" : "typed",
         respondent_group: group,
         significations: toSubmission(definition, values),
@@ -193,6 +218,7 @@ export function Wizard({ framework, onFinished = null, submit: submitOverride = 
     submittedRef.current = false;
     setText("");
     setRespondentTitle("");
+    setLanguage(null);
     setValues({});
     setGroup(null);
     setResult(null);
@@ -259,6 +285,42 @@ export function Wizard({ framework, onFinished = null, submit: submitOverride = 
           <h2 className="nl-wizard__heading">{settings.welcome_text}</h2>
           <p className="nl-wizard__promise">{settings.time_promise_text}</p>
           <p className="nl-wizard__anonymity">{settings.anonymity_text}</p>
+
+          {/* Delta phase E: only when there is a choice to make. One language
+              means no question, and a chooser of one is a screen between the
+              respondent and their story (constraint 10). */}
+          {offeredLanguages.length > 1 && (
+            <div className="nl-wizard__languages">
+              <span className="nl-wizard__languages-label" id="nl-language-label">
+                Which language will you tell it in?
+              </span>
+              <div
+                className="nl-wizard__language-row"
+                role="radiogroup"
+                aria-labelledby="nl-language-label"
+              >
+                {offeredLanguages.map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    role="radio"
+                    aria-checked={language === code}
+                    className={
+                      language === code
+                        ? "nl-wizard__language nl-wizard__language--chosen"
+                        : "nl-wizard__language"
+                    }
+                    onClick={() => setLanguage(language === code ? null : code)}
+                  >
+                    {/* Their word for it, not ours — a person scanning for
+                        their language is looking for how they write it. */}
+                    {endonymFor(code, languages)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <button type="button" className="nl-wizard__next" onClick={() => go(1)}>
             Start
           </button>

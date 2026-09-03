@@ -50,6 +50,7 @@ def browse_stories(
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    language_code: Annotated[str | None, Query()] = None,
 ) -> stories.StoryPage:
     """One page of stories: searched, filtered, newest first.
 
@@ -59,7 +60,9 @@ def browse_stories(
     version rule or the validated rule excludes.
     """
     framework = load_framework(session, framework_id)
-    filters = applied_filters(respondent_group, input_method, entry_mode, source_type)
+    filters = applied_filters(
+        respondent_group, input_method, entry_mode, source_type, language_code
+    )
     scope = scoped_ids(session, framework, mixed)
     chosen = stories.selected_ids(ids)
 
@@ -104,6 +107,9 @@ def browse_stories(
                 title=stories.display_title(row),
                 respondent_title=row.respondent_title,
                 text=row.text,
+                language_code=row.language_code,
+                language_source=row.language_source,
+                language_name=stories.language_label(row.language_code),
                 respondent_group=row.respondent_group,
                 created_at_hour=row.created_at_hour,
                 source_type=row.source_type,
@@ -163,6 +169,9 @@ def set_marks(
         title=stories.display_title(anecdote),
         respondent_title=anecdote.respondent_title,
         text=anecdote.text,
+        language_code=anecdote.language_code,
+        language_source=anecdote.language_source,
+        language_name=stories.language_label(anecdote.language_code),
         respondent_group=anecdote.respondent_group,
         created_at_hour=anecdote.created_at_hour,
         source_type=anecdote.source_type,

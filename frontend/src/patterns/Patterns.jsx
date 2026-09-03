@@ -45,6 +45,11 @@ const FILTERS = [
   { id: "respondent_group", label: "Who told it" },
   { id: "input_method", label: "How it was written" },
   { id: "entry_mode", label: "Where it came from" },
+  // Delta phase E. A story's language is a fact about the story, so it filters
+  // and splits like the rest. The dropdown offers only the languages actually
+  // present, so a single-language dataset shows one option and nobody wonders
+  // what the empty menu is for.
+  { id: "language_code", label: "Language it was told in" },
 ];
 
 /*
@@ -312,7 +317,7 @@ export function PatternsTab() {
 
   const selected = frameworks.find((row) => row.id === selectedId) ?? frameworks[0];
   const family = lineageOf(frameworks, selected);
-  const options = optionsFrom(view);
+  const options = optionsFrom(view, selected);
 
   // Session mode replaces the page rather than sitting inside it: the delta
   // asks for the landscape at full screen with the controls hidden, and a
@@ -367,7 +372,7 @@ export function PatternsTab() {
 
           <ProvenanceControl value={signifiedBy} onChange={setSignifiedBy} />
 
-          {FILTERS.map((filter) => (
+          {railFilters(options).map((filter) => (
             <label key={filter.id} className="nl-rail__field">
               <span className="nl-rail__label">{filter.label}</span>
               <select
@@ -913,12 +918,26 @@ function AnalystNotes({ count }) {
   );
 }
 
-function optionsFrom(view) {
+function optionsFrom(view, framework) {
   const options = {};
   for (const chart of view?.demographics ?? []) {
     options[chart.id] = chart.bars.filter((bar) => bar.count > 0).map((bar) => bar.label);
   }
+  // Language comes from what the question set is published in, not from a
+  // demographic chart. Deliberately: adding a fifth chart would move a golden
+  // that predates the delta, and the published list is the more honest offer
+  // anyway — "we asked in Tamil and got nothing back" is worth being able to see.
+  const languages = framework?.definition?.capture_settings?.languages ?? [];
+  if (languages.length > 0) options.language_code = languages;
   return options;
+}
+
+/** The filters worth showing: language only once there is a choice to make. */
+function railFilters(options) {
+  return FILTERS.filter(
+    (filter) =>
+      filter.id !== "language_code" || (options.language_code ?? []).length > 0,
+  );
 }
 
 function VersionChip({ versions }) {

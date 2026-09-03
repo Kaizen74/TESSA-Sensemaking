@@ -83,6 +83,8 @@ EXPECTED_API_PATHS = {
     # Meaningfulness delta, phase D — what a room concluded, stored beside the
     # pattern and never merged into it (constraint 16).
     "/api/interpretations",
+    # Meaningfulness delta, phase E — the languages the Studio can offer.
+    "/api/frameworks/languages",
 }
 
 

@@ -306,6 +306,26 @@ export function Studio() {
                 value={draft.capture_settings.time_promise_text}
                 onChange={(value) => patchSettings({ time_promise_text: value })}
               />
+              {/* Delta phase E. Empty means English alone, so an existing
+                  question set needs no attention and its respondents see no
+                  chooser. Comma separated like the groups above, because the
+                  operator is typing a short list either way. */}
+              <Field
+                label="Languages offered"
+                hint={
+                  "Comma-separated language codes, e.g. en, ms, ta. " +
+                  "Leave empty for English only."
+                }
+                value={(draft.capture_settings.languages ?? []).join(", ")}
+                onChange={(value) =>
+                  patchSettings({
+                    languages: value
+                      .split(",")
+                      .map((part) => part.trim())
+                      .filter(Boolean),
+                  })
+                }
+              />
               <Field
                 label="Respondent groups"
                 hint="Comma separated. Leave empty to not ask."

@@ -52,6 +52,11 @@ SIGNIFIER_TYPES = ("triad", "dyad", "stones", "mcq")
 #: framework row rather than a log entry (PRD §3).
 EDIT_LOG_KINDS = ("wording_fix",)
 
+#: How the app came to believe a story's language (delta §3). Mirrors
+#: ``backend.languages.LANGUAGE_SOURCES``; held here too so the CHECK constraint
+#: and the schema tests read from the models the way every other vocabulary does.
+LANGUAGE_SOURCES = ("respondent_selected", "admin_entered", "unknown")
+
 #: Which picture a room was looking at when it wrote something down (delta §3).
 INTERPRETATION_VIEW_KINDS = ("landscape", "contour", "supporting")
 
@@ -145,6 +150,15 @@ class Anecdote(Base):
     #: Kept beside ``title_auto`` rather than over it: which of the two a reader
     #: is looking at is exactly the distinction this column exists to make.
     respondent_title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: The language this story was told in — BCP-47, e.g. "ms", "zh-Hans"
+    #: (delta §3, constraint 15). Null means nobody recorded one, which reads as
+    #: unknown and never as English.
+    language_code: Mapped[str | None] = mapped_column(String(35), nullable=True)
+    #: How the app came to believe that. A respondent who chose their language
+    #: and an operator who guessed while typing up paper are making claims of
+    #: very different strength, and a column holding only the tag would flatten
+    #: the two.
+    language_source: Mapped[str | None] = mapped_column(String(30), nullable=True)
     source_type: Mapped[str] = mapped_column(String(50), nullable=False)
     entry_mode: Mapped[str] = mapped_column(String(20), nullable=False)
     capture_link_id: Mapped[int | None] = mapped_column(

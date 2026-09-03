@@ -52,7 +52,18 @@ HISTOGRAM_BINS = 10
 #: by. ``signified_by`` is not among them because it is not one of them — it
 #: lives on the signification, and it filters which *placements* count rather
 #: than which stories do. It has its own vocabulary below.
-FILTERABLE = ("respondent_group", "input_method", "entry_mode", "source_type")
+FILTERABLE = (
+    "respondent_group",
+    "input_method",
+    "entry_mode",
+    "source_type",
+    # Added by the delta, phase E. A story's language is a fact about the story,
+    # so it filters and splits like the rest of them. Deliberately *not* added to
+    # DEMOGRAPHIC_TITLES below: that would put a fifth chart into every
+    # supporting-charts view and move the pre-delta golden, which §7 acceptance
+    # 13 forbids. See PROGRESS.md "Decisions".
+    "language_code",
+)
 
 # --------------------------------------------------------------------------
 # Whose interpretation a view is showing (delta §1 item 1, constraint 14)

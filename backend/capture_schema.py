@@ -19,6 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from backend.barycentric import BarycentricError, normalise, sums_to_one
 from backend.framework_schema import FrameworkDefinition
+from backend.languages import MAX_LANGUAGE_CODE_CHARS
 
 #: What a directly-captured record records as its origin. Ingestion uses its own
 #: value from Phase 5 onward.
@@ -82,6 +83,10 @@ class CaptureSubmission(BaseModel):
     #: four capture paths — admin, link, kiosk, paper entry — accept it the same
     #: way rather than four ways.
     respondent_title: Annotated[str, Field(max_length=MAX_RESPONDENT_TITLE_CHARS)] | None = None
+    #: The language this story is being told in (delta §4, constraint 15).
+    #: Optional: a framework offering only English never sends it, and a story
+    #: with none reads as unknown rather than as English.
+    language_code: Annotated[str, Field(max_length=MAX_LANGUAGE_CODE_CHARS)] | None = None
     input_method: Literal["typed", "voice", "paper"] = "typed"
     respondent_group: Annotated[str, Field(max_length=200)] | None = None
     significations: list[SubmittedSignification] = Field(default_factory=list)
