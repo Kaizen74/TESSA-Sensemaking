@@ -396,6 +396,19 @@ own regression list.
 **The delta is complete.** Phases A–F are all green, and constraints 14, 15 and
 16 each have a guard on the regression list.
 
+- [x] **The whole-delta check.** — **2026-09-03** One world every phase touches
+  at once — a multilingual question set with a deliberately bad question in it,
+  nine stories in three languages, three imported and machine-read with two
+  validated and one rejected, two rooms' conclusions, and cached translations —
+  driven over HTTP against a live server and a real migrated database, then the
+  same world in a real browser. 204 HTTP checks and 35 browser checks, numbered
+  against the delta's own §7 acceptance criteria, plus a cross-phase section for
+  the disagreements no single phase's suite can see. Found one real defect
+  (Fixed 00: exported documents carried no provenance label, and the brief
+  asserted the opposite), three decisions worth recording (139–141), and two
+  recommendations left for the operator (142–143). Gate green afterwards: ruff
+  clean, eslint clean, 1331 passed, goldens byte-identical.
+
 ---
 
 ## Regression list
@@ -1138,11 +1151,90 @@ simpler option was taken unless noted.
      English" would be inventing the one fact decision 130 was careful not to
      invent. Absent stays absent.
 
+### After the delta — the whole-delta check
+
+139. **The provenance label is conditional in documents, unconditional on
+     screen.** Constraint 14 requires a label on a view *containing* readings
+     somebody else made. A default brief contains none, so it carries none —
+     which also keeps every document produced before the rule existed identical
+     to one produced after. The screen is the opposite case: §7.1 asks the first
+     load to report both counts, so the line is always there when there is a
+     second number to report, and silent when nobody has marked anything up.
+140. **`total` is stories in scope; `counts_by_signified_by` is marks.** Two
+     different denominators sitting next to each other, deliberately. A story an
+     analyst marked up was still told, so it is still one story (decision 103);
+     what the reading changes is which *marks* are counted. The on-screen label
+     says "marks" and the count line says "stories", and both are true. Worth
+     writing down because the two numbers look like they should match and never
+     will.
+141. **The skip rate is measured against every story in scope, which includes
+     stories nobody ever showed the question to.** On the storytellers' view an
+     imported story reads as having skipped everything — no storyteller placed
+     anything on it. Correct as a statement about the storytellers' marks, and
+     misleading as question-design feedback in a mostly-imported dataset, where
+     the panel's headline signal would approach 100% for reasons that have
+     nothing to do with the question. **Left as it is and recorded here rather
+     than changed**: narrowing the denominator changes what a published number
+     means, which is the operator's call, not this session's. The check states
+     the semantics out loud so the choice is visible.
+142. **The CSV writes `respondent`/`ai`; the app says `participant`/
+     `ai_validated`.** The CSV column carries the value the database stores
+     (constraint 3, since Phase 7, pinned by `test_an_imported_story_exports_
+     its_file_and_row`); the delta added a second vocabulary for the same
+     concept as a filter, and a third on screen ("Storyteller" /
+     "Expert-validated"). Three words for one thing, and an analyst filtering a
+     CSV for `ai_validated` finds nothing. **Not changed here**: it is a shipped
+     file format with a test pinning it, and aligning it is a decision about
+     what the operator's saved spreadsheets mean. Recommended for a future
+     session, either by renaming the stored values in a migration or by
+     translating on the way out.
+143. **A well-formed language tag that names no language is accepted as a
+     translation target.** `well_formed` is a shape check by deliberate design
+     (see `backend/languages.py`): refusing a real language because a local list
+     was out of date would be worse than accepting a tag nobody uses. The cost
+     is that `?target=zz` translates into "zz". Unreachable from the UI, which
+     only ever asks for English, and the refusal message slightly overstates
+     what is checked. Left alone; the design reason is stronger than the cost.
+
 ---
 
 ## Fixed
 
 Bugs found and fixed, newest first.
+
+00. **A downloaded brief or summary could carry somebody else's readings with
+    nothing on the page saying so — and a sentence saying the opposite**
+    *(found by the whole-delta check, after all six phases were green)*.
+    Constraint 14 says any view containing expert-validated marks carries a
+    visible label. Every screen did. Neither document did.
+
+    Asked for with `signified_by=all`, the Pattern Brief changed its headline
+    finding outright — from *"Most stories answer 'How did it end?' with
+    Unresolved"* to *"Stories pull towards Speed on 'What drove this?'"* —
+    because the machine's readings were now in the arithmetic, and printed no
+    word about it. Worse, it went on asserting **"Nothing here was written or
+    interpreted by AI"**, which was false of exactly that document. "What we
+    heard" — the summary handed *back to the people who told the stories* —
+    said *"N people shared a story. Here is what they said"* over figures
+    partly made of what somebody else said about them.
+
+    Every existing test passed. `test_no_export_bypasses_the_default` checked
+    the default was narrow; `test_every_export_can_be_asked_for_the_whole_
+    picture` checked the other view returned HTTP 200 and looked no further. The
+    gap was precisely between them: what the wider document *says about itself*.
+
+    Fixed by giving both documents the same rule the screen already had — a
+    label when, and only when, the view contains readings somebody else made —
+    and by making the "How to read this" bullet true of the view it is printed
+    on. Nine tests now hold it, including one that fails if the false
+    reassurance ever reappears. The default brief and the default summary are
+    byte-identical to what they were, which is why the label is conditional.
+
+    Two related things were fixed with it: the Patterns tab's first load now
+    reports **both** counts, as §7.1 asks and as it did not (the label rendered
+    only on the non-default views, so a reader was never told how many marks
+    were being withheld); and the page's standfirst no longer promises nothing
+    was AI-interpreted while showing marks that were.
 
 0. **The 5,000-story budget test failed on a slower machine than the one that
    set it, and its replacement threshold was wrong twice**

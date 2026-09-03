@@ -27,7 +27,11 @@ import io
 from backend.dataset import AnswerRow, StoryRow
 from backend.framework_schema import FrameworkDefinition
 from backend.interpretations import InterpretationOut
-from backend.patterns import PatternSet
+from backend.patterns import (
+    SIGNIFIED_BY_ALL,
+    SIGNIFIED_BY_PARTICIPANT,
+    PatternSet,
+)
 
 #: A triad whose average placement puts this much weight on one corner is
 #: leaning; below it, the stories do not agree enough to say so.
@@ -425,6 +429,39 @@ def _interpretation_section(rooms: list[InterpretationOut]) -> list[str]:
     return lines
 
 
+def _provenance_note(patterns: PatternSet) -> str:
+    """Whose readings these figures are made of, when they are not only the
+    storytellers' (constraint 14).
+
+    Constraint 14 requires a visible label on any view *containing* readings
+    somebody else made. A document that leaves the building is a view, and it is
+    the one nobody can ask a follow-up question about — so the sentence has to
+    travel with it.
+
+    Empty on the default, which contains no such readings and needs no
+    disclaimer. That also keeps every brief and summary produced before this
+    existed byte-identical to the ones produced after.
+    """
+    applied = patterns.signified_by_applied
+    if applied == SIGNIFIED_BY_PARTICIPANT:
+        return ""
+
+    counts = patterns.counts_by_signified_by
+    if applied == SIGNIFIED_BY_ALL:
+        return (
+            "**Whose interpretation:** both. "
+            f"{counts.participant} of the marks behind these figures were placed "
+            f"by the storytellers themselves and {counts.ai_validated} by "
+            "somebody reading their story."
+        )
+    return (
+        "**Whose interpretation:** expert-validated only. Every figure here is "
+        "somebody's reading of another person's story, confirmed by a human. "
+        f"The {counts.participant} marks the storytellers placed themselves are "
+        "not in this view."
+    )
+
+
 def pattern_brief(
     patterns: PatternSet,
     generated_at: dt.datetime,
@@ -450,6 +487,13 @@ def pattern_brief(
         f"prepared {generated_at:%d %B %Y}*"
     )
     lines.append("")
+
+    # Before the filters, because it is not a filter: it changes what the
+    # figures *mean*, not which slice of them you are looking at.
+    note = _provenance_note(patterns)
+    if note:
+        lines.append(note)
+        lines.append("")
 
     if patterns.filters:
         shown = ", ".join(
@@ -482,10 +526,20 @@ def pattern_brief(
 
     lines.append("## How to read this")
     lines.append("")
-    lines.append(
-        "- Every figure above is counted from stories a person validated. "
-        "Nothing here was written or interpreted by AI."
-    )
+    if patterns.signified_by_applied == SIGNIFIED_BY_PARTICIPANT:
+        lines.append(
+            "- Every figure above is counted from stories a person validated. "
+            "Nothing here was written or interpreted by AI."
+        )
+    else:
+        # The sentence above is false of this view, and a false reassurance in
+        # an exported document is worse than none. Say what is actually true.
+        lines.append(
+            "- Every figure above is counted from stories a person validated, "
+            "and nothing here was written by AI. Some of the marks behind them "
+            "were proposed by AI reading somebody else's story and then "
+            "confirmed by a human — see *Whose interpretation* above."
+        )
     lines.append(
         "- Triads are closure-constrained: three weights that must sum to one, "
         "so a rise on one corner is a fall on another. Read the shape, not the "
@@ -576,6 +630,23 @@ def what_we_heard(patterns: PatternSet, generated_at: dt.datetime) -> str:
         f"{SUPPRESSION_FLOOR} people said."
     )
     lines.append("")
+    # "Here is what they said" is only true of the storytellers' own readings.
+    # If somebody else's readings are in these figures, the people who told the
+    # stories are the first who should be told (constraint 14).
+    if patterns.signified_by_applied != SIGNIFIED_BY_PARTICIPANT:
+        counts = patterns.counts_by_signified_by
+        lines.append(
+            "**Not all of these marks were placed by the storytellers.** "
+            + (
+                f"{counts.participant} were placed by the people who told the "
+                f"stories and {counts.ai_validated} by somebody reading them "
+                "afterwards."
+                if patterns.signified_by_applied == SIGNIFIED_BY_ALL
+                else "Every one of them was placed by somebody reading the "
+                "stories afterwards, not by the people who told them."
+            )
+        )
+        lines.append("")
     lines.append(f"*Prepared {generated_at:%d %B %Y}*")
     lines.append("")
 

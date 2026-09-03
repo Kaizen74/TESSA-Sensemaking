@@ -117,8 +117,25 @@ function ProvenanceControl({ value, onChange }) {
  * weight, not an alert — this is a fact about the picture, not a problem with it.
  */
 function ProvenanceLabel({ applied, counts }) {
-  if (!applied || applied === SIGNIFIED_BY_DEFAULT) return null;
+  if (!applied) return null;
   const held = counts ?? { participant: 0, ai_validated: 0 };
+
+  // The default gets a line too, and it is not a disclaimer: delta §7.1 asks
+  // the first load to report BOTH counts, and a reader who is never told how
+  // many marks are being withheld cannot know there are any. Quieter than the
+  // others, and silent when there is nothing being held back — a set nobody
+  // has marked up has no second number worth printing.
+  if (applied === SIGNIFIED_BY_DEFAULT) {
+    if (!held.ai_validated) return null;
+    return (
+      <p className="nl-provenance-note nl-provenance-note--quiet" role="status">
+        {held.participant} marks placed by the storytellers themselves.{" "}
+        {held.ai_validated} more, made by somebody reading their stories, are
+        not in this view — choose <strong>Both</strong> to include them.
+      </p>
+    );
+  }
+
   const other = applied === "all" ? null : held.participant;
   return (
     <p className="nl-provenance-note" role="status">
@@ -340,9 +357,13 @@ export function PatternsTab() {
     <div className="nl-patterns">
       <header className="nl-patterns__head">
         <h2 className="nl-patterns__title">Patterns</h2>
+        {/* True of the default, and only of the default. Under another reading
+            the marks below were interpreted by AI and confirmed by a person,
+            which is a different sentence and has to be said differently. */}
         <p className="nl-patterns__sub">
-          Every figure below is counted from stories you validated. Nothing here
-          was written or interpreted by AI.
+          {signifiedBy === SIGNIFIED_BY_DEFAULT
+            ? "Every figure below is counted from stories you validated. Nothing here was written or interpreted by AI."
+            : "Every figure below is counted from stories you validated, and nothing here was written by AI. Some of the marks behind them were proposed by AI and confirmed by you."}
         </p>
       </header>
 

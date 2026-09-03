@@ -231,9 +231,9 @@
 }
 
 /*
- * The persistent label above the figures, shown only when the view is not the
- * default. Context weight: a rule and quiet text, never an alert box — this
- * says what the picture is, not that something is wrong with it.
+ * The persistent label above the figures. Context weight: a rule and quiet
+ * text, never an alert box — this says what the picture is, not that something
+ * is wrong with it.
  */
 .nl-provenance-note {
   margin: 0 0 var(--nl-space-4);
@@ -242,6 +242,16 @@
   font-size: var(--nl-text-sm);
   line-height: var(--nl-leading-body);
   color: var(--nl-grey);
+}
+
+/*
+ * The same line on the default view, where it reports what is being held back
+ * rather than what is being shown. Quieter still: nothing is unusual about the
+ * default, and a rule as loud as the one above would imply otherwise.
+ */
+.nl-provenance-note--quiet {
+  border-left-color: transparent;
+  padding-left: 0;
 }
 
 /*

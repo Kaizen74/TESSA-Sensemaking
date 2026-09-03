@@ -2,8 +2,65 @@
 
 **Updated:** 2026-09-03
 **Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; the
-meaningfulness delta complete — all six phases A–F
-**Status:** green (1322 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+meaningfulness delta complete — all six phases A–F, and checked end to end
+**Status:** green (1331 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+
+---
+
+## The whole-delta check — and the one thing it caught
+
+With all six phases green, the delta was tested as one thing rather than six:
+one world every phase touches at once — a question set published in English,
+Malay and Tamil with a deliberately bad question in it, nine stories told in
+three languages, three more imported and read by the machine (two validated, one
+rejected), two rooms' conclusions recorded against filtered views, and
+translations cached for the stories nobody in the room can read. Driven over
+HTTP against a live server and a real migrated database, then the same world
+opened in a real browser. **204 checks over the wire and 35 on screen**, numbered
+against the delta's own acceptance criteria, plus a section for the
+disagreements no single phase could see — where two phases are each correct and
+contradict each other.
+
+Two hundred and thirty-eight of them passed first time. **One found something
+real, and it was the one that mattered most.**
+
+Every *screen* said whose readings it was showing. Neither *document* did. Ask
+for the Pattern Brief with expert-validated readings included and its headline
+finding changed outright — from *"Most stories answer 'How did it end?' with
+Unresolved"* to *"Stories pull towards Speed on 'What drove this?'"* — with
+nothing on the page to say the arithmetic had changed underneath it. And it went
+on printing **"Nothing here was written or interpreted by AI"**, which was false
+of that exact document. "What we heard" — the summary handed *back to the people
+who told the stories* — said *"Here is what they said"* over figures partly made
+of what somebody else said about them.
+
+That is the failure constraint 14 exists to prevent, in the one place it does
+most damage: a document that has left the app and cannot be asked a follow-up
+question. Both now carry the label when, and only when, there is something to
+declare, and the brief's "How to read this" is true of the view it is printed
+on. The Patterns tab also now reports **both** counts on first load — a reader
+who is never told how many marks are being withheld cannot know there are any.
+
+Every existing test passed while this was broken, which is the part worth
+keeping. One checked that the default export was narrow. Another checked that
+the wider export returned successfully. Neither asked what the wider document
+*said about itself*, and the gap was exactly there. Nine tests now hold it,
+including one that fails if the false reassurance ever comes back.
+
+**Three things were found and deliberately left alone**, written down in
+PROGRESS.md rather than quietly changed:
+
+- **The skip rate counts stories nobody showed the question to.** On the
+  storytellers' view an imported story reads as having skipped everything —
+  true, and misleading as question-design feedback in a mostly-imported
+  dataset. Narrowing it changes what a published number means, which is your
+  call.
+- **The CSV says `respondent` and `ai` where the app says "Storyteller" and
+  "Expert-validated".** Three words for one idea. Aligning them changes a
+  shipped file format, so it is a recommendation, not a change made behind you.
+- **`?target=zz` translates into "zz".** Unreachable from the buttons, and the
+  design reason for accepting any well-formed language tag is stronger than the
+  cost of accepting a meaningless one.
 
 ---
 

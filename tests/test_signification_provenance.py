@@ -366,6 +366,123 @@ def test_every_export_can_be_asked_for_the_whole_picture(
     assert response.status_code == 200, response.text
 
 
+# --------------------------------------------------------------------------
+# The label travels with the document
+# --------------------------------------------------------------------------
+#
+# Constraint 14's second half: a view *containing* readings somebody else made
+# carries a visible label saying so. A downloaded document is the view nobody
+# can ask a follow-up question about — the reader has only what is on the page —
+# so this is where the label matters most and where its absence is hardest to
+# notice. It was absent, and every test above still passed.
+
+
+@pytest.mark.parametrize("signified_by", ["all", "ai_validated"])
+def test_a_brief_holding_somebody_elses_readings_says_so(
+    client: TestClient, signified_by: str
+) -> None:
+    framework = mixed_dataset(client)
+
+    brief = client.get(
+        "/api/export/brief",
+        params={"framework_id": framework["id"], "signified_by": signified_by},
+    ).text
+
+    whose = {
+        "all": "somebody reading their story",
+        "ai_validated": "somebody's reading of another person's story",
+    }[signified_by]
+
+    assert "Whose interpretation:" in brief
+    assert whose in brief
+
+
+def test_a_brief_of_the_storytellers_own_readings_needs_no_such_line(
+    client: TestClient,
+) -> None:
+    """The default contains nothing to disclaim, and says nothing about it.
+
+    Also the reason the line is conditional: every brief produced before this
+    existed is byte-identical to one produced after.
+    """
+    framework = mixed_dataset(client)
+
+    brief = client.get("/api/export/brief", params={"framework_id": framework["id"]}).text
+
+    assert "Whose interpretation:" not in brief
+
+
+@pytest.mark.parametrize("signified_by", ["all", "ai_validated"])
+def test_the_brief_never_promises_no_ai_reading_when_there_was_one(
+    client: TestClient, signified_by: str
+) -> None:
+    """A false reassurance is worse than none.
+
+    "Nothing here was written or interpreted by AI" is true of the default and
+    false of every other view. It may not appear on a document where AI read
+    somebody's story.
+    """
+    framework = mixed_dataset(client)
+
+    brief = client.get(
+        "/api/export/brief",
+        params={"framework_id": framework["id"], "signified_by": signified_by},
+    ).text
+
+    assert "Nothing here was written or interpreted by AI" not in brief
+    assert "nothing here was written by AI" in brief
+    assert "confirmed by a human" in brief
+
+
+@pytest.mark.parametrize("signified_by", ["all", "ai_validated"])
+def test_what_we_heard_tells_the_room_when_the_marks_are_not_theirs(
+    client: TestClient, signified_by: str
+) -> None:
+    """The strongest case for the label, and the one handed to respondents.
+
+    "Here is what they said" is a claim about the people who told the stories.
+    If the marks behind the figures were placed by somebody reading those
+    stories afterwards, the people who told them are the first who should know.
+    """
+    framework = mixed_dataset(client)
+
+    heard = client.get(
+        "/api/export/heard",
+        params={"framework_id": framework["id"], "signified_by": signified_by},
+    ).text
+
+    assert "Not all of these marks were placed by the storytellers." in heard
+
+
+def test_what_we_heard_stays_plain_when_the_marks_are_the_storytellers_own(
+    client: TestClient,
+) -> None:
+    framework = mixed_dataset(client)
+
+    heard = client.get("/api/export/heard", params={"framework_id": framework["id"]}).text
+
+    assert "Not all of these marks" not in heard
+
+
+def test_the_note_counts_the_marks_rather_than_the_stories(client: TestClient) -> None:
+    """The number in the label is the number the app means by it.
+
+    Counted by hand: three captured stories at five placements each is fifteen
+    the storytellers placed themselves.
+    """
+    framework = mixed_dataset(client)
+
+    brief = client.get(
+        "/api/export/brief",
+        params={"framework_id": framework["id"], "signified_by": "all"},
+    ).text
+    counts = patterns(client, framework["id"])["counts_by_signified_by"]
+
+    assert counts["participant"] == SELF_SIGNIFIED * PLACEMENTS_PER_STORY
+    assert f"{counts['participant']} of the marks" in brief
+    assert f"{counts['ai_validated']} by " in brief
+
+
 def test_a_bad_choice_is_refused_on_an_export_too(client: TestClient) -> None:
     framework = mixed_dataset(client)
 
