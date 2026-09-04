@@ -3,7 +3,31 @@
 **Updated:** 2026-09-04
 **Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; the
 meaningfulness delta complete — all six phases A–F, and checked end to end
-**Status:** green (1349 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+**Status:** green (1359 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+
+---
+
+## Starting it: the launcher now sets itself up
+
+Double-click **Start Narrative Lens**. On a computer where the app has not been
+set up, it asks:
+
+> Narrative Lens has not been set up on this computer yet.
+> Set it up now? Press Y for yes, or N to stop:
+
+Press **Y** and it does the whole thing — installs what it needs, builds the
+pages, then starts the app. A few minutes, once, and it needs the internet only
+for that. There is no second file to go and find.
+
+That is the fix for the second failed start. The setup file existed by then and
+the message named it correctly, but the two files sit side by side with nearly
+the same name, Windows hides the ".bat" part so the message named something not
+actually on screen, and "go and run the other one first" is a step a person can
+simply not do. A launcher that knows exactly which file fixes the problem should
+run it, not point at it.
+
+If the setup does not finish, the launcher says so rather than starting into a
+broken install — and the message it prints is the thing to send back.
 
 ---
 
@@ -23,8 +47,8 @@ told you to run a setup that did not exist, and nothing in a suite of 1,331
 tests ever looked at either of the two files you actually double-click — every
 test ran the app from inside a terminal that was already set up.
 
-**`Set up Narrative Lens.bat` now exists.** Double-click it once, on a new
-computer, before the first start. It needs the internet and takes a few
+**`Set up Narrative Lens.bat` now exists** — and the launcher runs it for you,
+so you never have to find it. It needs the internet and takes a few
 minutes; the app never needs the internet again except when you click Analyse.
 It finds a Python, makes a private space for the app's software, installs it,
 and builds the app's pages — saying which of the four steps it is on, and if
