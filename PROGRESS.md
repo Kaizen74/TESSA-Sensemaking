@@ -1216,6 +1216,33 @@ simpler option was taken unless noted.
 
 Bugs found and fixed, newest first.
 
+0000. **The app failed to start a second time, in the same way, because the
+      launcher knew the answer and made the operator go and find it**
+      *(found by the operator, on the second real Windows attempt)*. The setup
+      file now existed and the message named it correctly. The operator
+      double-clicked the launcher again anyway — reasonably: the two files sit
+      next to each other with near-identical names, Explorer hides the `.bat`
+      part so the message named something not visible on screen, and "go and
+      run that other thing first" is a step a person can simply not do.
+
+      A launcher that can name the exact file that fixes the problem can run
+      it. It now asks — "Set it up now? Press Y for yes, or N to stop" — runs
+      the setup, checks readiness *again*, and either starts the app or says the
+      setup did not finish. Declining is a real answer that says how to change
+      your mind. Called from the launcher, setup skips its closing "press any
+      key", because the launcher is about to carry straight on.
+
+      Verified as far as this machine allows: all five paths through the new
+      control flow executed as a faithful translation (not set up + yes + setup
+      works → starts; + no → declines; + setup fails → says so; already set up →
+      straight through; half set up → repairs). Four more tests hold the batch
+      mechanics that fail *silently* on Windows and cannot be run here — every
+      `goto` lands on a label that exists, the yes/no answer is tested in
+      descending `errorlevel` order (testing 1 first matches "no" as well and
+      would start the install the operator just declined — mutation-checked),
+      the main flow exits before falling into its own subroutines, and no
+      operator-facing message names a file by an extension Explorer hides.
+
 000. **The app could not be started on a new computer, because the setup it
      told you to run had never been written** *(found by the operator, on the
      first real Windows machine)*. `Start Narrative Lens.bat` correctly detected

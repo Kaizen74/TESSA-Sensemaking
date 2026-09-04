@@ -156,11 +156,18 @@ if not exist "frontend\dist\index.html" (
 echo.
 echo   ===============================================================
 echo     Narrative Lens is ready.
-echo.
-echo     Now double-click "Start Narrative Lens.bat" to open the app.
-echo     You only ever have to do this setup once on this computer.
 echo   ===============================================================
+echo.
+
+rem  Called by the launcher, which is about to start the app itself, so
+rem  there is nothing to wait for and nothing more to tell the operator.
+if /i "%~1"=="from-launcher" goto done
+
+echo   Now double-click the file called "Start Narrative Lens" to open
+echo   the app. You only ever have to do this setup once on this
+echo   computer.
 echo.
 pause
 
+:done
 endlocal
