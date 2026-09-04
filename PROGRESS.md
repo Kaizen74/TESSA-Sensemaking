@@ -1188,6 +1188,20 @@ simpler option was taken unless noted.
      what the operator's saved spreadsheets mean. Recommended for a future
      session, either by renaming the stored values in a migration or by
      translating on the way out.
+144. **The provenance label does not appear over the story browser.** Adding it
+     to the default view (Fixed 00) put it above every sub-view, and the story
+     browser is not one that aggregates significations — `/api/stories` takes no
+     provenance filter at all, so every story is listed whatever the rail says.
+     A line there claiming marks were left out would describe the charts while
+     the reader is looking at a list. Suppressed there, on the same rule and for
+     the same reason as the "N stories in this view" count beside it.
+145. **The edit log is the one part of the contract the alignment check cannot
+     verify.** `FrameworkOut.edit_log` is a list of untyped objects, so OpenAPI
+     declares no shape for its `field_path` / `old_text` / `new_text` keys and a
+     schema-driven check cannot confirm the Studio and the backend agree about
+     them. They were confirmed by hand against a live wording fix instead, and
+     the exception is written into the check with that reason rather than left
+     looking like a clean pass.
 143. **A well-formed language tag that names no language is accepted as a
      translation target.** `well_formed` is a shape check by deliberate design
      (see `backend/languages.py`): refusing a real language because a local list
@@ -1201,6 +1215,40 @@ simpler option was taken unless noted.
 ## Fixed
 
 Bugs found and fixed, newest first.
+
+000. **The app could not be started on a new computer, because the setup it
+     told you to run had never been written** *(found by the operator, on the
+     first real Windows machine)*. `Start Narrative Lens.bat` correctly detected
+     that the Python packages were missing and said so in plain English — then
+     told the operator to *"run the one-time setup you were given"*. There was
+     no such file. The README said the same thing in the same words. Three
+     places pointed at a file that did not exist, and nothing in a suite of
+     1,331 tests looked at either of the two files the operator actually
+     double-clicks.
+
+     `Set up Narrative Lens.bat` now exists and does the four things that were
+     only ever written down as terminal commands: find a Python (preferring
+     `py -3`, because a bare `python` on Windows can be a Store placeholder that
+     silently does nothing), make a `.venv` where the launcher already looks for
+     one, install the project into it, and build the frontend. Every failure
+     path says what went wrong and what to do, and pauses so a double-clicked
+     window does not vanish before it is read. The launcher and README now name
+     that file instead of gesturing at one.
+
+     `tests/test_launcher.py` (17) holds it: no message may name a `.bat` that
+     is not on disk, the launcher's import check may not ask for more than
+     `pyproject.toml` installs, `npm` must be invoked with `call` (without it a
+     batch file hands over control and never returns — setup would stop dead at
+     that line and report success), every refusal must carry both sentences
+     constraint 7 asks for and a `pause`, and nothing may tell the operator to
+     open a terminal. Mutation-checked by restoring the old dangling message,
+     which fails the guard.
+
+     The install sequence was executed for real on Linux — venv, `pip install
+     -e .`, `alembic upgrade head`, server start — and the launcher's own
+     readiness check passes against the result. **The batch files themselves
+     still have never run on Windows**, which remains the one thing this build
+     owes a real machine.
 
 00. **A downloaded brief or summary could carry somebody else's readings with
     nothing on the page saying so — and a sentence saying the opposite**

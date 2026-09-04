@@ -535,10 +535,17 @@ export function PatternsTab() {
 
           {view.mixed && view.versions.length > 1 && <VersionChip versions={view.versions} />}
 
-          <ProvenanceLabel
-            applied={view.signified_by_applied}
-            counts={view.counts_by_signified_by}
-          />
+          {/* Not on the story browser. Constraint 14 is about views that
+              aggregate significations, and this one lists stories — it takes no
+              provenance filter at all, so every story is in it whatever the
+              rail says. A line here claiming marks were left out would be
+              describing the charts while the reader is looking at a list. */}
+          {subView !== VIEW_STORIES && (
+            <ProvenanceLabel
+              applied={view.signified_by_applied}
+              counts={view.counts_by_signified_by}
+            />
+          )}
 
           {view.total === 0 ? (
             <p className="nl-patterns__empty">
