@@ -30,8 +30,9 @@ if errorlevel 1 (
   echo   Narrative Lens cannot start.
   echo.
   echo   What went wrong: the software it needs is not installed yet.
-  echo   What to do: run the one-time setup you were given, then
-  echo   double-click this file again.
+  echo   What to do: double-click "Set up Narrative Lens.bat" in this
+  echo   same folder, wait for it to finish, then double-click this
+  echo   file again.
   echo.
   pause
   exit /b 1
@@ -43,8 +44,9 @@ if not exist "frontend\dist\index.html" (
   echo   Narrative Lens cannot start.
   echo.
   echo   What went wrong: the app's pages have not been built yet.
-  echo   What to do: run the one-time setup you were given, then
-  echo   double-click this file again.
+  echo   What to do: double-click "Set up Narrative Lens.bat" in this
+  echo   same folder, wait for it to finish, then double-click this
+  echo   file again.
   echo.
   pause
   exit /b 1

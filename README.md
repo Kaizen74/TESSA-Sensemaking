@@ -21,7 +21,7 @@ computer, not on anybody's service.
 | --- | --- |
 | Start the app | Double-click **Start Narrative Lens.bat**. Your browser opens by itself. |
 | Stop the app | Close the small window called *Narrative Lens server*. |
-| First time on a new computer | Run the one-time setup you were given. After that it is only ever the double-click. |
+| First time on a new computer | Double-click **Set up Narrative Lens.bat**, once. It needs the internet and takes a few minutes. After that it is only ever the double-click. |
 
 If the app will not start, it tells you what went wrong and what to do about
 it, in a sentence. That is deliberate: there is nothing in this app you are

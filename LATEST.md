@@ -1,9 +1,45 @@
 # Narrative Lens — Latest
 
-**Updated:** 2026-09-03
+**Updated:** 2026-09-04
 **Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; the
 meaningfulness delta complete — all six phases A–F, and checked end to end
-**Status:** green (1331 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+**Status:** green (1349 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+
+---
+
+## The app would not start, and it was our fault
+
+The first attempt to run this on a real Windows machine failed at the first
+step, with this:
+
+> Narrative Lens cannot start.
+> What went wrong: the software it needs is not installed yet.
+> What to do: run the one-time setup you were given, then double-click this
+> file again.
+
+The first half was right. **The second half pointed at a file that had never
+been written.** The README said the same thing in the same words. Three places
+told you to run a setup that did not exist, and nothing in a suite of 1,331
+tests ever looked at either of the two files you actually double-click — every
+test ran the app from inside a terminal that was already set up.
+
+**`Set up Narrative Lens.bat` now exists.** Double-click it once, on a new
+computer, before the first start. It needs the internet and takes a few
+minutes; the app never needs the internet again except when you click Analyse.
+It finds a Python, makes a private space for the app's software, installs it,
+and builds the app's pages — saying which of the four steps it is on, and if
+one fails, what went wrong and what to do about it.
+
+Seventeen tests now guard the two files: no message may name a file that is not
+there, the launcher may not check for software the setup does not install, and
+every refusal has to hold the window open long enough to be read. One of them
+was checked by putting the old broken message back — it fails, as it should.
+
+**Still owed to a real machine.** The setup's steps were run for real here, and
+the app started and served its pages from the result. But that was on Linux;
+these are Windows batch files and they have still never run on Windows. If the
+setup fails on your machine, the message it prints is the thing to send back —
+it is written to be enough to act on.
 
 ---
 
@@ -335,8 +371,9 @@ grid, and every colour on the page measured as black on white.
 - **A phone over Tailscale.** This build has one machine and no second device.
   The respondent's wizard was exercised at 375px in a browser, which is not the
   same as a handset on the mesh.
-- **The `.bat` launcher on Windows.** It has been read carefully and fixed
-  twice; it has never been run. Its first real run belongs to the operator.
+- **The `.bat` files on Windows.** Their first real run found that the setup
+  they named had never been written (now fixed, and guarded by tests). The
+  files themselves have still never executed on Windows.
 - The frontend must be built once (`npm run build` in `frontend/`) before the
   app can serve its own pages. The launcher now says so plainly instead of
   starting into a blank screen.
@@ -416,7 +453,7 @@ and the text after it, which silently runs two words together.
 
 | What you want | What to do |
 |---|---|
-| First time only | In `frontend/`, run `npm install`, then `npm run build` |
+| First time on a new computer | Double-click **Set up Narrative Lens.bat**, once |
 | Start the app | Double-click `Start Narrative Lens.bat` |
 | Write the questions | The **Studio** tab |
 | Enter a story yourself | **Capture & Links** → "One at a time" |
