@@ -26,6 +26,11 @@ EXPECTED_TABLES = {
     "significations",
     "import_jobs",
     "tags",
+    # Added by the meaningfulness delta, phase D (revision 003).
+    "interpretations",
+    # Added by the meaningfulness delta, phase F (revision 005). A display
+    # cache: deleting every row must leave the app correct, only slower.
+    "translations",
 }
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -47,7 +52,7 @@ def _table_names(db_url: str) -> set[str]:
         engine.dispose()
 
 
-def test_upgrade_head_creates_the_six_tables(alembic_config: Config, db_url: str) -> None:
+def test_upgrade_head_creates_every_table(alembic_config: Config, db_url: str) -> None:
     command.upgrade(alembic_config, "head")
 
     tables = _table_names(db_url)
@@ -73,7 +78,7 @@ def test_upgrade_downgrade_upgrade_is_repeatable(alembic_config: Config, db_url:
 
 
 def test_migration_001_matches_the_models(alembic_config: Config, db_url: str) -> None:
-    """No drift between migration 001 and ``backend/models.py``."""
+    """No drift between the migration chain and ``backend/models.py``."""
     command.upgrade(alembic_config, "head")
 
     engine = make_engine(db_url)
@@ -85,7 +90,7 @@ def test_migration_001_matches_the_models(alembic_config: Config, db_url: str) -
         engine.dispose()
 
     assert diff == [], (
-        "backend/models.py and migration 001 disagree. Constraint 5 forbids "
+        "backend/models.py and the migrations disagree. Constraint 5 forbids "
         f"editing an existing migration — add a new revision instead. Diff: {diff}"
     )
 

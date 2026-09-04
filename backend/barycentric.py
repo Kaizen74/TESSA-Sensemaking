@@ -34,6 +34,19 @@ CORNER_2 = (0.5, math.sqrt(3.0) / 2.0)
 
 CORNERS = (CORNER_0, CORNER_1, CORNER_2)
 
+#: The middle of the triangle — equal weight on all three corners, which is
+#: where a respondent lands when the question did not fit their story well
+#: enough to lean anywhere. The data-quality signals of the meaningfulness delta
+#: measure how many placements sit near it, so it belongs here with the rest of
+#: the triangle's geometry rather than being worked out again elsewhere.
+CENTROID = (
+    (CORNER_0[0] + CORNER_1[0] + CORNER_2[0]) / 3.0,
+    (CORNER_0[1] + CORNER_1[1] + CORNER_2[1]) / 3.0,
+)
+
+#: Area of the reference triangle, side 1.0.
+TRIANGLE_AREA = math.sqrt(3.0) / 4.0
+
 #: Weights are rounded to this many decimals so that repeated round-trips settle
 #: instead of drifting in the last bits of the float.
 WEIGHT_DECIMALS = 6
@@ -118,6 +131,16 @@ def normalise(weights: tuple[float, float, float]) -> tuple[float, float, float]
         rounded[largest] = round(rounded[largest] + drift, WEIGHT_DECIMALS)
 
     return (rounded[0], rounded[1], rounded[2])
+
+
+def distance_from_centre(point: tuple[float, float]) -> float:
+    """How far a placement sits from the middle of the triangle.
+
+    Plain Euclidean distance in the same coordinates :func:`to_cartesian`
+    produces, so "near the centre" means the same thing here as "near the
+    middle of the picture" does on the landscape.
+    """
+    return math.hypot(point[0] - CENTROID[0], point[1] - CENTROID[1])
 
 
 def sums_to_one(weights: tuple[float, float, float]) -> bool:

@@ -24,7 +24,7 @@ export function draftKey(frameworkId) {
 
 /** The shape a fresh draft starts from. */
 export function emptyDraft() {
-  return { text: "", values: {}, respondentGroup: null, step: 0 };
+  return { text: "", respondentTitle: "", values: {}, respondentGroup: null, step: 0 };
 }
 
 function safeStorage(storage) {
@@ -80,6 +80,9 @@ export function loadDraft(storage, frameworkId) {
 
   return {
     text: typeof parsed.text === "string" ? parsed.text : "",
+    // A draft written before the name field existed simply has no name in it,
+    // which is the same thing as not having given one.
+    respondentTitle: typeof parsed.respondentTitle === "string" ? parsed.respondentTitle : "",
     values: parsed.values && typeof parsed.values === "object" ? parsed.values : {},
     respondentGroup: typeof parsed.respondentGroup === "string" ? parsed.respondentGroup : null,
     step: Number.isInteger(parsed.step) && parsed.step >= 0 ? parsed.step : 0,

@@ -26,9 +26,11 @@ from backend.routers import (
     exports,
     frameworks,
     imports,
+    interpretations,
     landscape,
     patterns,
     public,
+    quality,
     queue,
     stories,
 )
@@ -44,6 +46,8 @@ app.include_router(imports.router)
 app.include_router(queue.router)
 app.include_router(patterns.router)
 app.include_router(landscape.router)
+app.include_router(quality.router)
+app.include_router(interpretations.router)
 app.include_router(exports.router)
 app.include_router(stories.router)
 app.include_router(public.router)

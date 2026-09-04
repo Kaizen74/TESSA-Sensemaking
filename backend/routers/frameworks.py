@@ -18,6 +18,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from backend import errors
+from backend.ai_client import AiError
 from backend.db import get_session
 from backend.edit_semantics import (
     build_edit_log_entries,
@@ -26,6 +27,8 @@ from backend.edit_semantics import (
     rename_in_value,
 )
 from backend.framework_schema import FrameworkDefinition, default_definition
+from backend.languages import KNOWN_LANGUAGES, Language
+from backend.lint import LintFinding, lint
 from backend.models import Anecdote, Framework, Signification, utcnow
 from backend.paper_pack import render_paper_pack
 
@@ -155,6 +158,21 @@ def _next_version(session: Session, framework: Framework) -> int:
     return int(highest or framework.version) + 1
 
 
+@router.get("/languages", response_model=list[Language])
+def known_languages() -> list[Language]:
+    """The languages the Studio offers, named in English and in their own script.
+
+    A fixed local list (constraint 4: no network for this). A framework may
+    configure any subset, or any other well-formed tag the Studio lets an
+    operator type — this is a starting point, not a claim about which languages
+    exist.
+
+    Declared before ``/{framework_id}`` so "languages" is read as this route
+    rather than as a framework id.
+    """
+    return list(KNOWN_LANGUAGES)
+
+
 @router.get("", response_model=list[FrameworkOut])
 def list_frameworks(session: Annotated[Session, Depends(get_session)]) -> list[FrameworkOut]:
     """Every framework, newest first. The Studio groups these into lineages."""
@@ -205,6 +223,47 @@ def get_paper_pack(
     definition = FrameworkDefinition.model_validate(framework.definition_json)
     html = render_paper_pack(definition, framework.name, framework.version)
     return HTMLResponse(content=html)
+
+
+class LintOut(BaseModel):
+    """A design critique of one framework version, and nothing about its data."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    framework_id: int
+    framework_version: int
+    findings: list[LintFinding] = Field(default_factory=list)
+
+
+@router.post("/{framework_id}/lint", response_model=LintOut)
+def lint_framework(
+    framework_id: int,
+    session: Annotated[Session, Depends(get_session)],
+) -> LintOut:
+    """Ask the model what a respondent might trip over (delta §4a).
+
+    The only AI call in the app that never sees data. It reads this version's
+    ``definition_json`` and returns advice about the wording; it writes nothing,
+    and it cannot stop the operator publishing. ``POST`` because it costs money
+    and takes a moment — it happens when somebody clicks, never on a page load.
+
+    A failure is an ordinary state of the app (constraint 4): the Studio says
+    what happened in a sentence and stays usable, because nothing here was
+    half-written. There is no state to leave behind.
+    """
+    framework = _get_or_404(session, framework_id)
+    definition = FrameworkDefinition.model_validate(framework.definition_json)
+
+    try:
+        report = lint(definition)
+    except AiError as exc:
+        raise errors.upstream(exc.code, exc.message, exc.action) from exc
+
+    return LintOut(
+        framework_id=framework.id,
+        framework_version=framework.version,
+        findings=report.findings,
+    )
 
 
 @router.put("/{framework_id}", response_model=FrameworkOut)

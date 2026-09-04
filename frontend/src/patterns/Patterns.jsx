@@ -20,6 +20,7 @@ import { BarChart, DyadChart, StonesChart } from "./Charts.jsx";
 import { ExplorerView } from "./Explorer.jsx";
 import { StoryBrowser } from "./StoryBrowser.jsx";
 import { LandscapeView } from "./Landscape.jsx";
+import { SessionMode } from "./SessionMode.jsx";
 import {
   chartsFilename,
   saveChartsSnapshot,
@@ -44,7 +45,108 @@ const FILTERS = [
   { id: "respondent_group", label: "Who told it" },
   { id: "input_method", label: "How it was written" },
   { id: "entry_mode", label: "Where it came from" },
+  // Delta phase E. A story's language is a fact about the story, so it filters
+  // and splits like the rest. The dropdown offers only the languages actually
+  // present, so a single-language dataset shows one option and nobody wonders
+  // what the empty menu is for.
+  { id: "language_code", label: "Language it was told in" },
 ];
+
+/*
+ * Whose interpretation a figure is made of (constraint 14).
+ *
+ * A segmented control rather than a dropdown, because the choice is epistemic:
+ * which of these three you are looking at changes what the picture *means*, and
+ * that should be readable without opening anything.
+ */
+const SIGNIFIED_BY_DEFAULT = "participant";
+
+const PROVENANCE_CHOICES = [
+  {
+    id: "participant",
+    label: "Storyteller",
+    description: "Told and interpreted by the storyteller",
+  },
+  {
+    id: "ai_validated",
+    label: "Expert-validated",
+    description: "Interpreted by someone else and confirmed by you",
+  },
+  { id: "all", label: "Both", description: "Both kinds together" },
+];
+
+function provenanceChoice(id) {
+  return PROVENANCE_CHOICES.find((choice) => choice.id === id) ?? PROVENANCE_CHOICES[0];
+}
+
+/** The three-way choice, in the rail. */
+function ProvenanceControl({ value, onChange }) {
+  return (
+    <div className="nl-rail__field">
+      <span className="nl-rail__label" id="nl-provenance-label">
+        Whose interpretation
+      </span>
+      <div className="nl-provenance" role="radiogroup" aria-labelledby="nl-provenance-label">
+        {PROVENANCE_CHOICES.map((choice) => (
+          <button
+            key={choice.id}
+            type="button"
+            role="radio"
+            aria-checked={value === choice.id}
+            className={
+              value === choice.id
+                ? "nl-provenance__option nl-provenance__option--current"
+                : "nl-provenance__option"
+            }
+            onClick={() => onChange(choice.id)}
+          >
+            {choice.label}
+          </button>
+        ))}
+      </div>
+      <p className="nl-rail__aside">{provenanceChoice(value).description}.</p>
+    </div>
+  );
+}
+
+/**
+ * What the figures above are made of, said out loud (constraint 14).
+ *
+ * Only when the view is not the default: the storytellers' own readings need no
+ * disclaimer, and a banner on every screen would be one nobody reads. Context
+ * weight, not an alert — this is a fact about the picture, not a problem with it.
+ */
+function ProvenanceLabel({ applied, counts }) {
+  if (!applied) return null;
+  const held = counts ?? { participant: 0, ai_validated: 0 };
+
+  // The default gets a line too, and it is not a disclaimer: delta §7.1 asks
+  // the first load to report BOTH counts, and a reader who is never told how
+  // many marks are being withheld cannot know there are any. Quieter than the
+  // others, and silent when there is nothing being held back — a set nobody
+  // has marked up has no second number worth printing.
+  if (applied === SIGNIFIED_BY_DEFAULT) {
+    if (!held.ai_validated) return null;
+    return (
+      <p className="nl-provenance-note nl-provenance-note--quiet" role="status">
+        {held.participant} marks placed by the storytellers themselves.{" "}
+        {held.ai_validated} more, made by somebody reading their stories, are
+        not in this view — choose <strong>Both</strong> to include them.
+      </p>
+    );
+  }
+
+  const other = applied === "all" ? null : held.participant;
+  return (
+    <p className="nl-provenance-note" role="status">
+      {provenanceChoice(applied).description}.{" "}
+      {applied === "all"
+        ? `${held.participant} of these marks were placed by the storyteller and ` +
+          `${held.ai_validated} by somebody reading their story.`
+        : `${other} marks placed by storytellers themselves are not in this view.`}
+    </p>
+  );
+}
 
 /** Every framework sharing a version chain with this one. */
 function lineageOf(frameworks, framework) {
@@ -70,6 +172,10 @@ export function PatternsTab() {
   const [frameworks, setFrameworks] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [filters, setFilters] = useState({});
+  // Constraint 14: the default is the storytellers' own readings, and nothing
+  // else. Every request on this screen carries it, so no view can drift into
+  // showing a mixture without the reader having asked for one.
+  const [signifiedBy, setSignifiedBy] = useState(SIGNIFIED_BY_DEFAULT);
   const [mixed, setMixed] = useState(false);
   const [splitBy, setSplitBy] = useState("");
   const [subView, setSubView] = useState(VIEW_LANDSCAPE);
@@ -78,6 +184,11 @@ export function PatternsTab() {
   const [land, setLand] = useState(null);
   const [explorer, setExplorer] = useState(null);
   const [clusters, setClusters] = useState(null);
+  const [signals, setSignals] = useState(null);
+  // Delta phase D. `session` is the projector view; `rooms` is what previous
+  // rooms concluded, listed beneath the landscape in normal mode.
+  const [session, setSession] = useState(false);
+  const [rooms, setRooms] = useState([]);
   const [k, setK] = useState(3);
   const [showClusters, setShowClusters] = useState(false);
   const [region, setRegion] = useState(null);
@@ -94,7 +205,10 @@ export function PatternsTab() {
       .catch((caught) => setError(caught instanceof ApiError ? caught : null));
   }, []);
 
-  const params = useMemo(() => ({ ...filters, mixed }), [filters, mixed]);
+  const params = useMemo(
+    () => ({ ...filters, mixed, signified_by: signifiedBy }),
+    [filters, mixed, signifiedBy],
+  );
 
   const loadPatterns = useCallback(async () => {
     if (selectedId === null) return;
@@ -109,6 +223,39 @@ export function PatternsTab() {
   useEffect(() => {
     loadPatterns();
   }, [loadPatterns]);
+
+  // The quality signals travel with the same scope as the charts they sit
+  // under, so the panel can never describe a different set of stories than the
+  // figures above it. A failure here leaves the charts alone: this is a panel
+  // you open on purpose, not something the page depends on.
+  const loadQuality = useCallback(async () => {
+    if (selectedId === null) return;
+    try {
+      setSignals(await api.getQuality(selectedId, params));
+    } catch {
+      setSignals(null);
+    }
+  }, [selectedId, params]);
+
+  useEffect(() => {
+    loadQuality();
+  }, [loadQuality]);
+
+  // Interpretations belong to a question set, not to a filter: a room's words
+  // stay readable whatever you narrow the picture to afterwards. So this
+  // reloads on the framework and the version scope, and on nothing else.
+  const loadRooms = useCallback(async () => {
+    if (selectedId === null) return;
+    try {
+      setRooms(await api.listInterpretations(selectedId, { mixed }));
+    } catch {
+      setRooms([]);
+    }
+  }, [selectedId, mixed]);
+
+  useEffect(() => {
+    loadRooms();
+  }, [loadRooms]);
 
   // The triad the landscape is about. Defaults to the first, which is what
   // §5b's "zero clicks to a meaningful default" asks for.
@@ -187,15 +334,36 @@ export function PatternsTab() {
 
   const selected = frameworks.find((row) => row.id === selectedId) ?? frameworks[0];
   const family = lineageOf(frameworks, selected);
-  const options = optionsFrom(view);
+  const options = optionsFrom(view, selected);
+
+  // Session mode replaces the page rather than sitting inside it: the delta
+  // asks for the landscape at full screen with the controls hidden, and a
+  // projector view with a filter rail beside it is not that.
+  if (session && subView === VIEW_LANDSCAPE && land) {
+    return (
+      <SessionMode
+        framework={selected}
+        land={land}
+        view={view}
+        triadId={currentTriad}
+        filters={filters}
+        onClose={() => setSession(false)}
+        onRecorded={loadRooms}
+      />
+    );
+  }
 
   return (
     <div className="nl-patterns">
       <header className="nl-patterns__head">
         <h2 className="nl-patterns__title">Patterns</h2>
+        {/* True of the default, and only of the default. Under another reading
+            the marks below were interpreted by AI and confirmed by a person,
+            which is a different sentence and has to be said differently. */}
         <p className="nl-patterns__sub">
-          Every figure below is counted from stories you validated. Nothing here
-          was written or interpreted by AI.
+          {signifiedBy === SIGNIFIED_BY_DEFAULT
+            ? "Every figure below is counted from stories you validated. Nothing here was written or interpreted by AI."
+            : "Every figure below is counted from stories you validated, and nothing here was written by AI. Some of the marks behind them were proposed by AI and confirmed by you."}
         </p>
       </header>
 
@@ -223,7 +391,9 @@ export function PatternsTab() {
             </select>
           </label>
 
-          {FILTERS.map((filter) => (
+          <ProvenanceControl value={signifiedBy} onChange={setSignifiedBy} />
+
+          {railFilters(options).map((filter) => (
             <label key={filter.id} className="nl-rail__field">
               <span className="nl-rail__label">{filter.label}</span>
               <select
@@ -300,6 +470,15 @@ export function PatternsTab() {
               “What we heard” is the one to give back: no stories, no history,
               nothing fewer than five people said.
             </p>
+            {subView === VIEW_LANDSCAPE && land && (
+              <button
+                type="button"
+                className="nl-rail__clear"
+                onClick={() => setSession(true)}
+              >
+                Open session mode
+              </button>
+            )}
             {subView === VIEW_LANDSCAPE && land?.panels?.[0]?.has_surface && (
               <button
                 type="button"
@@ -356,6 +535,11 @@ export function PatternsTab() {
 
           {view.mixed && view.versions.length > 1 && <VersionChip versions={view.versions} />}
 
+          <ProvenanceLabel
+            applied={view.signified_by_applied}
+            counts={view.counts_by_signified_by}
+          />
+
           {view.total === 0 ? (
             <p className="nl-patterns__empty">
               No validated stories match this. Collect some under{" "}
@@ -411,9 +595,12 @@ export function PatternsTab() {
                         <RegionDrawer
                           region={region}
                           view={view}
+                          frameworkId={selected.id}
+                          params={params}
                           onClose={() => setRegion(null)}
                         />
                       )}
+                      <RoomsList rooms={rooms} />
                       <AnalystNotes count={view.total} />
                     </>
                   )}
@@ -421,7 +608,8 @@ export function PatternsTab() {
               )}
 
               {subView === VIEW_CHARTS && (
-                <div ref={chartsRef}>
+                <>
+                  <div ref={chartsRef}>
                   <section className="nl-patterns__band">
                     <h3 className="nl-patterns__band-title">What people said</h3>
                     {/* A question set can be a prompt and nothing else, and then
@@ -465,7 +653,14 @@ export function PatternsTab() {
                         ))}
                     </div>
                   </section>
-                </div>
+                  </div>
+
+                  {/* Below the charts, and below them on purpose (delta §5).
+                      It is a check on the questions, read after the answers —
+                      and per constraint 13a it stays quiet: closed until asked
+                      for, no colour, no alarm. */}
+                  <QualityPanel signals={signals} />
+                </>
               )}
 
               {subView === VIEW_EXPLORER &&
@@ -499,8 +694,33 @@ export function PatternsTab() {
  * The ids come from the landscape's own grid cells, so this list is exactly
  * what is under that hill — not a re-query that might round differently.
  */
-function RegionDrawer({ region, view, onClose }) {
-  const ids = new Set(region.anecdote_ids ?? []);
+function RegionDrawer({ region, view, frameworkId, params, onClose }) {
+  const ids = useMemo(() => [...new Set(region.anecdote_ids ?? [])], [region]);
+  const [named, setNamed] = useState(null);
+
+  // The names, fetched for exactly these ids. The landscape's cells decide
+  // *which* stories are here; this only asks what they are called, so a slow or
+  // failed lookup leaves the list of ids standing rather than emptying it.
+  useEffect(() => {
+    let live = true;
+    if (frameworkId === null || ids.length === 0) {
+      setNamed(null);
+      return undefined;
+    }
+    api
+      .browseStories(frameworkId, { ...params, ids: ids.join(",") })
+      .then((page) => {
+        if (!live) return;
+        setNamed(new Map(page.stories.map((story) => [story.anecdote_id, story])));
+      })
+      .catch(() => {
+        if (live) setNamed(null);
+      });
+    return () => {
+      live = false;
+    };
+  }, [frameworkId, ids, params]);
+
   return (
     <aside className="nl-region" aria-label="Stories in this region">
       <div className="nl-region__head">
@@ -513,17 +733,176 @@ function RegionDrawer({ region, view, onClose }) {
         </button>
       </div>
       <ul className="nl-region__list">
-        {[...ids].map((id) => (
-          <li key={id} className="nl-region__story">
-            <span className="nl-region__id">#{id}</span>
-          </li>
-        ))}
+        {ids.map((id) => {
+          const story = named?.get(id) ?? null;
+          return (
+            <li key={id} className="nl-region__story">
+              <span className="nl-region__id">#{id}</span>
+              {story?.title && <span className="nl-region__name">{story.title}</span>}
+              {story?.respondent_title && (
+                <span className="nl-region__by">named by the storyteller</span>
+              )}
+            </li>
+          );
+        })}
       </ul>
       <p className="nl-region__note">
-        These are the {ids.size} stories whose marks sit under that peak, out of{" "}
+        These are the {ids.length} stories whose marks sit under that peak, out of{" "}
         {view.total} in this view. Open the CSV to read them in full.
       </p>
     </aside>
+  );
+}
+
+/**
+ * The data-quality panel (delta §5, phase B).
+ *
+ * Two signals per question, and no opinion about either. Centre-parking is the
+ * share of placements sitting in the middle of the triangle — the shape a
+ * question makes when nobody could trade its three corners off against each
+ * other, and the one shape that is indistinguishable from agreement on a
+ * landscape. Skip rate is who left it blank.
+ *
+ * Constraint 11 draws the line this component sits on: it prints computed
+ * proportions and one fixed reading note written by a person. It never says
+ * what a number means for *this* data, and nothing here is generated.
+ *
+ * Quiet by construction (13a): closed until opened, no colour encoding, no
+ * emphasis on any row. A number worth acting on is worth finding by reading,
+ * not by being shouted at.
+ */
+function QualityPanel({ signals }) {
+  if (!signals || signals.signifiers.length === 0) return null;
+
+  const evenly = Math.round(signals.centre_share_if_even * 100);
+
+  return (
+    <details className="nl-quality">
+      <summary className="nl-quality__summary">
+        Check the questions: centre-parking and skips
+      </summary>
+
+      <p className="nl-quality__note">
+        Two counts per question, from the {signals.total}{" "}
+        {signals.total === 1 ? "story" : "stories"} in this view.{" "}
+        <strong>In the middle</strong> is how many placements sit in a small
+        circle at the centre of the triangle — if placements were spread evenly
+        across it, about {evenly}% would land there. High centre-clustering
+        often means the question did not fit the stories, and on a landscape it
+        looks the same as agreement. <strong>Skipped</strong> is how many
+        stories left the question blank.
+      </p>
+
+      <div className="nl-quality__scroll">
+        <table className="nl-quality__table">
+          <thead>
+            <tr>
+              <th scope="col">Question</th>
+              <th scope="col" className="nl-quality__figure">
+                Answered
+              </th>
+              <th scope="col" className="nl-quality__figure">
+                Skipped
+              </th>
+              <th scope="col" className="nl-quality__figure">
+                In the middle
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {signals.signifiers.map((row) => (
+              <tr key={row.signifier_id}>
+                <th scope="row" className="nl-quality__name">
+                  {row.title}
+                  <span className="nl-quality__kind"> · {row.signifier_type}</span>
+                </th>
+                <td className="nl-quality__figure nl-numeric">{row.answered}</td>
+                <td className="nl-quality__figure nl-numeric">
+                  {row.skipped}
+                  <span className="nl-quality__share">
+                    {" "}
+                    ({Math.round(row.skip_rate * 100)}%)
+                  </span>
+                </td>
+                <td className="nl-quality__figure nl-numeric">
+                  {row.centre_parked === null ? (
+                    <span className="nl-quality__na" title="Only a triangle has a centre">
+                      —
+                    </span>
+                  ) : (
+                    <>
+                      {row.centre_parked}
+                      <span className="nl-quality__share">
+                        {" "}
+                        ({Math.round(row.centre_parked_rate * 100)}%)
+                      </span>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="nl-quality__note">
+        A dash means the question has no middle to park in — only a triangle asks
+        for a three-way trade-off. These are counts, not verdicts: what a high
+        number means about a question is yours to judge.
+      </p>
+    </details>
+  );
+}
+
+/**
+ * What rooms have concluded, beneath the landscape (delta §5, constraint 16).
+ *
+ * Their words, timestamped, and labelled with the filter they were made under —
+ * because "most of these are about being told to hurry" means something
+ * different if the room was looking at one shift than at everybody.
+ *
+ * Reported alongside the pattern and never merged into it. Nothing in this list
+ * is counted, scored, or drawn; it is quoted. The heading says whose words they
+ * are, so a reader never mistakes a room's judgement for a figure.
+ */
+function RoomsList({ rooms }) {
+  if (!rooms || rooms.length === 0) return null;
+
+  return (
+    <section className="nl-rooms" aria-label="What rooms concluded">
+      <h3 className="nl-rooms__title">What rooms made of this</h3>
+      <p className="nl-rooms__note">
+        Conclusions people reached together while looking at this pattern — their
+        words, recorded beside the figures and forming no part of them.
+      </p>
+      <ul className="nl-rooms__list">
+        {rooms.map((room) => (
+          <li key={room.id} className="nl-rooms__item">
+            <blockquote className="nl-rooms__quote">
+              {room.interpretation_text}
+            </blockquote>
+            <p className="nl-rooms__meta">
+              {room.session_label && <span>{room.session_label}</span>}
+              <span>{new Date(room.recorded_at).toLocaleDateString()}</span>
+              {room.participant_count ? (
+                <span>
+                  {room.participant_count}{" "}
+                  {room.participant_count === 1 ? "person" : "people"}
+                </span>
+              ) : null}
+              {room.signifier_id && <span>looking at {room.signifier_id}</span>}
+              <span>
+                {Object.keys(room.filter_state).length === 0
+                  ? "no filters"
+                  : Object.entries(room.filter_state)
+                      .map(([field, value]) => `${field.replace(/_/g, " ")} = ${value}`)
+                      .join(", ")}
+              </span>
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -560,12 +939,26 @@ function AnalystNotes({ count }) {
   );
 }
 
-function optionsFrom(view) {
+function optionsFrom(view, framework) {
   const options = {};
   for (const chart of view?.demographics ?? []) {
     options[chart.id] = chart.bars.filter((bar) => bar.count > 0).map((bar) => bar.label);
   }
+  // Language comes from what the question set is published in, not from a
+  // demographic chart. Deliberately: adding a fifth chart would move a golden
+  // that predates the delta, and the published list is the more honest offer
+  // anyway — "we asked in Tamil and got nothing back" is worth being able to see.
+  const languages = framework?.definition?.capture_settings?.languages ?? [];
+  if (languages.length > 0) options.language_code = languages;
   return options;
+}
+
+/** The filters worth showing: language only once there is a choice to make. */
+function railFilters(options) {
+  return FILTERS.filter(
+    (filter) =>
+      filter.id !== "language_code" || (options.language_code ?? []).length > 0,
+  );
 }
 
 function VersionChip({ versions }) {

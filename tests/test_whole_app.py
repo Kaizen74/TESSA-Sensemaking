@@ -173,7 +173,12 @@ def test_the_whole_app_agrees_with_itself(client: TestClient, session: Session) 
     assert clusters["caveat"] == "statistical clusters — descriptive only"
 
     # -------------------------------------------------------------- exports
-    export = client.get("/api/export/csv", params={"framework_id": fid})
+    # ``signified_by=all`` because this walk-through includes a story an analyst
+    # corrected, and constraint 14 keeps other people's readings out of the
+    # default export. The default is checked immediately below.
+    export = client.get(
+        "/api/export/csv", params={"framework_id": fid, "signified_by": "all"}
+    )
     rows = list(csv.DictReader(io.StringIO(export.text)))
     assert len(rows) == patterns["total"]
     assert {row["status"] for row in rows} == {"validated"}
@@ -185,6 +190,14 @@ def test_the_whole_app_agrees_with_itself(client: TestClient, session: Session) 
     assert by_method == {"typed", "paper", "imported"}
     assert any(row["signified_by"] == "ai|analyst" for row in rows), "the corrected story"
     assert any(row["source_file"] == "workshop.xlsx" for row in rows)
+
+    # Constraint 14 at the end of the pipeline: taking the same download without
+    # asking for anything hands over no reading anybody made on a storyteller's
+    # behalf. Same stories, same provenance columns, fewer placements.
+    plain = client.get("/api/export/csv", params={"framework_id": fid})
+    plain_rows = list(csv.DictReader(io.StringIO(plain.text)))
+    assert len(plain_rows) == len(rows)
+    assert {row["signified_by"] for row in plain_rows} <= {"respondent", ""}
 
     # Constraint 9 held all the way to the file.
     assert all(row["created_at_hour"].endswith(":00:00") for row in rows)

@@ -29,7 +29,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from backend import dataset
+from backend import dataset, errors
+from backend.languages import UNKNOWN_LANGUAGE_LABEL, display_name
 from backend.models import Anecdote, Signification, Tag
 
 #: The tag a star is stored as. Reserved, and refused as a typed tag, so a
@@ -53,8 +54,19 @@ class Story(BaseModel):
     anecdote_id: int
     framework_id: int
     framework_version: int
+    #: What to show: the name its teller gave it, else the machine's (delta §3).
     title: str
+    #: Present only when a respondent actually named it, so the screen can say
+    #: whose words the title is rather than leaving a reader to guess.
+    respondent_title: str | None
     text: str
+    #: The language it was told in, and how the app came to believe that
+    #: (constraint 15). Null reads as unknown on screen, never as English.
+    language_code: str | None = None
+    language_source: str | None = None
+    #: The language written the way an operator reads it, so no screen has to
+    #: keep its own copy of the mapping.
+    language_name: str = UNKNOWN_LANGUAGE_LABEL
     respondent_group: str | None
     created_at_hour: dt.datetime | None
     source_type: str
@@ -90,6 +102,53 @@ class StoryPage(BaseModel):
     known_tags: list[str] = Field(default_factory=list)
 
 
+def selected_ids(ids: str | None) -> set[int] | None:
+    """The story ids a caller asked for by name, or None for all of them.
+
+    One parser for both readers of a selection — the CSV export's "export
+    selected" and the landscape's region drill — so the two cannot drift into
+    disagreeing about what a list of ids means, or into two different sentences
+    for the same mistake.
+    """
+    if ids is None:
+        return None
+    chosen: set[int] = set()
+    for part in ids.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if not part.isdigit():
+            raise errors.bad_request(
+                "unreadable_selection",
+                "That download asked for stories by a name Narrative Lens does "
+                "not recognise.",
+                "Go back to the story list, tick the stories you want, and "
+                "download again.",
+            )
+        chosen.add(int(part))
+    return chosen
+
+
+def language_label(code: str | None) -> str:
+    """The language written the way a reader reads it (constraint 15).
+
+    One definition, so a story browser, a drill drawer and an export can never
+    disagree about what to call a language — and so that absent reads as
+    unknown rather than as English in every one of them.
+    """
+    return display_name(code)
+
+
+def display_title(anecdote: Anecdote) -> str:
+    """The delta's display rule, in one place (delta §3).
+
+    The name its teller gave it when there is one, else the machine's first
+    words. Written once so a list, a drawer and a drill can never show three
+    different titles for the same story.
+    """
+    return anecdote.respondent_title or anecdote.title_auto or ""
+
+
 def marks_for(session: Session, anecdote_ids: list[int]) -> dict[int, tuple[bool, list[str]]]:
     """Star and tags per story, in one query rather than one per row."""
     if not anecdote_ids:
@@ -123,7 +182,7 @@ def answer_counts(session: Session, anecdote_ids: list[int]) -> dict[int, int]:
 
 
 def search_clause(query: str):
-    """The full-text rule: every word must appear, in the story or its title.
+    """The full-text rule: every word must appear, in the story or either title.
 
     Deliberately plain ``LIKE``. A search index would be another table, and PRD
     §3 ends the schema at six; at the scale this app is for, the difference is
@@ -141,6 +200,12 @@ def search_clause(query: str):
         clauses.append(
             func.lower(Anecdote.text).like(pattern, escape="\\")
             | func.lower(func.coalesce(Anecdote.title_auto, "")).like(pattern, escape="\\")
+            # A story its teller named is findable by that name. Searching only
+            # the machine's title would make the one title a person chose the
+            # one title the search box could not see.
+            | func.lower(func.coalesce(Anecdote.respondent_title, "")).like(
+                pattern, escape="\\"
+            )
         )
     return clauses
 
@@ -153,11 +218,20 @@ def stories_in_scope(
     query: str,
     tag: str | None,
     starred_only: bool,
+    ids: set[int] | None = None,
 ):
-    """The select every count and page in this module is built from."""
+    """The select every count and page in this module is built from.
+
+    ``ids`` narrows it to a named few — how the landscape's region drill reads
+    the stories under a hill. It is a filter on the same scope as everything
+    else, not a way around it: a story the version rule or the validated rule
+    excludes stays excluded however it was asked for.
+    """
     statement = dataset.only_validated(select(Anecdote)).where(
         Anecdote.framework_id.in_(framework_ids)
     )
+    if ids is not None:
+        statement = statement.where(Anecdote.id.in_(sorted(ids)))
     for field, value in filters.items():
         statement = statement.where(getattr(Anecdote, field) == value)
     for clause in search_clause(query):

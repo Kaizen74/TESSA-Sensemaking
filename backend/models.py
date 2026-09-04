@@ -27,6 +27,7 @@ from sqlalchemy import (
     MetaData,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -51,6 +52,14 @@ SIGNIFIER_TYPES = ("triad", "dyad", "stones", "mcq")
 #: The only ``kind`` an edit-log entry may carry. A meaning change creates a new
 #: framework row rather than a log entry (PRD §3).
 EDIT_LOG_KINDS = ("wording_fix",)
+
+#: How the app came to believe a story's language (delta §3). Mirrors
+#: ``backend.languages.LANGUAGE_SOURCES``; held here too so the CHECK constraint
+#: and the schema tests read from the models the way every other vocabulary does.
+LANGUAGE_SOURCES = ("respondent_selected", "admin_entered", "unknown")
+
+#: Which picture a room was looking at when it wrote something down (delta §3).
+INTERPRETATION_VIEW_KINDS = ("landscape", "contour", "supporting")
 
 
 def _in_clause(column: str, allowed: tuple[str, ...]) -> str:
@@ -138,6 +147,19 @@ class Anecdote(Base):
     )
     text: Mapped[str] = mapped_column(Text, nullable=False)
     title_auto: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    #: The name the storyteller gave their own story (delta §3, migration 002).
+    #: Kept beside ``title_auto`` rather than over it: which of the two a reader
+    #: is looking at is exactly the distinction this column exists to make.
+    respondent_title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: The language this story was told in — BCP-47, e.g. "ms", "zh-Hans"
+    #: (delta §3, constraint 15). Null means nobody recorded one, which reads as
+    #: unknown and never as English.
+    language_code: Mapped[str | None] = mapped_column(String(35), nullable=True)
+    #: How the app came to believe that. A respondent who chose their language
+    #: and an operator who guessed while typing up paper are making claims of
+    #: very different strength, and a column holding only the tag would flatten
+    #: the two.
+    language_source: Mapped[str | None] = mapped_column(String(30), nullable=True)
     source_type: Mapped[str] = mapped_column(String(50), nullable=False)
     entry_mode: Mapped[str] = mapped_column(String(20), nullable=False)
     capture_link_id: Mapped[int | None] = mapped_column(
@@ -194,6 +216,98 @@ class ImportJob(Base):
     segments_found: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
+
+
+class Interpretation(Base):
+    """What a room concluded about a pattern, in the room's own words.
+
+    Constraint 16 in table form. Note what is *absent*: no ``anecdote_id``, no
+    ``signification_id``, no numeric value, no place for a marker. That absence
+    is the design. An interpretation is an artefact recorded alongside a
+    pattern, never a reading merged into one — it cannot enter the KDE because
+    there is no column through which it could.
+
+    What it does carry is enough to say what was on screen when the room spoke:
+    the framework version, the signifier being looked at, the filters in force
+    and the moment. Six months later that is the difference between a sentence
+    somebody wrote and a sentence you can put back in front of the picture it
+    was about.
+
+    ``interpretation_text`` is free text on purpose (delta §9 assumption 5). A
+    room's conclusion resists a schema, and forcing one would be the same error
+    as machine-coding a story.
+    """
+
+    __tablename__ = "interpretations"
+    __table_args__ = (
+        CheckConstraint(
+            _in_clause("view_kind", INTERPRETATION_VIEW_KINDS), name="view_kind"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    #: The exact framework version the room was reading. No lineage pooling: a
+    #: conclusion about version 1's wording is not about version 2's.
+    framework_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("frameworks.id"), nullable=False
+    )
+    #: Which triad or question was on screen. Null for the supporting charts,
+    #: which are about the set rather than about one signifier.
+    signifier_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    #: The filters in force, exactly as the endpoint received them.
+    filter_state_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    view_kind: Mapped[str] = mapped_column(String(20), nullable=False)
+    #: What the room called itself — "Ops workshop, March". Optional.
+    session_label: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    interpretation_text: Mapped[str] = mapped_column(Text, nullable=False)
+    #: Exact, not hour-rounded. Constraint 9 protects respondents, and this row
+    #: carries no respondent link at all; a facilitator wants the order the room
+    #: said things in.
+    recorded_at: Mapped[dt.datetime] = mapped_column(
+        DateTime, nullable=False, default=utcnow
+    )
+    #: How many people were in the room, when anybody counted.
+    participant_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class Translation(Base):
+    """A cached read-time translation of one story into one language.
+
+    Constraint 15 in table form, and the constraint turns almost entirely on
+    what this table *is not*. It is not the story. It is not a signification.
+    Nothing computes from it, nothing exports from it, and Stage B never sees
+    it. It exists so that reading the same story twice does not cost two API
+    calls — and that is the whole of its job.
+
+    The test of that claim is blunt and lives in
+    ``tests/test_translation_readtime.py``: delete every row here and the app
+    must be fully correct, only slower. Every pattern, every landscape, every
+    export byte-identical. A cache that failed that test would have stopped
+    being a cache and started being the record.
+
+    ``model_used`` is kept because a translation is a machine's reading of
+    somebody's words, and six months on the only honest answer to "who said
+    that?" is the name of the model that said it.
+    """
+
+    __tablename__ = "translations"
+    # One translation per story per target language, replaced rather than
+    # accumulated — which is what makes this a cache and not a log. No explicit
+    # name: the ``uq`` naming convention builds it from the columns.
+    __table_args__ = (UniqueConstraint("anecdote_id", "target_language_code"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    anecdote_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("anecdotes.id"), nullable=False
+    )
+    target_language_code: Mapped[str] = mapped_column(String(35), nullable=False)
+    translated_text: Mapped[str] = mapped_column(Text, nullable=False)
+    translated_at: Mapped[dt.datetime] = mapped_column(
+        DateTime, nullable=False, default=utcnow
+    )
+    #: Which model produced it. A translation is somebody else's reading of a
+    #: person's words, and the reader deserves to know whose.
+    model_used: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
 class Tag(Base):

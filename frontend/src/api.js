@@ -89,6 +89,21 @@ export const api = {
         ...(name ? { name } : {}),
       }),
     }),
+  // Read-time translation (delta phase F). Display-only: the reply carries the
+  // original alongside so a screen cannot show the translation unlabelled.
+  translateStory: (anecdoteId, target) =>
+    request(`/api/stories/${anecdoteId}/translation${queryString({ target })}`),
+
+  // The languages the Studio can offer (delta phase E). A fixed local list —
+  // constraint 4 permits no network for this.
+  knownLanguages: () => request("/api/frameworks/languages"),
+
+  // The design linter (delta phase C). AI-calling, and the only model call in
+  // the app that never sees a story — POST because it costs money and happens
+  // when somebody clicks, never on a page load.
+  lintFramework: (frameworkId) =>
+    request(`/api/frameworks/${frameworkId}/lint`, { method: "POST" }),
+
   paperPackUrl: (id) => `/api/frameworks/${id}/paper-pack`,
   capture: (submission) =>
     request("/api/capture", { method: "POST", body: JSON.stringify(submission) }),
@@ -160,6 +175,19 @@ export const api = {
     request(`/api/explorer/${frameworkId}${queryString(params)}`),
   getClusters: (frameworkId, params = {}) =>
     request(`/api/clusters/${frameworkId}${queryString(params)}`),
+
+  // Collective interpretations (delta phase D). What a room concluded, stored
+  // beside the pattern and never merged into it — there is no endpoint here
+  // that could fold one into a figure, because there is no such operation.
+  listInterpretations: (frameworkId, params = {}) =>
+    request(`/api/interpretations${queryString({ framework_id: frameworkId, ...params })}`),
+  recordInterpretation: (body) =>
+    request("/api/interpretations", { method: "POST", body: JSON.stringify(body) }),
+
+  // The data-quality signals (delta phase B). Counted locally like everything
+  // else on this tab — no AI is reachable from that endpoint at all.
+  getQuality: (frameworkId, params = {}) =>
+    request(`/api/quality/${frameworkId}${queryString(params)}`),
 
   // The respondent's path. The token carries everything — no framework id is
   // ever sent from here, so a browser cannot retarget its own story.

@@ -74,6 +74,20 @@ EXPECTED_API_PATHS = {
     "/api/landscape/{framework_id}/{triad_id}",
     "/api/explorer/{framework_id}",
     "/api/clusters/{framework_id}",
+    # Meaningfulness delta, phase B — the data-quality signals. Pure local
+    # counting; nothing on this path can reach a language model.
+    "/api/quality/{framework_id}",
+    # Meaningfulness delta, phase C — the framework design linter. The one AI
+    # call that reads the questions rather than the answers.
+    "/api/frameworks/{framework_id}/lint",
+    # Meaningfulness delta, phase D — what a room concluded, stored beside the
+    # pattern and never merged into it (constraint 16).
+    "/api/interpretations",
+    # Meaningfulness delta, phase E — the languages the Studio can offer.
+    "/api/frameworks/languages",
+    # Meaningfulness delta, phase F — read-time translation. Display-only:
+    # deleting every cached row leaves the app correct, only slower.
+    "/api/stories/{anecdote_id}/translation",
 }
 
 

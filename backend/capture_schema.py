@@ -19,6 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from backend.barycentric import BarycentricError, normalise, sums_to_one
 from backend.framework_schema import FrameworkDefinition
+from backend.languages import MAX_LANGUAGE_CODE_CHARS
 
 #: What a directly-captured record records as its origin. Ingestion uses its own
 #: value from Phase 5 onward.
@@ -39,6 +40,12 @@ CAPTURE_INPUT_METHODS = ("typed", "voice", "paper")
 LOCAL_ENTRY_MODES = ("admin", "kiosk")
 
 MAX_STORY_CHARS = 20_000
+
+#: How long a name a respondent may give their own story (delta §4). Long
+#: enough for a real title, short enough that the field cannot quietly become a
+#: second story box — which is the one thing it must not become, because the
+#: text is what gets signified and a title is not.
+MAX_RESPONDENT_TITLE_CHARS = 120
 
 
 class CaptureError(ValueError):
@@ -70,6 +77,16 @@ class CaptureSubmission(BaseModel):
 
     framework_id: int
     text: Annotated[str, Field(min_length=1, max_length=MAX_STORY_CHARS)]
+    #: The name the storyteller gave it, if they gave it one (delta §5). Optional
+    #: everywhere and validated on nothing but length: a title somebody chose is
+    #: right by definition, and this field lives on the shared base class so all
+    #: four capture paths — admin, link, kiosk, paper entry — accept it the same
+    #: way rather than four ways.
+    respondent_title: Annotated[str, Field(max_length=MAX_RESPONDENT_TITLE_CHARS)] | None = None
+    #: The language this story is being told in (delta §4, constraint 15).
+    #: Optional: a framework offering only English never sends it, and a story
+    #: with none reads as unknown rather than as English.
+    language_code: Annotated[str, Field(max_length=MAX_LANGUAGE_CODE_CHARS)] | None = None
     input_method: Literal["typed", "voice", "paper"] = "typed"
     respondent_group: Annotated[str, Field(max_length=200)] | None = None
     significations: list[SubmittedSignification] = Field(default_factory=list)

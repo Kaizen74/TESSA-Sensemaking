@@ -19,10 +19,13 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from backend import errors, stories
+from backend import ai_client, errors, stories, translate
+from backend.ai_client import AiError
 from backend.db import get_session
+from backend.languages import DEFAULT_LANGUAGE, MAX_LANGUAGE_CODE_CHARS, well_formed
 from backend.models import Anecdote, Framework
 from backend.routers.patterns import applied_filters, load_framework, scoped_ids
+from backend.translate import TranslationOut
 
 router = APIRouter(prefix="/api/stories", tags=["stories"])
 
@@ -43,23 +46,34 @@ def browse_stories(
     q: Annotated[str, Query(max_length=200)] = "",
     tag: Annotated[str | None, Query(max_length=stories.MAX_TAG_CHARS)] = None,
     starred: Annotated[bool, Query()] = False,
+    ids: Annotated[str | None, Query()] = None,
     offset: Annotated[int, Query(ge=0)] = 0,
     mixed: Annotated[bool, Query()] = False,
     respondent_group: Annotated[str | None, Query()] = None,
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    language_code: Annotated[str | None, Query()] = None,
 ) -> stories.StoryPage:
-    """One page of stories: searched, filtered, newest first."""
+    """One page of stories: searched, filtered, newest first.
+
+    ``ids`` asks for a named few rather than a search — how the landscape's
+    region drill reads the stories under a hill. It narrows the same scope
+    everything else does, so a drill can never surface a story the current
+    version rule or the validated rule excludes.
+    """
     framework = load_framework(session, framework_id)
-    filters = applied_filters(respondent_group, input_method, entry_mode, source_type)
-    ids = scoped_ids(session, framework, mixed)
+    filters = applied_filters(
+        respondent_group, input_method, entry_mode, source_type, language_code
+    )
+    scope = scoped_ids(session, framework, mixed)
+    chosen = stories.selected_ids(ids)
 
     matching = stories.stories_in_scope(
-        session, ids, filters=filters, query=q, tag=tag, starred_only=starred
+        session, scope, filters=filters, query=q, tag=tag, starred_only=starred, ids=chosen
     )
     everything = stories.stories_in_scope(
-        session, ids, filters={}, query="", tag=None, starred_only=False
+        session, scope, filters={}, query="", tag=None, starred_only=False
     )
 
     matched = session.scalar(select(func.count()).select_from(matching.subquery())) or 0
@@ -75,7 +89,7 @@ def browse_stories(
     answered = stories.answer_counts(session, anecdote_ids)
     versions = {
         row.id: row.version
-        for row in session.scalars(select(Framework).where(Framework.id.in_(ids))).all()
+        for row in session.scalars(select(Framework).where(Framework.id.in_(scope))).all()
     }
 
     return stories.StoryPage(
@@ -93,8 +107,12 @@ def browse_stories(
                 anecdote_id=row.id,
                 framework_id=row.framework_id,
                 framework_version=versions.get(row.framework_id, framework.version),
-                title=row.title_auto or "",
+                title=stories.display_title(row),
+                respondent_title=row.respondent_title,
                 text=row.text,
+                language_code=row.language_code,
+                language_source=row.language_source,
+                language_name=stories.language_label(row.language_code),
                 respondent_group=row.respondent_group,
                 created_at_hour=row.created_at_hour,
                 source_type=row.source_type,
@@ -108,8 +126,63 @@ def browse_stories(
             )
             for row in rows
         ],
-        known_tags=stories.known_tags(session, ids),
+        known_tags=stories.known_tags(session, scope),
     )
+
+
+@router.get("/{anecdote_id}/translation", response_model=TranslationOut)
+def get_translation(
+    anecdote_id: int,
+    session: Annotated[Session, Depends(get_session)],
+    target: Annotated[str, Query(max_length=MAX_LANGUAGE_CODE_CHARS)] = DEFAULT_LANGUAGE,
+) -> TranslationOut:
+    """One story, carried into another language for reading only (constraint 15).
+
+    ``GET`` because it reads a story, but it may write to the cache on the way —
+    which is a cache doing its job, not the endpoint changing anything. The
+    story itself is never touched: ``anecdotes.text`` is the record, and no
+    branch of this function writes to it.
+
+    The response always carries ``is_translation`` and the original text, so a
+    screen cannot render the translation without both. A failure is an ordinary
+    state of the app (constraint 4): the story stays readable in the language it
+    was told in, which is the one that matters.
+    """
+    anecdote = session.get(Anecdote, anecdote_id)
+    if anecdote is None:
+        raise errors.not_found(
+            "story_not_found",
+            f"There is no story numbered {anecdote_id}.",
+            "Reload the list and pick a story from it.",
+        )
+
+    if not well_formed(target):
+        raise errors.bad_request(
+            "unknown_language",
+            f"'{target}' is not a language Narrative Lens can translate into.",
+            "Use the language buttons on the story rather than editing the "
+            "address.",
+        )
+
+    if anecdote.language_code == target:
+        raise errors.bad_request(
+            "already_in_that_language",
+            "That story was already told in this language.",
+            "Read it as it is — it is the original, which is always the better "
+            "text.",
+        )
+
+    hit = translate.cached(session, anecdote.id, target)
+    if hit is not None:
+        return translate.to_out(anecdote, hit, from_cache=True)
+
+    try:
+        text = translate.translate(anecdote.text, target)
+    except AiError as exc:
+        raise errors.upstream(exc.code, exc.message, exc.action) from exc
+
+    row = translate.store(session, anecdote.id, target, text, ai_client.MODEL)
+    return translate.to_out(anecdote, row, from_cache=False)
 
 
 @router.put("/{anecdote_id}/marks", response_model=stories.Story)
@@ -151,8 +224,12 @@ def set_marks(
         anecdote_id=anecdote.id,
         framework_id=anecdote.framework_id,
         framework_version=framework.version if framework else 0,
-        title=anecdote.title_auto or "",
+        title=stories.display_title(anecdote),
+        respondent_title=anecdote.respondent_title,
         text=anecdote.text,
+        language_code=anecdote.language_code,
+        language_source=anecdote.language_source,
+        language_name=stories.language_label(anecdote.language_code),
         respondent_group=anecdote.respondent_group,
         created_at_hour=anecdote.created_at_hour,
         source_type=anecdote.source_type,

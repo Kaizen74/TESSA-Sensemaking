@@ -234,10 +234,18 @@ import json, sys
 view = json.load(sys.stdin)
 assert view["total"] == 1, view["total"]          # only the accepted story
 assert view["mixed"] is False, view
+# Constraint 14: asked nothing, the endpoint answers with the storytellers own
+# readings, and says so. This story was marked up by Stage B and confirmed by a
+# person, so the default view holds none of its placements.
+assert view["signified_by_applied"] == "participant", view["signified_by_applied"]
+held = view["counts_by_signified_by"]
+assert held["participant"] == 0, held
+assert held["ai_validated"] > 0, held
 for chart in view["mcqs"] + view["demographics"]:
     counts = [bar["count"] for bar in chart["bars"]]
     assert counts == sorted(counts, reverse=True), chart["id"]
 print("  patterns count only validated stories, bars sorted by value")
+print("  patterns default to the storytellers own readings, and name the view")
 ' || {
     echo "  FAIL: the patterns endpoint broke its own grammar"
     exit 1
@@ -372,6 +380,32 @@ print("  landscape: 64x64 grid, %d stories, one grid for both readings" % count)
     exit 1
 }
 
+# Constraint 14 over the wire, on the view it matters most for: the terrain
+# drawn by default holds nobody elses reading of anybody, and asking for both
+# is what puts the expert-validated story on the map.
+curl -sf "${land}" | $PYTHON -c '
+import json, sys
+
+view = json.load(sys.stdin)
+assert view["signified_by_applied"] == "participant", view["signified_by_applied"]
+assert view["panels"][0]["count"] == 0, view["panels"][0]["count"]
+' || {
+    echo "  FAIL: the default landscape drew a placement nobody told it to"
+    exit 1
+}
+
+curl -sf "${land}?signified_by=all" | $PYTHON -c '
+import json, sys
+
+view = json.load(sys.stdin)
+assert view["signified_by_applied"] == "all", view["signified_by_applied"]
+assert view["panels"][0]["count"] == 1, view["panels"][0]["count"]
+print("  landscape: default holds only self-signified marks; \"all\" adds the rest")
+' || {
+    echo "  FAIL: asking for both did not put the expert-validated story on the map"
+    exit 1
+}
+
 curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/clusters/${framework_id}?k=2" | $PYTHON -c '
 import json, sys
 
@@ -381,6 +415,186 @@ assert view["caveat"] == "statistical clusters — descriptive only", view["cave
 print("  clusters carry their seed and their caveat")
 ' || {
     echo "  FAIL: the cluster endpoint dropped its caveat"
+    exit 1
+}
+
+# Constraint 15: a story keeps the language it was told in, and that tag
+# changes no figure. The framework above is English-only, so a language is
+# refused rather than silently accepted.
+lang_before="$(curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/patterns/${framework_id}")"
+lang_status="$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+    "http://127.0.0.1:${SMOKE_PORT}/api/capture" -H 'Content-Type: application/json' \
+    -d "{\"framework_id\": ${framework_id}, \"text\": \"A story in a language this set is not offered in.\", \"language_code\": \"ta\", \"significations\": []}")"
+if [[ "$lang_status" != "400" ]]; then
+    echo "  FAIL: a language the question set does not offer was accepted (got $lang_status)"
+    exit 1
+fi
+echo "  a language the question set does not offer is refused"
+
+curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/stories/${framework_id}" | $PYTHON -c '
+import json, sys
+
+page = json.load(sys.stdin)
+for story in page["stories"]:
+    # Nobody asked the person who wrote it, so it reads as unknown — not English.
+    assert story["language_code"] is None, story
+    assert story["language_name"] == "Language not recorded", story
+print("  a story with no language reads as unknown, never as English")
+' || {
+    echo "  FAIL: an unrecorded language did not read as unknown"
+    exit 1
+}
+
+curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/frameworks/languages" | $PYTHON -c '
+import json, sys
+
+offered = json.load(sys.stdin)
+codes = {entry["code"] for entry in offered}
+assert {"en", "ms", "ta", "zh-Hans"} <= codes, sorted(codes)
+assert all(entry["endonym"] for entry in offered)
+print("  the Studio can offer %d languages, each named in its own script" % len(offered))
+' || {
+    echo "  FAIL: the language list did not answer"
+    exit 1
+}
+
+# Constraint 16 over the wire: a room records what it concluded, and the
+# landscape is the same picture afterwards. This is the delta phase D guard.
+interp="http://127.0.0.1:${SMOKE_PORT}/api/interpretations"
+land_before="$(curl -sf "$land")"
+curl -sf -X POST "$interp" -H 'Content-Type: application/json' \
+    -d "{\"framework_id\": ${framework_id}, \"interpretation_text\": \"The room said the checklist assumes two free hands.\", \"view_kind\": \"landscape\", \"signifier_id\": \"t1\", \"filter_state\": {}, \"participant_count\": 9}" >/dev/null || {
+    echo "  FAIL: an interpretation could not be recorded"
+    exit 1
+}
+
+if [[ "$(curl -sf "$land")" != "$land_before" ]]; then
+    echo "  FAIL: recording an interpretation changed the landscape (constraint 16)"
+    exit 1
+fi
+echo "  interpretation recorded; the landscape is byte-identical (constraint 16)"
+
+curl -sf "${interp}?framework_id=${framework_id}" | $PYTHON -c '
+import json, sys
+
+rows = json.load(sys.stdin)
+assert len(rows) == 1, rows
+assert rows[0]["interpretation_text"].startswith("The room said"), rows[0]
+assert rows[0]["signifier_id"] == "t1", rows[0]
+print("  the room list quotes it back verbatim, with the question it was about")
+' || {
+    echo "  FAIL: the interpretation did not come back as recorded"
+    exit 1
+}
+
+curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/export/brief?framework_id=${framework_id}" \
+    | grep -q "What the room made of it" || {
+    echo "  FAIL: the Pattern Brief did not carry the room's words"
+    exit 1
+}
+echo "  the Pattern Brief quotes the room in its own section"
+
+# The design linter: the one AI call that reads the questions rather than the
+# answers. Runs on the mock here (NL_MOCK_AI=1), and must leave the framework
+# exactly as it found it.
+before_lint="$(curl -sf "${base}/${framework_id}")"
+lint_out="$(curl -sf -X POST "${base}/${framework_id}/lint")" || {
+    echo "  FAIL: the design linter did not answer"
+    exit 1
+}
+printf '%s' "$lint_out" | $PYTHON -c '
+import json, sys
+
+report = json.load(sys.stdin)
+assert report["findings"], "the linter returned nothing at all"
+for finding in report["findings"]:
+    assert finding["severity"] in ("info", "warning"), finding
+    for field in ("location", "finding", "suggestion"):
+        assert finding[field].strip(), finding
+print("  design linter: %d findings, every one with a field and a suggestion"
+      % len(report["findings"]))
+' || {
+    echo "  FAIL: the linter returned findings the panel could not render"
+    exit 1
+}
+
+if [[ "$(curl -sf "${base}/${framework_id}")" != "$before_lint" ]]; then
+    echo "  FAIL: linting changed the question set"
+    exit 1
+fi
+echo "  linting left the question set byte-identical"
+
+# The data-quality signals. One validated story here, and its markers were
+# placed by Stage B rather than by whoever told it — so under the default the
+# panel has nothing of the storytellers own to count, and says so in numbers
+# rather than by failing.
+curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/quality/${framework_id}?signified_by=all" \
+    | $PYTHON -c '
+import json, sys
+
+view = json.load(sys.stdin)
+assert view["total"] == 1, view["total"]
+assert view["signified_by_applied"] == "all", view["signified_by_applied"]
+# The circle is a tenth of the triangle by area, and the radius says so.
+import math
+assert abs(math.pi * view["centre_radius"] ** 2 / (math.sqrt(3) / 4) - 0.10) < 1e-9
+rows = {row["signifier_id"]: row for row in view["signifiers"]}
+assert rows, "no signifiers reported"
+for row in rows.values():
+    assert row["answered"] + row["skipped"] == view["total"], row
+    # Only a triangle has a middle to park in.
+    assert (row["centre_parked"] is None) == (row["signifier_type"] != "triad"), row
+print("  quality signals: every question accounted for, centre only on triads")
+' || {
+    echo "  FAIL: the quality endpoint broke one of its own guarantees"
+    exit 1
+}
+
+# Constraint 15, second half: a translation is a reading aid, never the record.
+# The story is captured in Tamil, translated, and then the cache is checked to
+# have changed nothing about the story or the figures.
+ta_id="$(curl -sf -X POST "http://127.0.0.1:${SMOKE_PORT}/api/capture" \
+    -H 'Content-Type: application/json' \
+    -d "{\"framework_id\": ${framework_id}, \"text\": \"பாகங்கள் கடைசி நேரத்தில் வந்தன.\", \"significations\": []}" \
+    | $PYTHON -c 'import json,sys; print(json.load(sys.stdin)["anecdote_id"])')" || {
+    echo "  FAIL: could not capture a story to translate"
+    exit 1
+}
+
+patterns_before="$(curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/patterns/${framework_id}")"
+curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/stories/${ta_id}/translation?target=ms" \
+    | $PYTHON -c '
+import json, sys
+
+reply = json.load(sys.stdin)
+# The reply cannot be rendered unlabelled: the flag and the original travel with it.
+assert reply["is_translation"] is True, reply
+assert reply["original_text"] == "பாகங்கள் கடைசி நேரத்தில் வந்தன.", reply
+assert reply["translated_text"] != reply["original_text"], reply
+assert reply["model_used"], reply
+print("  translation carries is_translation and the original alongside it")
+' || {
+    echo "  FAIL: the translation endpoint broke its own contract"
+    exit 1
+}
+
+if [[ "$(curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/patterns/${framework_id}")" != "$patterns_before" ]]; then
+    echo "  FAIL: caching a translation changed the figures (constraint 15)"
+    exit 1
+fi
+echo "  caching a translation left every figure unchanged"
+
+curl -sf "http://127.0.0.1:${SMOKE_PORT}/api/stories/${framework_id}" | $PYTHON -c '
+import json, sys
+
+stories = json.load(sys.stdin)["stories"]
+told = [s for s in stories if "பாகங்கள்" in s["text"]]
+assert told, "the Tamil story vanished from the browser"
+# anecdotes.text is the record and is untouched by translating it.
+assert told[0]["text"] == "பாகங்கள் கடைசி நேரத்தில் வந்தன.", told[0]
+print("  the story is still the story it was told as")
+' || {
+    echo "  FAIL: translating a story changed the story"
     exit 1
 }
 

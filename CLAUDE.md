@@ -26,6 +26,16 @@ Reproduced verbatim from PRD §2.
 12. **Tables are gated; triads are respected.** Tabular ingestion requires a human-confirmed column mapping and displayed exact row reconciliation. Closure-constraint caveats documented in the analyst notes; pattern reading is exploratory/abductive, never causal.
 13. **The visual grammar.** (a) The landscape is the ONE bold element; everything else is quiet — hero space to the landscape, supporting charts at reduced visual weight, filters in a slim rail. (b) Decorative 3D is banned everywhere; the landscape is the sole exception because its z-axis encodes data (density), and it must always offer its 2D contour twin, which is the default for print/export. (c) Per chart: ≤4 colors — one data hue, one accent, gray for context; sequential colorblind-safe scale for the terrain; never red/green as primary encoding; must survive grayscale. (d) Categorical comparisons are horizontal bars sorted by value; bar axes start at zero; direct labels beat legends; no decorative gridlines or icons. (e) WCAG AA contrast, ≥12px chart text, keyboard-reachable interactions. (f) Export and brief headlines state findings ("Ops stories cluster on time-pressure"), never topics ("Triad 2 results"). (g) Wording edits to live frameworks follow the wording-fix vs meaning-change guardrail — no silent in-place semantic changes, ever.
 
+### Added by `SPEC_DELTA_meaningfulness_20260902.md` (delta §2)
+
+The delta is a **delta, not a replacement**: the PRD remains the specification of
+record for everything the delta does not name. These three constraints join the
+thirteen above and are equally binding.
+
+14. **Self-signification is visible, not merely recorded.** Every view that aggregates significations must state whose interpretation it is showing. The default for every pattern, landscape, contour and export is `signified_by = participant` only. Expert-validated points (`ai_validated`) are shown only when explicitly selected, and any view containing them carries a visible label saying so. A view may never silently mix the two.
+15. **The original language is the record.** Significations attach only to the text as told. Translation is read-time, display-only, always labelled as a translation, never stored as the story, never sent to Stage B, and never used to compute anything. A translated text is never signified by anyone.
+16. **Collective interpretation is an artefact, not data.** What a room concludes about a pattern is stored as an interpretation note bound to a framework, a filter state and a timestamp, in the room's own words. It never becomes a signification, never enters the KDE, and never changes a landscape. It is reported alongside the pattern, never merged into it.
+
 ---
 
 ## Session protocol

@@ -29,6 +29,24 @@ from tests.patterns_fixtures import STORY_COUNT, build_golden_dataset
 
 GOLDEN = Path(__file__).resolve().parent / "golden" / "patterns_20_anecdotes.json"
 
+#: The same twenty stories under the delta's new default (delta §6, baseline
+#: block). Generated once, byte-identical thereafter, and never a substitute for
+#: the file above — the pair is the evidence that the default changed the view
+#: and nothing else.
+PARTICIPANT_GOLDEN = (
+    Path(__file__).resolve().parent / "golden" / "patterns_20_anecdotes_participant.json"
+)
+
+#: Fields the meaningfulness delta added to the response envelope (delta §4).
+#:
+#: The pre-delta golden pins the *aggregate*: every count, share, point, bin and
+#: sort order. It cannot also pin fields that did not exist when it was written,
+#: and the delta forbids regenerating it. So these two are lifted out before the
+#: comparison, and pinned instead by the participant golden below — which is new,
+#: and therefore free to hold them — and by
+#: ``tests/test_signification_provenance.py``, which is about them.
+DELTA_ENVELOPE_FIELDS = ("signified_by_applied", "counts_by_signified_by")
+
 
 def serialise(payload: dict) -> str:
     """The one way this project writes a golden file.
@@ -39,7 +57,27 @@ def serialise(payload: dict) -> str:
     return json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 
 
+def without_delta_envelope(payload: dict) -> dict:
+    """The aggregate as it was before the delta, so the old golden still fits."""
+    return {key: value for key, value in payload.items() if key not in DELTA_ENVELOPE_FIELDS}
+
+
 def produce(client: TestClient) -> str:
+    """The pre-delta view: every placement, whoever made it.
+
+    ``signified_by=all`` is now explicit. Before the delta this endpoint had no
+    such parameter and returned exactly this population; passing it keeps the
+    golden measuring the same twenty stories' worth of placements rather than
+    silently following the new default (delta §6, baseline block).
+    """
+    framework = build_golden_dataset(client)
+    response = client.get(f"/api/patterns/{framework['id']}", params={"signified_by": "all"})
+    assert response.status_code == 200, response.text
+    return serialise(without_delta_envelope(response.json()))
+
+
+def produce_participant(client: TestClient) -> str:
+    """The new default view, envelope and all."""
     framework = build_golden_dataset(client)
     response = client.get(f"/api/patterns/{framework['id']}")
     assert response.status_code == 200, response.text
@@ -95,3 +133,42 @@ def test_the_golden_holds_real_placements() -> None:
     assert stored["stones"]["answered"] == STORY_COUNT
     assert len(stored["stones"]["points"]) == STORY_COUNT * 3
     assert sum(bar["count"] for bar in stored["mcqs"][0]["bars"]) == STORY_COUNT
+
+
+# --------------------------------------------------------------------------
+# The participant golden (delta §6, baseline block)
+# --------------------------------------------------------------------------
+
+
+def test_the_participant_golden_file_exists() -> None:
+    assert PARTICIPANT_GOLDEN.is_file(), (
+        "the participant golden is missing; generate it once with "
+        "`python -m tests.regenerate_golden participant`"
+    )
+
+
+def test_the_default_view_is_byte_identical_to_its_own_golden(client: TestClient) -> None:
+    """The new default, pinned the same way the old view has always been."""
+    produced = produce_participant(client)
+
+    assert produced == PARTICIPANT_GOLDEN.read_text(encoding="utf-8")
+
+
+def test_the_two_goldens_agree_on_every_figure(client: TestClient) -> None:
+    """The delta changed which placements are counted, not how they are counted.
+
+    On this fixture every story was told and signified by the same person, so
+    "participant" and "all" cover the same placements — and every figure in the
+    two files must therefore be identical. What differs is only the envelope
+    saying which view it is. If these two ever diverge on a count, the filter has
+    started dropping placements it should keep.
+    """
+    stored = json.loads(GOLDEN.read_text(encoding="utf-8"))
+    participant = json.loads(PARTICIPANT_GOLDEN.read_text(encoding="utf-8"))
+
+    assert without_delta_envelope(participant) == stored
+    assert participant["signified_by_applied"] == "participant"
+    assert participant["counts_by_signified_by"] == {
+        "participant": STORY_COUNT * 5,
+        "ai_validated": 0,
+    }

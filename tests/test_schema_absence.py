@@ -59,19 +59,53 @@ BANNED_ON_RESPONDENT_TABLES = frozenset(
 )
 
 #: Tables whose rows are linked to an individual respondent.
+#:
+#: ``interpretations`` is deliberately not here. It carries no ``anecdote_id``
+#: and no signification linkage (constraint 16), so no row in it is linked to a
+#: respondent — which is also why an interpretation can never reach a landscape.
 RESPONDENT_TABLES = frozenset({"anecdotes", "significations", "tags", "capture_links"})
 
 ALL_TABLES = frozenset({"frameworks", "capture_links", "anecdotes", "significations",
-                        "import_jobs", "tags"})
+                        "import_jobs", "tags",
+                        # Added by the meaningfulness delta, phase D.
+                        "interpretations",
+                        # Added by the meaningfulness delta, phase F. Not a
+                        # respondent table: it holds a machine's reading of a
+                        # story, keyed by the story, and no identifier.
+                        "translations"})
 
 
 def _columns(table_name: str) -> set[str]:
     return {column.name.lower() for column in Base.metadata.tables[table_name].columns}
 
 
-def test_the_six_tables_exist() -> None:
-    """PRD §3: migration 001 creates all six tables and no others."""
+def test_the_schema_holds_exactly_the_tables_it_should() -> None:
+    """PRD §3's six tables, plus the one the meaningfulness delta added.
+
+    Still an equality check rather than a subset: a table nobody meant to add
+    fails here, which is the point. Phase D's ``interpretations`` is named in
+    ``ALL_TABLES`` above with the reason it is not respondent-bearing.
+    """
     assert set(Base.metadata.tables) == set(ALL_TABLES)
+
+
+def test_an_interpretation_has_no_route_to_a_respondent() -> None:
+    """Constraint 16, read off the metadata rather than promised.
+
+    The guarantee is structural: with no anecdote or signification column there
+    is nothing for an aggregate to join on, so an interpretation cannot enter a
+    landscape however the code above it is written.
+    """
+    columns = _columns("interpretations")
+
+    for forbidden in ("anecdote_id", "signification_id", "story_id"):
+        assert forbidden not in columns
+
+    foreign = {
+        key.column.table.name
+        for key in Base.metadata.tables["interpretations"].foreign_keys
+    }
+    assert foreign == {"frameworks"}, foreign
 
 
 @pytest.mark.parametrize("table_name", sorted(ALL_TABLES))

@@ -338,6 +338,110 @@
   font-size: var(--nl-text-sm);
 }
 
+/* ---- The design critique (delta phase C) ----
+ *
+ * Quiet. These are suggestions about wording, and a panel that looked like an
+ * alarm would read as the app refusing to publish — which it never does. A
+ * single rule down the left, body text throughout, and no colour carrying any
+ * meaning, so severity is read from the heading it sits under rather than from
+ * a hue (13c).
+ */
+
+.nl-lint {
+  margin-top: var(--nl-space-6);
+  padding: var(--nl-space-4);
+  border: var(--nl-border);
+  border-left: 3px solid var(--nl-grey-line);
+  border-radius: var(--nl-radius);
+  background: var(--nl-surface);
+}
+
+.nl-lint__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--nl-space-3);
+  margin-bottom: var(--nl-space-3);
+}
+
+.nl-lint__title {
+  margin: 0;
+  font-size: var(--nl-text-base);
+  font-weight: var(--nl-weight-medium);
+}
+
+.nl-lint__close {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--nl-grey);
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.nl-lint__note,
+.nl-lint__message {
+  max-width: 66ch;
+  margin: 0 0 var(--nl-space-3);
+  font-size: var(--nl-text-sm);
+  line-height: var(--nl-leading-body);
+  color: var(--nl-grey);
+}
+
+.nl-lint__message {
+  color: var(--nl-ink);
+}
+
+.nl-lint__group {
+  margin-top: var(--nl-space-4);
+}
+
+.nl-lint__group-title {
+  margin: 0 0 var(--nl-space-2);
+  font-size: var(--nl-text-sm);
+  font-weight: var(--nl-weight-medium);
+  color: var(--nl-grey);
+}
+
+.nl-lint__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nl-lint__finding {
+  padding: var(--nl-space-3) 0;
+  border-top: 1px solid var(--nl-grey-line);
+  max-width: 66ch;
+}
+
+/* The field it refers to, so the reader knows which question is meant. */
+.nl-lint__where {
+  font-family: var(--nl-font-data);
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+}
+
+.nl-lint__what {
+  margin: var(--nl-space-2) 0;
+  font-size: var(--nl-text-sm);
+  line-height: var(--nl-leading-body);
+}
+
+/* A suggestion is text to read and copy, never a button to press. */
+.nl-lint__try {
+  margin: 0;
+  font-size: var(--nl-text-sm);
+  line-height: var(--nl-leading-body);
+  color: var(--nl-grey);
+}
+
+.nl-lint__try-label {
+  font-weight: var(--nl-weight-medium);
+}
+
 /* ---- The active link's QR, on the screen the app opens on (§1.8) ---- */
 
 .nl-homeqr {

@@ -16,7 +16,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api.js";
 import { SignifierWidget } from "../widgets/Widgets.jsx";
 import { orderedSignifiers } from "../studio/PhonePreview.jsx";
-import { toSubmission } from "./Wizard.jsx";
+import {
+  MAX_RESPONDENT_TITLE_CHARS,
+  STORY_NAME_PROMPT,
+  toSubmission,
+} from "./Wizard.jsx";
 import "./paper-batch.css";
 
 export function PaperBatch({ framework }) {
@@ -25,6 +29,8 @@ export function PaperBatch({ framework }) {
   const signifiers = orderedSignifiers(definition);
 
   const [text, setText] = useState("");
+  // The name line on the returned card, when the person filling it in wrote one.
+  const [respondentTitle, setRespondentTitle] = useState("");
   const [values, setValues] = useState({});
   const [group, setGroup] = useState(null);
   const [entered, setEntered] = useState(0);
@@ -43,6 +49,7 @@ export function PaperBatch({ framework }) {
       const result = await api.capture({
         framework_id: framework.id,
         text,
+        respondent_title: respondentTitle.trim() || null,
         input_method: "paper",
         respondent_group: group,
         significations: toSubmission(definition, values),
@@ -52,6 +59,7 @@ export function PaperBatch({ framework }) {
       // Clear for the next sheet, but keep the group: a pile of sheets from one
       // session is usually one group, and retyping it 30 times is wasted effort.
       setText("");
+      setRespondentTitle("");
       setValues({});
       storyRef.current?.focus();
     } catch (caught) {
@@ -59,7 +67,7 @@ export function PaperBatch({ framework }) {
     } finally {
       setBusy(false);
     }
-  }, [text, busy, framework.id, group, definition, values]);
+  }, [text, respondentTitle, busy, framework.id, group, definition, values]);
 
   // Enter advances from anywhere on the screen. The story field needs real
   // newlines, so there it takes Ctrl/Cmd+Enter instead.
@@ -115,6 +123,21 @@ export function PaperBatch({ framework }) {
         value={text}
         onChange={(event) => setText(event.target.value)}
         placeholder="Type or paste what they wrote…"
+      />
+
+      {/* The card's own name line (delta §5). Blank on most sheets, and that is
+          the normal case, not a gap to chase up. */}
+      <label className="nl-batch__label" htmlFor="nl-batch-story-name">
+        {STORY_NAME_PROMPT}
+      </label>
+      <input
+        id="nl-batch-story-name"
+        type="text"
+        className="nl-batch__input"
+        maxLength={MAX_RESPONDENT_TITLE_CHARS}
+        value={respondentTitle}
+        onChange={(event) => setRespondentTitle(event.target.value)}
+        placeholder="Leave blank if the card has no name on it"
       />
 
       {groups.length > 0 && (

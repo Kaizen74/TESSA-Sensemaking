@@ -80,6 +80,24 @@
   resize: vertical;
 }
 
+/* The card's name line. One row, same box as the story, no emphasis. */
+.nl-batch__textarea + .nl-batch__label {
+  margin-top: var(--nl-space-4);
+}
+
+.nl-batch__input {
+  width: 100%;
+  min-height: var(--nl-tap-target);
+  margin-bottom: var(--nl-space-4);
+  padding: var(--nl-space-3);
+  font-family: inherit;
+  font-size: var(--nl-text-base);
+  color: var(--nl-ink);
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+}
+
 .nl-batch__groups {
   margin-top: var(--nl-space-4);
 }

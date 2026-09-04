@@ -26,14 +26,22 @@ from backend.clusters import ClusterSet, ExplorerSet, cluster, explorer
 from backend.db import get_session
 from backend.framework_schema import FrameworkDefinition
 from backend.landscape import Landscape
-from backend.patterns import FILTERABLE, TriadChart, triad_from_answers
+from backend.patterns import (
+    FILTERABLE,
+    SIGNIFIED_BY_DEFAULT,
+    SignifiedByCounts,
+    TriadChart,
+    triad_from_answers,
+)
 from backend.routers.patterns import (
     applied_filters,
+    applied_signified_by,
     distinct_values,
     load_answers,
     load_framework,
     load_rows,
     scoped_ids,
+    signified_by_counts,
     version_counts,
 )
 
@@ -61,10 +69,21 @@ class LandscapeSet(BaseModel):
     panels: list[Landscape] = Field(default_factory=list)
     #: Every triad on this framework, so the picker needs no second request.
     available_triads: list[dict] = Field(default_factory=list)
+    #: Whose interpretation this terrain is, and what the other choice holds
+    #: (constraint 14). The landscape is the view the app is built around, so
+    #: it is the one that most needs to say whose reading it is drawing.
+    signified_by_applied: str = SIGNIFIED_BY_DEFAULT
+    counts_by_signified_by: SignifiedByCounts = Field(default_factory=SignifiedByCounts)
 
 
 def _triad_chart(
-    session: Session, framework, *, mixed: bool, filters: dict[str, str], triad_id: str
+    session: Session,
+    framework,
+    *,
+    mixed: bool,
+    filters: dict[str, str],
+    triad_id: str,
+    signified_by: str = SIGNIFIED_BY_DEFAULT,
 ) -> tuple[TriadChart, int, FrameworkDefinition]:
     """The one triad's points, through the same code the supporting charts use.
 
@@ -76,7 +95,12 @@ def _triad_chart(
     """
     definition = FrameworkDefinition.model_validate(framework.definition_json)
     answers, total = load_answers(
-        session, framework, mixed=mixed, filters=filters, signifier_id=triad_id
+        session,
+        framework,
+        mixed=mixed,
+        filters=filters,
+        signifier_id=triad_id,
+        signified_by=signified_by,
     )
     chart = triad_from_answers(definition, answers, triad_id, total)
     if chart is None:
@@ -100,10 +124,20 @@ def get_landscape(
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    language_code: Annotated[str | None, Query()] = None,
+    signified_by: Annotated[str | None, Query()] = None,
 ) -> LandscapeSet:
-    """The terrain for one triangle: surface and contour twin, from one grid."""
+    """The terrain for one triangle: surface and contour twin, from one grid.
+
+    Drawn from participant-signified placements unless asked otherwise
+    (constraint 14). A hill made of readings somebody else supplied is a
+    different claim about a workforce than a hill made of their own.
+    """
     framework = load_framework(session, framework_id)
-    filters = applied_filters(respondent_group, input_method, entry_mode, source_type)
+    filters = applied_filters(
+        respondent_group, input_method, entry_mode, source_type, language_code
+    )
+    provenance = applied_signified_by(signified_by)
 
     if split_by is not None and split_by not in FILTERABLE:
         raise errors.bad_request(
@@ -113,7 +147,12 @@ def get_landscape(
         )
 
     chart, total, definition = _triad_chart(
-        session, framework, mixed=mixed, filters=filters, triad_id=triad_id
+        session,
+        framework,
+        mixed=mixed,
+        filters=filters,
+        triad_id=triad_id,
+        signified_by=provenance,
     )
 
     if split_by is None:
@@ -126,6 +165,7 @@ def get_landscape(
             filters=filters,
             triad_id=triad_id,
             split_by=split_by,
+            signified_by=provenance,
         )
 
     return LandscapeSet(
@@ -141,6 +181,10 @@ def get_landscape(
         filters=filters,
         split_by=split_by,
         panels=panels,
+        signified_by_applied=provenance,
+        counts_by_signified_by=signified_by_counts(
+            session, framework, mixed=mixed, filters=filters
+        ),
         available_triads=[
             {"id": triad.id, "title": triad.title, "corners": list(triad.corners)}
             for triad in definition.triads
@@ -156,6 +200,7 @@ def _split_panels(
     filters: dict[str, str],
     triad_id: str,
     split_by: str,
+    signified_by: str = SIGNIFIED_BY_DEFAULT,
 ) -> list[Landscape]:
     """One landscape per value of the split field, on a shared density scale."""
     values = distinct_values(session, framework, mixed=mixed, filters=filters, field=split_by)
@@ -168,6 +213,7 @@ def _split_panels(
             mixed=mixed,
             filters={**filters, split_by: value},
             triad_id=triad_id,
+            signified_by=signified_by,
         )
         panels.append(landscape_maths.compute(chart, panel=value))
 
@@ -183,11 +229,25 @@ def get_explorer(
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    language_code: Annotated[str | None, Query()] = None,
+    signified_by: Annotated[str | None, Query()] = None,
 ) -> ExplorerSet:
-    """Every numeric answer, so any three can be plotted against each other."""
+    """Every numeric answer, so any three can be plotted against each other.
+
+    Same provenance default as the landscape it sits under (constraint 14): a
+    point in the Explorer is the same placement, seen from another angle.
+    """
     framework = load_framework(session, framework_id)
-    filters = applied_filters(respondent_group, input_method, entry_mode, source_type)
-    anecdotes, placements = load_rows(session, framework, mixed=mixed, filters=filters)
+    filters = applied_filters(
+        respondent_group, input_method, entry_mode, source_type, language_code
+    )
+    anecdotes, placements = load_rows(
+        session,
+        framework,
+        mixed=mixed,
+        filters=filters,
+        signified_by=applied_signified_by(signified_by),
+    )
 
     return explorer(
         FrameworkDefinition.model_validate(framework.definition_json),
@@ -208,8 +268,14 @@ def get_clusters(
     input_method: Annotated[str | None, Query()] = None,
     entry_mode: Annotated[str | None, Query()] = None,
     source_type: Annotated[str | None, Query()] = None,
+    language_code: Annotated[str | None, Query()] = None,
+    signified_by: Annotated[str | None, Query()] = None,
 ) -> ClusterSet:
-    """k-means over the Explorer's dimensions. Deterministic, and descriptive only."""
+    """k-means over the Explorer's dimensions. Deterministic, and descriptive only.
+
+    Clusters what the Explorer plots, so the provenance choice reaches them by
+    reaching it — there is no second path to the data for them to disagree over.
+    """
     return cluster(
         get_explorer(
             framework_id,
@@ -219,6 +285,7 @@ def get_clusters(
             input_method=input_method,
             entry_mode=entry_mode,
             source_type=source_type,
+            signified_by=signified_by,
         ),
         k=k,
     )
