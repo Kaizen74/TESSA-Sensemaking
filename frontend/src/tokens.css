@@ -42,6 +42,13 @@
   /* Derived greys. Kept as tokens so no component invents its own. */
   --nl-grey-line: #dcdad4;
   --nl-grey-faint: #eeece7;
+  /* One step lighter again, for separators *inside* a card, where a border
+     would box every row. Declared exception to §5b's "4–6 named colors",
+     approved 6 September 2026: it is --nl-grey-faint lightened toward the
+     paper, so the palette's hue count is unchanged and only its value count
+     moves. The design handoff asked for two of these; the other one it wanted
+     turned out to be --nl-grey-faint, which already existed. */
+  --nl-grey-hairline: #f4f2ed;
 
   /* ---- Terrain scale (Phase 8 uses it; declared once, here) ----
      cividis, five stops. Monotonic lightness = survives grayscale. */
