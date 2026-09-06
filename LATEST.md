@@ -3,7 +3,33 @@
 **Updated:** 2026-09-06
 **Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; the
 meaningfulness delta complete — all six phases A–F, and checked end to end
-**Status:** green (1386 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+**Status:** green (1389 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+
+---
+
+## The download now uses the same two words the screen does
+
+The rail on the Patterns page asks you to choose between **Storyteller** and
+**Expert-validated**, and the address bar calls those `participant` and
+`ai_validated`. The downloaded spreadsheet used to call them something else
+again — `respondent`, `ai`, `analyst` — so an analyst who filtered the file for
+`ai_validated` found nothing at all. The `signified_by` column now says exactly
+what the screen said.
+
+That could have been done by simply renaming the values, but it would have
+thrown something away. Two of the old words mean different things: `ai` is a
+mark a model proposed and you accepted as it stood, `analyst` is one you moved
+before accepting. On screen those are one reading — either the storyteller
+placed it or an expert did — but in the file they are two facts, and the
+provenance rule says the file keeps every fact about where a record came from.
+
+So a second column, **`placed_by`**, sits beside it and keeps the finer record:
+`ai|analyst` on a story where you moved some markers and left others, which is
+exactly the case worth being able to find later. Nothing was lost; one column
+was gained.
+
+Your existing downloads are unaffected — this changes what new ones say, and
+nothing in the app reads a CSV back in.
 
 ---
 

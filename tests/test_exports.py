@@ -51,7 +51,10 @@ def test_every_record_carries_its_whole_provenance(client: TestClient) -> None:
     assert first["input_method"] in ("typed", "paper", "voice")
     assert first["entry_mode"] in ("admin", "kiosk")
     assert first["framework_version"] == "1"
-    assert first["signified_by"] == "respondent"
+    # The words the app itself uses, so a filter typed against the screen
+    # works against the file.
+    assert first["signified_by"] == "participant"
+    assert first["placed_by"] == "respondent"
     assert first["validated_at"]
     assert first["status"] == "validated"
 
@@ -148,7 +151,8 @@ def test_an_imported_story_exports_its_file_and_row(client: TestClient) -> None:
     assert rows[0]["input_method"] == "imported"
     assert rows[0]["source_file"] == "workshop.xlsx"
     assert rows[0]["source_locator"] == "Responses row 2"
-    assert rows[0]["signified_by"] == "ai"
+    assert rows[0]["signified_by"] == "ai_validated"
+    assert rows[0]["placed_by"] == "ai"
     assert rows[0]["lowest_ai_confidence"]
 
     # And the default really does withhold them: the story is still a row —
@@ -156,10 +160,18 @@ def test_an_imported_story_exports_its_file_and_row(client: TestClient) -> None:
     default_rows, _ = _csv(client, framework["id"])
     assert len(default_rows) == 1
     assert default_rows[0]["signified_by"] == ""
+    assert default_rows[0]["placed_by"] == ""
 
 
 def test_a_corrected_story_says_both_hands_touched_it(client: TestClient) -> None:
-    """The case the provenance column exists for."""
+    """The case the provenance column exists for.
+
+    Both hands still show. ``signified_by`` merges the two expert routes,
+    because to the person whose story it is they are the same kind of thing —
+    somebody else read it. ``placed_by`` keeps them apart, because a proposal
+    accepted as it stood and a proposal an analyst moved are not the same
+    event, and constraint 3 puts that on the record.
+    """
     framework = make_framework(client)
     proposed_import(client, framework["id"])
     item = client.get("/api/queue").json()["items"][0]
@@ -177,7 +189,8 @@ def test_a_corrected_story_says_both_hands_touched_it(client: TestClient) -> Non
 
     rows, _ = _csv(client, framework["id"], signified_by="all")
 
-    assert rows[0]["signified_by"] == "ai|analyst"
+    assert rows[0]["signified_by"] == "ai_validated"
+    assert rows[0]["placed_by"] == "ai|analyst"
 
 
 def test_a_mixed_export_says_which_wording_each_story_answered(

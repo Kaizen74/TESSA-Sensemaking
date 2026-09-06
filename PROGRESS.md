@@ -1281,7 +1281,8 @@ simpler option was taken unless noted.
      file format with a test pinning it, and aligning it is a decision about
      what the operator's saved spreadsheets mean. Recommended for a future
      session, either by renaming the stored values in a migration or by
-     translating on the way out.
+     translating on the way out. *(Superseded by decision 146: the operator
+     asked for the alignment, and it was taken by translating on the way out.)*
 144. **The provenance label does not appear over the story browser.** Adding it
      to the default view (Fixed 00) put it above every sub-view, and the story
      browser is not one that aggregates significations — `/api/stories` takes no
@@ -1296,6 +1297,28 @@ simpler option was taken unless noted.
      them. They were confirmed by hand against a live wording fix instead, and
      the exception is written into the check with that reason rather than left
      looking like a clean pass.
+146. **The CSV now speaks `participant`/`ai_validated`, and `placed_by` keeps
+     the finer record.** Supersedes decision 142. The operator asked for the
+     alignment, so it was taken on the way out rather than by renaming stored
+     values: `SIGNIFIED_BY_STORED` in `backend/patterns.py` gained a derived
+     inverse, `SIGNIFIED_BY_READING`, and `dataset_csv` maps through it. The two
+     directions cannot drift because one is computed from the other.
+
+     Translating in place would have merged `ai` and `analyst` into one word and
+     lost which hand placed a mark — a *reading* decision on screen (constraint
+     14 recognises exactly two readings), but a *data* decision in the file,
+     which constraint 3 forbids. So the alignment is additive: `signified_by`
+     carries the reading, and a new `placed_by` column beside it carries the
+     stored values, `ai|analyst` after a partial correction. Decision 66's
+     one-row-per-story rule is unchanged; both columns list every distinct value
+     across that story's placements. Pinned by
+     `test_the_csv_speaks_the_words_the_app_speaks`,
+     `test_the_finer_record_survives_beside_it` and
+     `test_the_two_columns_never_disagree`, and end-to-end over HTTP by
+     `test_the_whole_app_agrees_with_itself`. Both halves were mutation-checked:
+     reverting to the stored vocabulary fails six tests, dropping `placed_by`
+     fails two.
+
 143. **A well-formed language tag that names no language is accepted as a
      translation target.** `well_formed` is a shape check by deliberate design
      (see `backend/languages.py`): refusing a real language because a local list

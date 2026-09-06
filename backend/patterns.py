@@ -102,6 +102,15 @@ SIGNIFIED_BY_STORED = {
     SIGNIFIED_BY_AI_VALIDATED: ("ai", "analyst"),
 }
 
+#: The same mapping read the other way: which reading one stored value belongs
+#: to. Derived rather than written out again, so the two directions cannot
+#: drift — the export used to speak the stored vocabulary while every screen
+#: and every filter spoke this one, and an analyst filtering a downloaded CSV
+#: for ``ai_validated`` found nothing.
+SIGNIFIED_BY_READING = {
+    stored: choice for choice, values in SIGNIFIED_BY_STORED.items() for stored in values
+}
+
 
 class SignifiedByCounts(BaseModel):
     """How many placements each provenance holds, before the filter is applied.

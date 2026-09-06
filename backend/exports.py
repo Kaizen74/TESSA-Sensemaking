@@ -30,6 +30,7 @@ from backend.interpretations import InterpretationOut
 from backend.patterns import (
     SIGNIFIED_BY_ALL,
     SIGNIFIED_BY_PARTICIPANT,
+    SIGNIFIED_BY_READING,
     PatternSet,
 )
 
@@ -80,7 +81,16 @@ PROVENANCE_COLUMNS = [
     "source_file",
     "source_locator",
     "import_job_id",
+    # Whose reading the marks are, in the words the app itself uses — the same
+    # two the filter, the rail and the brief use, so a CSV can be filtered for
+    # what the screen called it.
     "signified_by",
+    # And whose hand actually placed each one. "ai_validated" covers two
+    # different events: a proposal accepted as it stood, and a proposal an
+    # analyst moved. To the person whose story it is those are the same kind of
+    # thing, which is why the reading above merges them — but they are not the
+    # same event, and constraint 3 puts the record of it on every row.
+    "placed_by",
     "validated_at",
     "lowest_ai_confidence",
 ]
@@ -189,9 +199,15 @@ def dataset_csv(
             "source_file": anecdote.source_file or "",
             "source_locator": anecdote.source_locator or "",
             "import_job_id": anecdote.import_job_id or "",
+            "signified_by": "|".join(
+                sorted({
+                    SIGNIFIED_BY_READING.get(p.signified_by, p.signified_by)
+                    for p in placements
+                })
+            ),
             # Usually one value; two when the operator moved some markers and
             # left others, which is exactly the case worth being able to see.
-            "signified_by": "|".join(sorted({p.signified_by for p in placements})),
+            "placed_by": "|".join(sorted({p.signified_by for p in placements})),
             "validated_at": _stamp(min(validated)) if validated else "",
             "lowest_ai_confidence": min(confidences) if confidences else "",
         }
