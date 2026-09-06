@@ -188,7 +188,11 @@ def test_the_whole_app_agrees_with_itself(client: TestClient, session: Session) 
     by_method = {row["input_method"] for row in rows}
     assert by_mode == {"admin", "kiosk", "link"}
     assert by_method == {"typed", "paper", "imported"}
-    assert any(row["signified_by"] == "ai|analyst" for row in rows), "the corrected story"
+    # The file speaks the words the app speaks — one reading, ``ai_validated`` —
+    # while ``placed_by`` keeps the finer record of which hand placed each mark.
+    corrected = [row for row in rows if row["placed_by"] == "ai|analyst"]
+    assert corrected, "the corrected story"
+    assert all(row["signified_by"] == "ai_validated" for row in corrected)
     assert any(row["source_file"] == "workshop.xlsx" for row in rows)
 
     # Constraint 14 at the end of the pipeline: taking the same download without
@@ -197,7 +201,8 @@ def test_the_whole_app_agrees_with_itself(client: TestClient, session: Session) 
     plain = client.get("/api/export/csv", params={"framework_id": fid})
     plain_rows = list(csv.DictReader(io.StringIO(plain.text)))
     assert len(plain_rows) == len(rows)
-    assert {row["signified_by"] for row in plain_rows} <= {"respondent", ""}
+    assert {row["signified_by"] for row in plain_rows} <= {"participant", ""}
+    assert {row["placed_by"] for row in plain_rows} <= {"respondent", ""}
 
     # Constraint 9 held all the way to the file.
     assert all(row["created_at_hour"].endswith(":00:00") for row in rows)

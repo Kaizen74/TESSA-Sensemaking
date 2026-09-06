@@ -29,6 +29,63 @@ import "./widgets.css";
 const VIEW = 300;
 const PAD = 46;
 
+/** Where a corner label's baseline sits, below the two bottom corners. */
+const LABEL_GAP = 18;
+/** And above the apex, which grows the other way. */
+const LABEL_GAP_TOP = 12;
+/** Line spacing for a wrapped corner name, at the 12px chart-text floor. */
+const LABEL_LINE = 14;
+
+/*
+ * Corner names are measured, not guessed.
+ *
+ * A canvas context measures text in the same font at the same size the SVG will
+ * draw it, which is what makes the wrap below exact rather than a constant that
+ * is wrong for "Wi" and wrong the other way for "ill". Created once and reused;
+ * absent in a non-browser environment, where the fallback estimate is
+ * deliberately generous, because wrapping a line early costs a little height and
+ * wrapping it late costs the end of a word.
+ */
+const measurer = (() => {
+  if (typeof document === "undefined") return null;
+  const context = document.createElement("canvas").getContext("2d");
+  if (!context) return null;
+  context.font =
+    '12px ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, ' +
+    'Helvetica, Arial, sans-serif';
+  return context;
+})();
+
+function textWidth(text) {
+  if (measurer) return measurer.measureText(text).width;
+  return text.length * 7.2;
+}
+
+/**
+ * Break a corner name into lines that each fit `limit`.
+ *
+ * Greedy by word, and a single word longer than the limit is left on its own
+ * line rather than broken mid-word: a corner called "Interdepartmental" reads
+ * better slightly over the line than as "Interdepartme / ntal".
+ */
+export function wrapLabel(text, limit) {
+  const words = String(text ?? "").split(/\s+/).filter(Boolean);
+  if (!words.length) return [""];
+
+  const lines = [];
+  let line = words[0];
+  for (const word of words.slice(1)) {
+    const candidate = `${line} ${word}`;
+    if (textWidth(candidate) <= limit) line = candidate;
+    else {
+      lines.push(line);
+      line = word;
+    }
+  }
+  lines.push(line);
+  return lines;
+}
+
 /** How far one arrow-key press moves a marker, as a fraction of the shape. */
 const KEY_STEP = 0.05;
 
@@ -126,15 +183,57 @@ export function TriadWidget({ triad, value = null, onChange = null }) {
           points={`${p0.x},${p0.y} ${p1.x},${p1.y} ${p2.x},${p2.y}`}
           className="nl-widget__shape"
         />
-        <text x={p0.x - 4} y={p0.y + 18} textAnchor="end" className="nl-widget__label">
-          {corners[0]}
-        </text>
-        <text x={p1.x + 4} y={p1.y + 18} textAnchor="start" className="nl-widget__label">
-          {corners[1]}
-        </text>
-        <text x={p2.x} y={p2.y - 12} textAnchor="middle" className="nl-widget__label">
-          {corners[2]}
-        </text>
+        {/*
+         * Corner labels are anchored INWARD and wrapped to the space they have.
+         *
+         * Anchored outward — corner 0 at p0.x - 4 with text-anchor="end" — a
+         * label grows into the margin, which is 42px wide, and SVG clips what
+         * does not fit without saying so. "Doing it by the book" lost 80 of its
+         * 122 pixels. patterns/Landscape.jsx hit this and clamps inward for the
+         * same reason; the widget never got the same treatment.
+         *
+         * Anchoring inward alone is not enough: the two bottom labels then grow
+         * toward each other and a pair of long names collides in the middle. So
+         * each bottom label gets the half of the base it starts from, and wraps
+         * inside it. Lines grow downward from the base and upward from the
+         * apex, which is where the viewBox has room.
+         */}
+        {wrapLabel(corners[0], p2.x - p0.x - LABEL_LINE).map((line, index) => (
+          <text
+            key={`c0-${index}`}
+            x={p0.x}
+            y={p0.y + LABEL_GAP + index * LABEL_LINE}
+            textAnchor="start"
+            className="nl-widget__label"
+          >
+            {line}
+          </text>
+        ))}
+        {wrapLabel(corners[1], p1.x - p2.x - LABEL_LINE).map((line, index) => (
+          <text
+            key={`c1-${index}`}
+            x={p1.x}
+            y={p1.y + LABEL_GAP + index * LABEL_LINE}
+            textAnchor="end"
+            className="nl-widget__label"
+          >
+            {line}
+          </text>
+        ))}
+        {(() => {
+          const lines = wrapLabel(corners[2], VIEW - 2 * LABEL_LINE);
+          return lines.map((line, index) => (
+            <text
+              key={`c2-${index}`}
+              x={p2.x}
+              y={p2.y - LABEL_GAP_TOP - (lines.length - 1 - index) * LABEL_LINE}
+              textAnchor="middle"
+              className="nl-widget__label"
+            >
+              {line}
+            </text>
+          ));
+        })()}
         {marker && <circle cx={marker.x} cy={marker.y} r="6" className="nl-widget__marker" />}
       </svg>
     </figure>

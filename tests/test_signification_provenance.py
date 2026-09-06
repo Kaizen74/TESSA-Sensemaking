@@ -23,6 +23,10 @@ the one piece of vocabulary worth stating out loud: ``participant`` means
 because a reading an operator made on somebody's behalf and a reading a machine
 made on somebody's behalf are, to the person whose story it is, the same kind
 of thing.
+
+The CSV speaks that same vocabulary, and carries the finer stored value beside
+it in ``placed_by`` — for a while it spoke only the stored one, so a filter
+typed against the screen found nothing in the file.
 """
 
 from __future__ import annotations
@@ -102,7 +106,7 @@ def expert_validated_ids(client: TestClient, framework_id: int) -> set[int]:
     return {
         int(row["anecdote_id"])
         for row in csv.DictReader(io.StringIO(response.text))
-        if {"ai", "analyst"} & set(row["signified_by"].split("|"))
+        if "ai_validated" in row["signified_by"].split("|")
     }
 
 
@@ -342,7 +346,7 @@ def test_no_export_bypasses_the_default(client: TestClient, export: str) -> None
     assert response.status_code == 200, response.text
     if export == "csv":
         rows = list(csv.DictReader(io.StringIO(response.text)))
-        assert {row["signified_by"] for row in rows} <= {"respondent", ""}
+        assert {row["signified_by"] for row in rows} <= {"participant", ""}
     else:
         # The brief and "What we heard" are prose over the same figures, so the
         # check is that they were built from the narrowed view.
@@ -493,3 +497,72 @@ def test_a_bad_choice_is_refused_on_an_export_too(client: TestClient) -> None:
 
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "unknown_signified_by"
+
+
+# --------------------------------------------------------------------------
+# One idea, one word for it
+# --------------------------------------------------------------------------
+#
+# There were three vocabularies for the same distinction: the database's
+# respondent/ai/analyst, the API's participant/ai_validated, and the screen's
+# Storyteller/Expert-validated. The CSV spoke the first while everything the
+# operator could read spoke the second, so filtering a downloaded file for
+# ai_validated found nothing and there was no error to tell you why.
+
+
+def test_the_csv_speaks_the_words_the_app_speaks(client: TestClient) -> None:
+    framework = mixed_dataset(client)
+
+    response = client.get(
+        "/api/export/csv", params={"framework_id": framework["id"], "signified_by": "all"}
+    )
+    readings = {
+        value
+        for row in csv.DictReader(io.StringIO(response.text))
+        for value in row["signified_by"].split("|")
+        if value
+    }
+
+    assert readings <= {"participant", "ai_validated"}, readings
+    assert "respondent" not in readings
+    assert "ai" not in readings
+
+
+def test_the_finer_record_survives_beside_it(client: TestClient) -> None:
+    """Merging the two expert routes on screen is a reading decision.
+
+    Losing them in the file would be a data decision, and constraint 3 does not
+    allow it: a proposal accepted as it stood and a proposal an analyst moved
+    are different events, whatever a chart chooses to call them.
+    """
+    framework = mixed_dataset(client)
+
+    response = client.get(
+        "/api/export/csv", params={"framework_id": framework["id"], "signified_by": "all"}
+    )
+    rows = list(csv.DictReader(io.StringIO(response.text)))
+    hands = {value for row in rows for value in row["placed_by"].split("|") if value}
+
+    assert hands == {"respondent", "ai", "analyst"}, hands
+    # And the corrected story still shows both hands on the same row.
+    assert any(row["placed_by"] == "ai|analyst" for row in rows)
+
+
+def test_the_two_columns_never_disagree(client: TestClient) -> None:
+    """Every stored value maps to the reading printed beside it.
+
+    Derived from the same table the SQL filter uses, so a new stored value
+    cannot be added on one side and forgotten on the other.
+    """
+    from backend.patterns import SIGNIFIED_BY_READING
+
+    framework = mixed_dataset(client)
+
+    response = client.get(
+        "/api/export/csv", params={"framework_id": framework["id"], "signified_by": "all"}
+    )
+    for row in csv.DictReader(io.StringIO(response.text)):
+        hands = [v for v in row["placed_by"].split("|") if v]
+        readings = {v for v in row["signified_by"].split("|") if v}
+
+        assert readings == {SIGNIFIED_BY_READING[hand] for hand in hands}, row["anecdote_id"]

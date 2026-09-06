@@ -115,15 +115,16 @@
 /* ---- The filter rail (§5b: slim, roughly a tenth of the width) ---- */
 
 .nl-rail {
-  flex: 0 1 15rem;
-  min-width: 13rem;
+  /* Inside the shell's sidebar now: it takes the width it is given rather than
+     asking for one, and drops its own card, because a card inside a card is a
+     box drawn twice. A rule separates it from the spine above. */
+  width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--nl-space-4);
-  padding: var(--nl-space-4);
-  border: var(--nl-border);
-  border-radius: var(--nl-radius);
-  background: var(--nl-surface);
+  padding-top: var(--nl-space-4);
+  border-top: 1px solid var(--nl-grey-line);
 }
 
 .nl-rail__label {
@@ -210,7 +211,13 @@
 .nl-provenance__option {
   flex: 1;
   min-height: var(--nl-tap-target);
-  padding: 0 var(--nl-space-2);
+  /* The rail now lives in a 15rem sidebar, where three labels on one row put
+     "Both" through the edge as "Bo" — the corner-label clipping again, in a
+     different place. The fix is to give the text the room it needs, not to
+     shrink it below the 12px floor §5b sets. */
+  padding: var(--nl-space-1);
+  white-space: normal;
+  line-height: 1.15;
   background: var(--nl-paper);
   border: 0;
   border-right: 1px solid var(--nl-grey-line);
@@ -285,11 +292,24 @@
 
 /* ---- Charts ---- */
 
+/*
+ * Each figure in its own card (design handoff §5.1).
+ *
+ * Framing only — the encodings are untouched. A card gives every chart the same
+ * edge, which is what stops a wide one reading as more important than a narrow
+ * one, and it holds the title, the figure and the note together as one thing.
+ * The rule is the faint grey, not the line grey: a card is a grouping, not a
+ * boundary, and constraint 13a keeps everything here quieter than the terrain.
+ */
 .nl-chart {
   flex: 1 1 22rem;
   min-width: 0;
   max-width: 34rem;
   margin: 0;
+  padding: var(--nl-space-4);
+  background: var(--nl-surface);
+  border: 1px solid var(--nl-grey-faint);
+  border-radius: var(--nl-radius);
 }
 
 .nl-chart__title {
@@ -322,9 +342,21 @@
 
 /* One data hue, at the quiet test's secondary weight. Length carries the
    meaning, so the chart survives being printed in grey. */
+/* The track every bar is read against: the same 100% for all of them, which
+ * is what removes the need for a legend or an axis. */
+.nl-chart__track {
+  fill: var(--nl-grey-faint);
+}
+
 .nl-chart__bar {
   fill: var(--nl-data);
   fill-opacity: var(--nl-quiet-data);
+}
+
+/* The mode, at full strength. One glance rather than a comparison, and no
+ * second colour enters the chart to say it (13c). */
+.nl-chart__bar--largest {
+  fill-opacity: 1;
 }
 
 .nl-chart__dot {
@@ -1169,4 +1201,152 @@
   display: flex;
   gap: var(--nl-space-3);
   margin-top: var(--nl-space-6);
+}
+
+/* ------------------------------------------------------------------ stage --
+ * Figure left, findings right (design handoff §4.1).
+ *
+ * The landscape keeps the hero space constraint 13a gives it — 1.85 of the two
+ * columns — and the findings sit beside it rather than under it at the weight
+ * of small buttons. Below the breakpoint the aside falls under the figure,
+ * which is the only honest order on a narrow screen: the picture first.
+ */
+.nl-patterns__stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.85fr) minmax(15rem, 1fr);
+  gap: var(--nl-space-5);
+  align-items: start;
+}
+
+.nl-patterns__figure {
+  min-width: 0;
+}
+
+.nl-patterns__aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nl-space-4);
+  min-width: 0;
+}
+
+@media (max-width: 60rem) {
+  .nl-patterns__stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --------------------------------------------------------------- findings --
+ * The three peaks as three ranked actions.
+ *
+ * Quiet framing — a card rule and a hairline between rows — because constraint
+ * 13a keeps the landscape the only bold thing on the page. What carries weight
+ * here is the count, in tabular figures, and nothing else in the card competes
+ * with it.
+ */
+.nl-findings {
+  background: var(--nl-surface);
+  border: var(--nl-border);
+  border-radius: var(--nl-radius);
+  overflow: hidden;
+}
+
+.nl-findings__head {
+  padding: var(--nl-space-3) var(--nl-space-4) var(--nl-space-2);
+  border-bottom: 1px solid var(--nl-grey-faint);
+}
+
+.nl-findings__title {
+  margin: 0;
+  font-size: var(--nl-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.nl-findings__lede {
+  margin: var(--nl-space-1) 0 0;
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+  line-height: var(--nl-leading-body);
+}
+
+.nl-findings__row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--nl-space-3) var(--nl-space-4);
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--nl-grey-hairline);
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  min-height: var(--nl-tap-target);
+}
+
+.nl-findings__row:first-of-type {
+  border-top: 0;
+}
+
+.nl-findings__row:hover {
+  background: var(--nl-paper);
+}
+
+.nl-findings__line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--nl-space-2);
+}
+
+.nl-findings__count {
+  font-family: var(--nl-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.nl-findings__near {
+  flex: 1;
+  font-size: var(--nl-text-sm);
+  min-width: 0;
+}
+
+.nl-findings__share {
+  font-family: var(--nl-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+}
+
+/* Every share read against the same 100%, which is what removes the need for
+ * a legend — the track is the whole, the fill is the part. */
+.nl-findings__bar {
+  display: block;
+  height: 4px;
+  background: var(--nl-grey-faint);
+  border-radius: 2px;
+  margin: var(--nl-space-2) 0 var(--nl-space-1);
+  overflow: hidden;
+}
+
+.nl-findings__bar span {
+  display: block;
+  height: 100%;
+  background: var(--nl-data);
+  opacity: 0.8;
+}
+
+.nl-findings__go {
+  display: block;
+  font-size: var(--nl-text-xs);
+  color: var(--nl-data);
+}
+
+.nl-findings__foot {
+  margin: 0;
+  padding: var(--nl-space-3) var(--nl-space-4);
+  border-top: 1px solid var(--nl-grey-faint);
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+  line-height: var(--nl-leading-body);
 }

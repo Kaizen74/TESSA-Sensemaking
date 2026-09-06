@@ -298,3 +298,80 @@ class TestEdgeCases:
 
         assert FULL_DEFINITION["prompt_text"] in _pack_html(client, created["id"])
         assert "A different question entirely." in _pack_html(client, child["id"])
+
+
+# --------------------------------------------------------------------------
+# Corner labels have to fit on the sheet
+# --------------------------------------------------------------------------
+#
+# They did not. Anchored outward, a corner label grew into an 80px margin and
+# SVG clipped the remainder without a word: "Doing it by the book" arrived on
+# the printed sheet as "Doing it b". A facilitator then handed that to a room,
+# and nobody in it could know what the third corner had been called.
+#
+# The widget on screen had the same defect and the same cause. Both now anchor
+# inward and wrap into the half of the base they start from.
+
+
+class TestCornerLabelsFitTheSheet:
+    LONG = ["Speed", "Doing it by the book", "Looking after each other"]
+
+    def _triad_svg(self, client: TestClient, corners: list[str]) -> str:
+        definition = {
+            "prompt_text": "Tell us about a moment at work that stuck with you.",
+            "triads": [{"id": "t1", "title": "What drove this?", "corners": corners}],
+            "dyads": [],
+            "mcqs": [],
+            "capture_settings": {},
+        }
+        created = client.post(
+            "/api/frameworks", json={"name": "Labels", "definition": definition}
+        )
+        assert created.status_code == 201, created.text
+        return _pack_html(client, created.json()["id"])
+
+    def test_a_long_corner_name_survives_onto_the_sheet(self, client: TestClient) -> None:
+        """Every word of every corner has to reach the paper."""
+        html = self._triad_svg(client, self.LONG)
+
+        for corner in self.LONG:
+            for word in corner.split():
+                assert word in html, f"{word!r} of {corner!r} never reached the sheet"
+
+    def test_the_labels_are_anchored_inward(self, client: TestClient) -> None:
+        """The fix itself, so a later edit cannot quietly undo it.
+
+        Anchoring the left corner "end" is what put the label in the margin.
+        """
+        html = self._triad_svg(client, self.LONG)
+        triad = html[html.index("Triangle with corners") :][:1400]
+
+        assert 'text-anchor="start"' in triad
+        assert 'text-anchor="end"' in triad
+        assert 'text-anchor="middle"' in triad
+
+    def test_a_long_name_is_wrapped_rather_than_cut(self, client: TestClient) -> None:
+        """Wrapped means more <text> lines than there are corners."""
+        from backend.paper_pack import wrap_label
+
+        wrapped = wrap_label("Getting it done before the shift ends", 260.0)
+
+        assert len(wrapped) > 1
+        assert " ".join(wrapped) == "Getting it done before the shift ends"
+
+    def test_a_single_long_word_keeps_its_own_line(self) -> None:
+        """Better slightly over the line than broken into nonsense."""
+        from backend.paper_pack import wrap_label
+
+        assert wrap_label("Interdepartmental", 40.0) == ["Interdepartmental"]
+
+    def test_a_short_name_is_left_alone(self) -> None:
+        from backend.paper_pack import wrap_label
+
+        assert wrap_label("Speed", 260.0) == ["Speed"]
+
+    def test_an_empty_corner_does_not_crash_the_sheet(self) -> None:
+        from backend.paper_pack import wrap_label
+
+        assert wrap_label("", 260.0) == [""]
+        assert wrap_label(None, 260.0) == [""]

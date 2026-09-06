@@ -1,9 +1,116 @@
 # Narrative Lens — Latest
 
-**Updated:** 2026-09-04
+**Updated:** 2026-09-06
 **Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; the
 meaningfulness delta complete — all six phases A–F, and checked end to end
-**Status:** green (1359 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+**Status:** green (1389 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+
+---
+
+## The download now uses the same two words the screen does
+
+The rail on the Patterns page asks you to choose between **Storyteller** and
+**Expert-validated**, and the address bar calls those `participant` and
+`ai_validated`. The downloaded spreadsheet used to call them something else
+again — `respondent`, `ai`, `analyst` — so an analyst who filtered the file for
+`ai_validated` found nothing at all. The `signified_by` column now says exactly
+what the screen said.
+
+That could have been done by simply renaming the values, but it would have
+thrown something away. Two of the old words mean different things: `ai` is a
+mark a model proposed and you accepted as it stood, `analyst` is one you moved
+before accepting. On screen those are one reading — either the storyteller
+placed it or an expert did — but in the file they are two facts, and the
+provenance rule says the file keeps every fact about where a record came from.
+
+So a second column, **`placed_by`**, sits beside it and keeps the finer record:
+`ai|analyst` on a story where you moved some markers and left others, which is
+exactly the case worth being able to find later. Nothing was lost; one column
+was gained.
+
+Your existing downloads are unaffected — this changes what new ones say, and
+nothing in the app reads a CSV back in.
+
+---
+
+## The four tabs are now four stages of one job
+
+Down the left you now have **Design → Collect → Validate → Read**, in the order
+you actually work, each carrying its own live count: which version you are on
+and how many questions it asks, how many stories and how many links are open,
+what is waiting for you, what there is to read. You can see the state of the
+whole study from wherever you happen to be standing, and every stage is still
+one click from every other — this is a progress indicator, not a wizard.
+
+Across the top, one line of context per stage: the sentence that is true here
+and easy to forget. On Validate it is *"Nothing the AI proposes enters your data
+on its own — not at high confidence, not at low."*
+
+Beside it, **as of 11:17 AM** — when *you* last looked, which is the question you
+are actually asking. Nothing polls. If stories arrive while a link is open, the
+Collect stage says *"3 new · fold in"* and waits for you to click. A number that
+changes under you while you are reasoning about it destroys the reasoning.
+
+The filter rail moved into that same left column rather than sitting beside it,
+so the Patterns page has one left edge instead of two.
+
+**One thing in the handoff I did not build.** It wanted the filters turned into
+chips that open on click. Its reason was that this "removes the Patterns-only
+filter column from every other screen" — but that column only ever appeared on
+Patterns, so there was nothing to remove. And hiding the Storyteller /
+Expert-validated / Both control behind a click is precisely what the
+self-signification rule argues against: whose reading you are looking at should
+be visible without opening anything.
+
+---
+
+## The landscape looks like a landscape now
+
+**The terrain reads as terrain.** It was a flat stained triangle, and the reason
+was subtle: the colour scale runs monotonically from dark to bright, so a slope
+and a plateau at the same height came out the same colour and there was nothing
+to tell them apart. It now has a light falling on it from the upper left, so
+slopes facing the light brighten and slopes facing away darken; contour rings
+draped on the surface, so height can be counted rather than only seen; and a
+count pinned to each summit, readable from the back of a room.
+
+**It sits on an ink ground, and that is a fix rather than a style.** The colour
+scale runs dark-blue to yellow, so on white paper the emptiest region carried
+the heaviest ink — the flat plain advanced toward you and the peaks fell back,
+the picture reading exactly backwards. On ink it reads the right way round: dark
+is empty, bright is dense. The rest of the app is still paper, and the contour
+twin — the one you print, photograph and export — is still black on white.
+
+**The 3D Explorer was an unreadable cloud** and now has a floor, a line from
+every story down to it, and near dots drawn larger. Two dots an inch apart used
+to be either neighbours or a whole axis apart with no way to tell.
+
+**The three peaks stopped being buttons.** They were a row of small controls
+under the picture reading "33 near Speed". They are the finding the whole page
+exists to deliver, so they are now a panel beside the landscape: the count, what
+it is near, its share, and "Read these 33 stories". "How to read a landscape"
+keeps every word — including the caveat about triangles that constraint 12
+requires — and moves in beside them, behind a disclosure, so nothing stands
+between you and the picture any more.
+
+**And the corner labels were being cut off.** This is the one that mattered.
+A corner called "Doing it by the book" lost two-thirds of itself on screen and
+more than half on the printed sheet — silently, because SVG clips without
+complaint. A facilitator has been handing out triangles whose third corner reads
+"Doing it b". Fixed in both places, and the printed sheet was the one the
+handoff missed entirely.
+
+### Three things the handoff got wrong, worth knowing
+
+- Its headline example was wrong. "Speed" fits with 4.4px to spare; it takes a
+  longer name to break.
+- Its API document names four fields that do not exist in this app. Its
+  conclusion — no backend change needed — is right, and every one has a real
+  equivalent, but coding to the document would have produced blank counts.
+- Two of the "binding constraints" it argues around are not in the PRD at all.
+  One of them, "labels sit under the picture", is the opposite of what the PRD
+  says: it explicitly asks for directly-labelled peaks. So the question the
+  handoff raised about whether peak pins are allowed had already been answered.
 
 ---
 

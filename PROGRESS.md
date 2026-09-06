@@ -411,6 +411,100 @@ own regression list.
 
 ---
 
+## The design handoff (6 September 2026)
+
+`design_handoff_narrative_lens/` — a visual and navigational redesign in four
+phases. Scoped by the operator to **phases 1–3; the workflow shell (phase 4) is
+deferred pending a look at 1–3 in use.**
+
+- [x] **Phase 1 — corner labels.** Real defect, in two places rather than the
+  one the handoff found. Measured: "Doing it by the book" lost 80 of 122px on
+  screen and 97 of 177px on the printed sheet. The handoff's headline example
+  ("Speed" renders as "peed") is wrong — Speed fits with 4.4px to spare. Its fix
+  is also incomplete: anchoring both base labels inward makes them grow toward
+  each other, trading a clip for an overlap. Both call sites now anchor inward
+  *and* wrap into the half of the base they start from.
+- [x] **Phase 2 — depth cues.** Diffuse shading from a fixed light, base plate,
+  isolines draped at their own height, peak pins, ink figure ground. Explorer:
+  floor grid, drop lines, depth-scaled dots.
+- [x] **Phase 3 — Patterns layout and charts.** Findings card beside the figure,
+  prose behind disclosure in the aside, chart cards, bar tracks, mode emphasis.
+- [x] **Phase 4 — workflow shell.** The four tabs become four stages with live
+  counts, a contextual bar, and §8 freshness. §7.4 (filters → chips) is the one
+  part not built: its stated reason is false — the rail only ever rendered on
+  Patterns — and hiding the three-way provenance control behind a click is what
+  constraint 14 argues against. The rail keeps its form; it moves into the
+  shell's sidebar through a portal so the page has one left column.
+
+### What the handoff got wrong
+
+Recorded because the same package will be read again.
+
+146. **`API-ALIGNMENT.md` names four fields the API does not have.**
+     `is_published` (really `is_live`), `signified_by_counts` (really
+     `counts_by_signified_by`), `closed_at` (really `revoked_at`) and
+     `anecdote_count` on a capture link (really `story_count`). Its
+     *conclusion* — that no backend change is needed — is correct, and every
+     one has an existing equivalent. But JS renders `undefined` as blank, so
+     coding to the document would have produced empty counts with nothing
+     raised.
+147. **Two of its "binding constraints" are not in the PRD.** "No dark mode"
+     appears nowhere in §5b — the handoff argues its way around a rule that
+     does not exist. Nor does "labels sit under the picture": PRD acceptance
+     criterion 9 explicitly requires **directly-labelled peaks**. So its
+     OPEN-QUESTIONS §4, asking permission for peak pins as an exception, is a
+     non-question — the pins are what the PRD asks for.
+148. **The palette breach is real, and half the size the handoff thought.**
+     §5b's "4–6 named colors" is genuinely exceeded by adding tints, and that
+     needed the operator's sign-off. But one of the two requested tints,
+     `--nl-grey-faintest #eeece7`, already exists here as `--nl-grey-faint`;
+     the handoff's token names do not match the repo's. Only
+     `--nl-grey-hairline #f4f2ed` was actually new.
+149. **Its cluster colours would have taken the palette to ten.** Four raw RGB
+     triples for the Explorer's clusters on the darker ground. The existing
+     tokens lifted toward the paper solve the same visibility problem with the
+     same hues, so the palette is unchanged.
+150. **Its pin collision loop pushes pins off the canvas.** The loop only ever
+     lengthens stems, so a peak that projects high leaves the frame — which
+     happens on the default camera, measured. Pins now shorten rather than
+     grow when there is no room above, and hang below only as a last resort.
+151. **Emphasising "the largest bar" emphasises all of them on a tie.** Found
+     by screenshotting a fixture that happened to tie three ways.
+152. **§7.2's rationale is false.** "This is the change that removes the
+     Patterns-only filter column from every other screen" — the filter column
+     only ever rendered on Patterns. There was nothing to remove from anywhere
+     else, so §7.4 buys nothing and costs the provenance control its visibility.
+153. **BAR.read's note is fixture data presented as verbatim copy.** "188 marks
+     were placed by the storytellers themselves. 26 more…" is given in `CODE.md`
+     §4 as a string to reproduce exactly. Those are numbers from the prototype's
+     synthesised dataset. Replaced with a sentence true of any dataset; the real
+     numbers are on the provenance label, which computes them.
+
+### Found by the review that followed phase 4
+
+154. **The shell would have printed onto the QR poster.** `link-manager.css`
+     hid `.nl-nav` for print. The stage spine replaced `.nl-nav`, so for one
+     commit a printed poster came out with the sidebar and the contextual bar
+     on it. Caught by a scan for CSS rules matching nothing, then confirmed by
+     rendering the page under `@media print`.
+
+     The rule now lives in `app.css`, beside the shell it hides, for two
+     reasons: a print rule in another component's stylesheet goes stale the
+     moment a class is renamed, and it also lost the specificity tie, so moving
+     it there and leaving it there would have looked fixed and not been.
+155. **A stray brace silently dropped every style on the page.** Left when
+     replacing the nav CSS. The build compiled it happily and the page rendered
+     in Times New Roman. Caught by screenshot; nothing else would have.
+156. **Three orphaned CSS rules, and the scan that finds them needs its
+     comments stripped.** `test_no_component_styles_a_class_that_no_longer_
+     exists` flagged `.nl-nav` inside the comment explaining why `.nl-nav` had
+     gone. That is the third guard in the suite to need comment-stripping — the
+     translation reachability check and the gridline check both hit it — so the
+     reason is written into the test rather than rediscovered a fourth time. Emphasis
+     marks a distinction; a tie has none, so it now gets none.
+
+---
+
 ## Regression list
 
 Green in every phase from introduction onward:
@@ -1187,7 +1281,8 @@ simpler option was taken unless noted.
      file format with a test pinning it, and aligning it is a decision about
      what the operator's saved spreadsheets mean. Recommended for a future
      session, either by renaming the stored values in a migration or by
-     translating on the way out.
+     translating on the way out. *(Superseded by decision 146: the operator
+     asked for the alignment, and it was taken by translating on the way out.)*
 144. **The provenance label does not appear over the story browser.** Adding it
      to the default view (Fixed 00) put it above every sub-view, and the story
      browser is not one that aggregates significations — `/api/stories` takes no
@@ -1202,6 +1297,28 @@ simpler option was taken unless noted.
      them. They were confirmed by hand against a live wording fix instead, and
      the exception is written into the check with that reason rather than left
      looking like a clean pass.
+146. **The CSV now speaks `participant`/`ai_validated`, and `placed_by` keeps
+     the finer record.** Supersedes decision 142. The operator asked for the
+     alignment, so it was taken on the way out rather than by renaming stored
+     values: `SIGNIFIED_BY_STORED` in `backend/patterns.py` gained a derived
+     inverse, `SIGNIFIED_BY_READING`, and `dataset_csv` maps through it. The two
+     directions cannot drift because one is computed from the other.
+
+     Translating in place would have merged `ai` and `analyst` into one word and
+     lost which hand placed a mark — a *reading* decision on screen (constraint
+     14 recognises exactly two readings), but a *data* decision in the file,
+     which constraint 3 forbids. So the alignment is additive: `signified_by`
+     carries the reading, and a new `placed_by` column beside it carries the
+     stored values, `ai|analyst` after a partial correction. Decision 66's
+     one-row-per-story rule is unchanged; both columns list every distinct value
+     across that story's placements. Pinned by
+     `test_the_csv_speaks_the_words_the_app_speaks`,
+     `test_the_finer_record_survives_beside_it` and
+     `test_the_two_columns_never_disagree`, and end-to-end over HTTP by
+     `test_the_whole_app_agrees_with_itself`. Both halves were mutation-checked:
+     reverting to the stored vocabulary fails six tests, dropping `placed_by`
+     fails two.
+
 143. **A well-formed language tag that names no language is accepted as a
      translation target.** `well_formed` is a shape check by deliberate design
      (see `backend/languages.py`): refusing a real language because a local list

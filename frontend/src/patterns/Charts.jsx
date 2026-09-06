@@ -45,6 +45,9 @@ const MEDIAN_LABEL_INSET = 48;
 export function BarChart({ chart, unit = "stories" }) {
   const bars = chart.bars ?? [];
   const largest = bars.reduce((most, bar) => Math.max(most, bar.count), 0);
+  // A mode worth pointing at is one bar, not several. Ties get no emphasis.
+  const hasSingleMode =
+    largest > 0 && bars.filter((bar) => bar.count === largest).length === 1;
   const plotWidth = CHART_WIDTH - LABEL_WIDTH - VALUE_WIDTH;
   const height = Math.max(bars.length, 1) * (BAR_HEIGHT + BAR_GAP);
 
@@ -76,9 +79,32 @@ export function BarChart({ chart, unit = "stories" }) {
               >
                 {bar.label}
               </text>
-              {/* Zero-based by construction: every bar starts at LABEL_WIDTH. */}
+              {/*
+                * A full-width track behind every bar, so each one is read
+                * against the same 100%. That is what lets the shares be
+                * comparable without a legend or an axis (§5b: direct labels
+                * beat legends, no gridline decoration).
+                */}
               <rect
-                className="nl-chart__bar"
+                className="nl-chart__track"
+                x={LABEL_WIDTH}
+                y={y}
+                width={plotWidth}
+                height={BAR_HEIGHT}
+              />
+              {/* Zero-based by construction: every bar starts at LABEL_WIDTH.
+                  The longest bar in each chart is drawn at full strength and
+                  the rest a step back, so the mode is findable in one glance
+                  without a second colour entering the chart — but only when
+                  there is a single longest bar. Emphasising a three-way tie
+                  marks every bar as the exception, which is more ink saying
+                  less than the plain chart did. */}
+              <rect
+                className={
+                  bar.count === largest && hasSingleMode
+                    ? "nl-chart__bar nl-chart__bar--largest"
+                    : "nl-chart__bar"
+                }
                 x={LABEL_WIDTH}
                 y={y}
                 width={Math.max(width, bar.count > 0 ? 2 : 0)}

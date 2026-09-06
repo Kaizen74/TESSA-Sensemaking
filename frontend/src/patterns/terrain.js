@@ -59,11 +59,66 @@ export function project(x, y, z, camera, view) {
 }
 
 /**
+ * A fixed light, upper left, in model space.
+ *
+ * Fixed rather than following the camera: a light that turns with the viewer
+ * lights every face the same way at every angle, which is exactly the flatness
+ * the shading exists to remove.
+ */
+export const LIGHT = (() => {
+  const v = [-0.55, -0.45, 0.7];
+  const m = Math.hypot(v[0], v[1], v[2]);
+  return v.map((c) => c / m);
+})();
+
+/** How far a lit face brightens and an unlit one darkens. */
+export const SHADE_AMBIENT = 0.68;
+export const SHADE_DIFFUSE = 0.4;
+
+/**
+ * How much light one quad catches, from its own slope.
+ *
+ * The normal is taken from two *model-space* edges rather than projected ones,
+ * so the shading describes the real surface and does not change as the camera
+ * turns. Without this the terrain is a flat stained triangle: cividis is
+ * monotonic in lightness, so a slope and a plateau at the same height are the
+ * same colour, and there is nothing left to tell them apart.
+ *
+ * This is a depth cue, not an encoding. The colour scale is untouched, so the
+ * greyscale and photocopier guarantees are exactly what they were.
+ */
+function shadeOf(corners, heights, top) {
+  const at = (i) => [
+    corners[i][0],
+    corners[i][1],
+    (heights[i] / top) * HEIGHT_SCALE,
+  ];
+  const m0 = at(0);
+  const m1 = at(1);
+  const m3 = at(3);
+  const u = [m1[0] - m0[0], m1[1] - m0[1], m1[2] - m0[2]];
+  const v = [m3[0] - m0[0], m3[1] - m0[1], m3[2] - m0[2]];
+  let n = [
+    u[1] * v[2] - u[2] * v[1],
+    u[2] * v[0] - u[0] * v[2],
+    u[0] * v[1] - u[1] * v[0],
+  ];
+  const magnitude = Math.hypot(n[0], n[1], n[2]) || 1;
+  n = n.map((c) => c / magnitude);
+  // Two edges of a quad give a normal that may point either way; the surface
+  // is a height field, so the one facing up is the one that is meant.
+  if (n[2] < 0) n = n.map((c) => -c);
+  const ndotl = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
+  return SHADE_AMBIENT + SHADE_DIFFUSE * ndotl;
+}
+
+/**
  * The surface as quads, furthest first.
  *
  * Painter's algorithm: no depth buffer, no z-fighting, and a draw order a
  * person could check by hand. Every quad carries the height of its corner so
- * the colour and the geometry cannot disagree.
+ * the colour and the geometry cannot disagree, and the light it catches, so a
+ * slope reads as a slope.
  */
 export function surfaceQuads(density, xAxis, yAxis, scaleDensity, camera, view) {
   const quads = [];
@@ -89,12 +144,57 @@ export function surfaceQuads(density, xAxis, yAxis, scaleDensity, camera, view) 
       quads.push({
         points,
         height: mean / top,
+        shade: shadeOf(corners, heights, top),
         depth: points.reduce((sum, point) => sum + point.depth, 0) / points.length,
       });
     }
   }
   quads.sort((a, b) => a.depth - b.depth);
   return quads;
+}
+
+/**
+ * One palette colour, lifted far enough to be seen on the ink ground.
+ *
+ * The data hue is `#00366d`, which is nearly the ground itself: drawn on ink it
+ * would be a dot nobody could find. The handoff's answer was four fresh RGB
+ * values, which is four new colours and a palette of ten.
+ *
+ * Mixing the existing token toward the paper keeps its hue exactly and moves
+ * only its luminance, so the figure gains contrast and the palette gains
+ * nothing. What was one blue on paper is the same blue on ink.
+ */
+export function liftedForInk(colour, amount = 0.62) {
+  const parts = colour.match(/\d+(\.\d+)?/g);
+  const rgb = parts && parts.length >= 3
+    ? parts.slice(0, 3).map(Number)
+    : hexChannels(colour);
+  if (!rgb) return colour;
+  const paper = [251, 250, 247];
+  const lifted = rgb.map((c, i) => Math.round(c + (paper[i] - c) * amount));
+  return `rgb(${lifted[0]}, ${lifted[1]}, ${lifted[2]})`;
+}
+
+function hexChannels(colour) {
+  const hex = String(colour).trim().replace("#", "");
+  if (hex.length !== 3 && hex.length !== 6) return null;
+  const full = hex.length === 3 ? hex.split("").map((c) => c + c).join("") : hex;
+  return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
+}
+
+/**
+ * One `rgb(...)` colour scaled by how much light its face catches.
+ *
+ * Kept here beside the shading it belongs to, so a caller cannot apply the
+ * light to one figure and forget it on another.
+ */
+export function shaded(colour, shade) {
+  const parts = colour.match(/\d+(\.\d+)?/g);
+  if (!parts || parts.length < 3) return colour;
+  const scaled = parts
+    .slice(0, 3)
+    .map((c) => Math.min(255, Math.round(Number(c) * shade)));
+  return `rgb(${scaled[0]}, ${scaled[1]}, ${scaled[2]})`;
 }
 
 /* -------------------------------------------------------------- contour -- */

@@ -22,6 +22,7 @@ import {
   clampCamera,
   colourFor,
   contourSegments,
+  shaded,
   project,
   surfaceQuads,
   TRIANGLE_HEIGHT,
@@ -34,6 +35,24 @@ const CONTOUR_PAD = 44;
 
 /** Radians of rotation per pixel dragged. */
 const DRAG_SENSITIVITY = 0.008;
+
+/*
+ * The three tokens the canvas needs by value.
+ *
+ * A canvas cannot read a CSS variable, so these are the only place in the app
+ * where a token is written twice. Held together here rather than inline, so a
+ * palette change has one place to look — and a test asserts they still match
+ * tokens.css, which is what stops the two drifting apart in silence.
+ */
+const INK = "#16181d";
+const PAPER = "#fbfaf7";
+const ACCENT = "#a37b18";
+
+const MONO_STACK = 'ui-monospace, Menlo, Consolas, "Liberation Mono", monospace';
+
+/** Peak counts on the surface: the figure the page exists to deliver. */
+const PIN_PX = 13;
+const PIN_PX_MAX = 22;
 
 /** Corner labels, in CSS pixels as they should appear on screen (§5b: ≥12). */
 const LABEL_PX = 13;
@@ -100,6 +119,10 @@ export function LandscapeView({ view, onRegion, busy = false }) {
             onCamera={setCamera}
             onRegion={onRegion}
             busy={busy}
+            // The single-panel view carries its peaks in the findings card
+            // beside the figure; a split view keeps them under each picture,
+            // where each set stays with the landscape it belongs to.
+            showPeaks={split || panels.length !== 1}
           />
         ))}
       </div>
@@ -107,7 +130,7 @@ export function LandscapeView({ view, onRegion, busy = false }) {
   );
 }
 
-function Panel({ panel, contour, camera, onCamera, onRegion, busy }) {
+function Panel({ panel, contour, camera, onCamera, onRegion, busy, showPeaks = true }) {
   return (
     <figure className="nl-land__panel">
       {panel.panel && <figcaption className="nl-land__panel-name">{panel.panel}</figcaption>}
@@ -120,7 +143,7 @@ function Panel({ panel, contour, camera, onCamera, onRegion, busy }) {
         // terrain; a rotating surface has no stable place to click.
         <Terrain panel={panel} camera={camera} onCamera={onCamera} />
       )}
-      <PeakLabels panel={panel} onRegion={onRegion} />
+      {showPeaks && <PeakLabels panel={panel} onRegion={onRegion} />}
     </figure>
   );
 }
@@ -174,8 +197,53 @@ function Terrain({ panel, camera, onCamera }) {
       frame,
     );
 
+    /*
+     * The figure sits on ink, and only the figure.
+     *
+     * Cividis runs dark-blue to yellow. On paper that puts the heaviest ink on
+     * the emptiest region, so the flat plateau advances toward the reader and
+     * the peaks recede — the encoding read backwards. On an ink ground the ramp
+     * reads monotonically as luminance: dark is empty, bright is dense. The
+     * shell around this canvas stays paper, and the contour twin stays on paper
+     * too, so this is figure and ground inside one element rather than a theme.
+     */
+    context.fillStyle = INK;
+    context.fillRect(0, 0, VIEW.width, VIEW.height);
+
+    const footprint = [
+      [0, 0],
+      [1, 0],
+      [0.5, TRIANGLE_HEIGHT],
+    ].map(([x, y]) => project(x, y, 0, camera, frame));
+
+    const pool = context.createRadialGradient(
+      frame.cx,
+      footprint[0].y - 50,
+      20,
+      frame.cx,
+      footprint[0].y - 50,
+      VIEW.width * 0.52,
+    );
+    pool.addColorStop(0, "rgba(0, 54, 109, 0.36)");
+    pool.addColorStop(1, "rgba(22, 24, 29, 0)");
+    context.fillStyle = pool;
+    context.fillRect(0, 0, VIEW.width, VIEW.height);
+
+    // A base plate, so the surface sits on something instead of floating.
+    context.beginPath();
+    context.moveTo(footprint[0].x, footprint[0].y);
+    for (const point of footprint.slice(1)) context.lineTo(point.x, point.y);
+    context.closePath();
+    context.fillStyle = "rgba(251, 250, 247, 0.06)";
+    context.fill();
+    context.strokeStyle = "rgba(251, 250, 247, 0.22)";
+    context.lineWidth = 1;
+    context.stroke();
+
     for (const quad of quads) {
-      const colour = colourFor(quad.height, stops);
+      // The height still chooses the colour; the slope only decides how much
+      // light that colour catches. Nothing here changes what the colour means.
+      const colour = shaded(colourFor(quad.height, stops), quad.shade);
       context.beginPath();
       context.moveTo(quad.points[0].x, quad.points[0].y);
       for (const point of quad.points.slice(1)) context.lineTo(point.x, point.y);
@@ -189,10 +257,35 @@ function Terrain({ panel, camera, onCamera }) {
       context.stroke();
     }
 
+    /*
+     * Isolines draped on the surface, at their own height rather than at zero.
+     *
+     * The same marching squares the contour twin runs, projected at the level
+     * they belong to, which makes height countable on the 3D view instead of
+     * only visible. No new geometry — the twin and the drape are one function.
+     */
+    context.strokeStyle = "rgba(251, 250, 247, 0.34)";
+    context.lineWidth = 0.9;
+    context.beginPath();
+    const top = panel.scale_density > 0 ? panel.scale_density : 1;
+    for (const level of panel.contour_levels ?? []) {
+      for (const segment of contourSegments(
+        panel.density,
+        panel.x_axis,
+        panel.y_axis,
+        level,
+      )) {
+        const a = project(segment[0].x, segment[0].y, level / top, camera, frame);
+        const b = project(segment[1].x, segment[1].y, level / top, camera, frame);
+        context.moveTo(a.x, a.y);
+        context.lineTo(b.x, b.y);
+      }
+    }
+    context.stroke();
+
     // The corners, so the terrain is anchored to the question it is about.
-    context.fillStyle = getComputedStyle(document.documentElement)
-      .getPropertyValue("--nl-ink")
-      .trim();
+    // On the ink ground they need a plate to stay readable where they cross the
+    // surface, and paper-coloured text rather than ink.
     // The canvas draws in a fixed 640-unit space and is then stretched to
     // whatever width it has been given, so a font set in canvas units shrinks
     // with the picture — on a 375px phone, 13 units lands at about 7px, half
@@ -207,6 +300,7 @@ function Terrain({ panel, camera, onCamera }) {
       [1, 0],
       [0.5, TRIANGLE_HEIGHT],
     ];
+    const placed = [];
     corners.forEach(([x, y], index) => {
       const at = project(x, y, 0, camera, frame);
       // The terrain turns, so which side of the picture a corner ends up on
@@ -222,8 +316,105 @@ function Terrain({ panel, camera, onCamera }) {
         Math.max(at.x + nudge, outward === "right" ? width + 4 : 4),
         outward === "right" ? VIEW.width - 4 : VIEW.width - width - 4,
       );
-      context.fillText(label, clamped, Math.min(Math.max(at.y + 4, 14), VIEW.height - 6));
+      const baseline = Math.min(Math.max(at.y + 4, 14), VIEW.height - 6);
+      const boxX = (outward === "right" ? clamped - width : clamped) - 6;
+      const boxY = baseline - labelPx + 1;
+      context.fillStyle = "rgba(22, 24, 29, 0.66)";
+      context.fillRect(boxX, boxY, width + 12, labelPx + 6);
+      context.fillStyle = PAPER;
+      context.fillText(label, clamped, baseline);
+      placed.push({ x: boxX, y: boxY, w: width + 12, h: labelPx + 6 });
     });
+
+    /*
+     * Peak pins — the three findings, on the surface (PRD acceptance 9:
+     * "directly-labelled peaks").
+     *
+     * Placed front to back, and a pin whose label would land on something
+     * already placed grows its stem until it is clear. Without that, three
+     * adjacent hills print three counts on top of each other and the figure
+     * delivers none of them.
+     */
+    const pinPx = Math.min(Math.max(PIN_PX * (VIEW.width / shownWidth), PIN_PX), PIN_PX_MAX);
+    context.font = `700 ${pinPx.toFixed(1)}px ${MONO_STACK}`;
+    context.textAlign = "center";
+
+    const pins = (panel.peaks ?? [])
+      .map((peak) => ({
+        peak,
+        at: project(peak.x, peak.y, (peak.density ?? 0) / top, camera, frame),
+      }))
+      .sort((a, b) => b.at.y - a.at.y);
+
+    const STEM = 26;
+    for (const { peak, at } of pins) {
+      const boxW = Math.max(26, context.measureText(String(peak.count)).width + 14);
+      const boxH = 24;
+      const boxX = at.x - boxW / 2;
+      const clashesAt = (y) =>
+        placed.some(
+          (b) =>
+            boxX < b.x + b.w + 6 &&
+            boxX + boxW + 6 > b.x &&
+            y < b.y + b.h + 4 &&
+            y + boxH + 4 > b.y,
+        );
+
+      /*
+       * Lengthen the stem until the label is clear of everything already
+       * placed. Two things bound it.
+       *
+       * It may not leave the canvas: a pin pushed off the top edge is worse
+       * than a pin close to its neighbour, because one is a number you can
+       * read and the other is a number that is not there. A peak that projects
+       * near the top has no room above it at all, so its pin hangs *below*
+       * instead — the stem is a pointer, and it points just as well downward.
+       */
+      const MARGIN = 4;
+      const MIN_STEM = 8;
+      // A peak near the top of the frame gets a shorter stem rather than a
+      // label hanging the other way: a pin that points down lands its number
+      // in the middle of the scene, next to a hill it does not belong to.
+      // Hanging below is the last resort, for a summit with no room at all.
+      const ceiling = at.y - boxH - MARGIN;
+      const direction = ceiling >= MIN_STEM ? -1 : 1;
+      const boxTopFor = (length) =>
+        direction < 0 ? at.y - length - boxH : at.y + length;
+      const fits = (length) => {
+        const y = boxTopFor(length);
+        return y >= MARGIN && y + boxH <= VIEW.height - MARGIN;
+      };
+
+      let stem = direction < 0 ? Math.min(STEM, ceiling) : STEM;
+      for (let guard = 0; guard < 8; guard += 1) {
+        if (!clashesAt(boxTopFor(stem))) break;
+        const next = stem + boxH + 8;
+        if (!fits(next)) break;
+        stem = next;
+      }
+      if (!fits(stem)) stem = Math.max(MIN_STEM, Math.min(STEM, ceiling));
+      const boxY = boxTopFor(stem);
+      placed.push({ x: boxX, y: boxY, w: boxW, h: boxH });
+
+      const tip = at.y + direction * stem;
+      const disc = tip + direction * 6;
+      context.strokeStyle = ACCENT;
+      context.lineWidth = 1.5;
+      context.beginPath();
+      context.moveTo(at.x, at.y);
+      context.lineTo(at.x, tip);
+      context.stroke();
+
+      context.beginPath();
+      context.arc(at.x, disc, 12, 0, Math.PI * 2);
+      context.fillStyle = PAPER;
+      context.fill();
+      context.strokeStyle = ACCENT;
+      context.stroke();
+
+      context.fillStyle = INK;
+      context.fillText(String(peak.count), at.x, disc + pinPx / 2 - 1);
+    }
   }, [panel, camera, stops]);
 
   useEffect(() => {
@@ -419,5 +610,69 @@ function PeakLabels({ panel, onRegion }) {
         </button>
       ))}
     </div>
+  );
+}
+
+/**
+ * The three peaks as three ranked actions, beside the figure.
+ *
+ * They were a row of small buttons under the picture, reading "130 near Speed"
+ * at the weight of a tertiary control. They are the page's findings: the whole
+ * landscape exists to say where stories gather, and this is where it says it.
+ *
+ * Only for the single-panel view. A split landscape has two sets of peaks and
+ * no honest way to rank them against each other, so it keeps the row under each
+ * panel where each set stays with the picture it came from.
+ */
+export function FindingsPanel({ view, onRegion }) {
+  const panels = view?.panels ?? [];
+  if (view?.split_by || panels.length !== 1) return null;
+
+  const panel = panels[0];
+  const peaks = [...(panel.peaks ?? [])].sort((a, b) => b.count - a.count);
+  if (!peaks.length) return null;
+
+  // The share is of the stories that answered *this* triangle, not of every
+  // story in scope: a percentage whose denominator is a different question is
+  // a number nobody can act on.
+  const answered = panel.count || 0;
+
+  return (
+    <section className="nl-findings" aria-label="Where stories gather">
+      <header className="nl-findings__head">
+        <h3 className="nl-findings__title">Where stories gather</h3>
+        <p className="nl-findings__lede">
+          Three peaks. Each is exactly those stories, not roughly those.
+        </p>
+      </header>
+
+      {peaks.map((peak) => {
+        const share = answered ? Math.round((peak.count / answered) * 100) : 0;
+        return (
+          <button
+            key={`${peak.x}-${peak.y}`}
+            type="button"
+            className="nl-findings__row"
+            onClick={() => onRegion?.(peak)}
+          >
+            <span className="nl-findings__line">
+              <span className="nl-findings__count">{peak.count}</span>
+              <span className="nl-findings__near">near {peak.nearest_corner}</span>
+              <span className="nl-findings__share">{share}%</span>
+            </span>
+            <span className="nl-findings__bar" aria-hidden="true">
+              <span style={{ width: `${share}%` }} />
+            </span>
+            <span className="nl-findings__go">
+              Read {peak.count === 1 ? "this story" : `these ${peak.count} stories`} →
+            </span>
+          </button>
+        );
+      })}
+
+      <p className="nl-findings__foot">
+        The slopes between hills are arithmetic filling in gaps. Read the peaks.
+      </p>
+    </section>
   );
 }
