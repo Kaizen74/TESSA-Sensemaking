@@ -19,7 +19,7 @@ import { api, ApiError } from "../api.js";
 import { BarChart, DyadChart, StonesChart } from "./Charts.jsx";
 import { ExplorerView } from "./Explorer.jsx";
 import { StoryBrowser } from "./StoryBrowser.jsx";
-import { LandscapeView } from "./Landscape.jsx";
+import { FindingsPanel, LandscapeView } from "./Landscape.jsx";
 import { SessionMode } from "./SessionMode.jsx";
 import {
   chartsFilename,
@@ -593,22 +593,39 @@ export function PatternsTab() {
                           ))}
                         </div>
                       )}
-                      {land ? (
-                        <LandscapeView view={land} onRegion={setRegion} />
-                      ) : (
-                        <p className="nl-patterns__empty">Drawing the landscape…</p>
-                      )}
-                      {region && (
-                        <RegionDrawer
-                          region={region}
-                          view={view}
-                          frameworkId={selected.id}
-                          params={params}
-                          onClose={() => setRegion(null)}
-                        />
-                      )}
+                      {/*
+                        * Figure left, findings right.
+                        *
+                        * The three peaks were a row of small buttons under the
+                        * picture, at the weight of tertiary controls. They are
+                        * what the page is for, so they sit beside the figure at
+                        * the weight of findings — and the prose that used to
+                        * stand between the reader and the landscape moves in
+                        * here too, behind its own disclosure.
+                        */}
+                      <div className="nl-patterns__stage">
+                        <div className="nl-patterns__figure">
+                          {land ? (
+                            <LandscapeView view={land} onRegion={setRegion} />
+                          ) : (
+                            <p className="nl-patterns__empty">Drawing the landscape…</p>
+                          )}
+                        </div>
+                        <aside className="nl-patterns__aside">
+                          {land && <FindingsPanel view={land} onRegion={setRegion} />}
+                          {region && (
+                            <RegionDrawer
+                              region={region}
+                              view={view}
+                              frameworkId={selected.id}
+                              params={params}
+                              onClose={() => setRegion(null)}
+                            />
+                          )}
+                          <AnalystNotes count={view.total} />
+                        </aside>
+                      </div>
                       <RoomsList rooms={rooms} />
-                      <AnalystNotes count={view.total} />
                     </>
                   )}
                 </>

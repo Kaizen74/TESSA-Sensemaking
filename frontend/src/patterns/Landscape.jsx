@@ -119,6 +119,10 @@ export function LandscapeView({ view, onRegion, busy = false }) {
             onCamera={setCamera}
             onRegion={onRegion}
             busy={busy}
+            // The single-panel view carries its peaks in the findings card
+            // beside the figure; a split view keeps them under each picture,
+            // where each set stays with the landscape it belongs to.
+            showPeaks={split || panels.length !== 1}
           />
         ))}
       </div>
@@ -126,7 +130,7 @@ export function LandscapeView({ view, onRegion, busy = false }) {
   );
 }
 
-function Panel({ panel, contour, camera, onCamera, onRegion, busy }) {
+function Panel({ panel, contour, camera, onCamera, onRegion, busy, showPeaks = true }) {
   return (
     <figure className="nl-land__panel">
       {panel.panel && <figcaption className="nl-land__panel-name">{panel.panel}</figcaption>}
@@ -139,7 +143,7 @@ function Panel({ panel, contour, camera, onCamera, onRegion, busy }) {
         // terrain; a rotating surface has no stable place to click.
         <Terrain panel={panel} camera={camera} onCamera={onCamera} />
       )}
-      <PeakLabels panel={panel} onRegion={onRegion} />
+      {showPeaks && <PeakLabels panel={panel} onRegion={onRegion} />}
     </figure>
   );
 }
@@ -606,5 +610,69 @@ function PeakLabels({ panel, onRegion }) {
         </button>
       ))}
     </div>
+  );
+}
+
+/**
+ * The three peaks as three ranked actions, beside the figure.
+ *
+ * They were a row of small buttons under the picture, reading "130 near Speed"
+ * at the weight of a tertiary control. They are the page's findings: the whole
+ * landscape exists to say where stories gather, and this is where it says it.
+ *
+ * Only for the single-panel view. A split landscape has two sets of peaks and
+ * no honest way to rank them against each other, so it keeps the row under each
+ * panel where each set stays with the picture it came from.
+ */
+export function FindingsPanel({ view, onRegion }) {
+  const panels = view?.panels ?? [];
+  if (view?.split_by || panels.length !== 1) return null;
+
+  const panel = panels[0];
+  const peaks = [...(panel.peaks ?? [])].sort((a, b) => b.count - a.count);
+  if (!peaks.length) return null;
+
+  // The share is of the stories that answered *this* triangle, not of every
+  // story in scope: a percentage whose denominator is a different question is
+  // a number nobody can act on.
+  const answered = panel.count || 0;
+
+  return (
+    <section className="nl-findings" aria-label="Where stories gather">
+      <header className="nl-findings__head">
+        <h3 className="nl-findings__title">Where stories gather</h3>
+        <p className="nl-findings__lede">
+          Three peaks. Each is exactly those stories, not roughly those.
+        </p>
+      </header>
+
+      {peaks.map((peak) => {
+        const share = answered ? Math.round((peak.count / answered) * 100) : 0;
+        return (
+          <button
+            key={`${peak.x}-${peak.y}`}
+            type="button"
+            className="nl-findings__row"
+            onClick={() => onRegion?.(peak)}
+          >
+            <span className="nl-findings__line">
+              <span className="nl-findings__count">{peak.count}</span>
+              <span className="nl-findings__near">near {peak.nearest_corner}</span>
+              <span className="nl-findings__share">{share}%</span>
+            </span>
+            <span className="nl-findings__bar" aria-hidden="true">
+              <span style={{ width: `${share}%` }} />
+            </span>
+            <span className="nl-findings__go">
+              Read {peak.count === 1 ? "this story" : `these ${peak.count} stories`} →
+            </span>
+          </button>
+        );
+      })}
+
+      <p className="nl-findings__foot">
+        The slopes between hills are arithmetic filling in gaps. Read the peaks.
+      </p>
+    </section>
   );
 }

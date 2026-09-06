@@ -170,3 +170,89 @@ def test_the_contour_twin_stays_on_paper() -> None:
     assert "INK" not in twin.split("function ")[1], (
         "the contour twin has started painting an ink ground"
     )
+
+
+# --------------------------------------------------------------------------
+# The Patterns layout (design handoff §4, §5)
+# --------------------------------------------------------------------------
+
+
+def patterns_source() -> str:
+    return (FRONTEND / "patterns" / "Patterns.jsx").read_text(encoding="utf-8")
+
+
+def test_the_landscape_keeps_the_hero_space() -> None:
+    """Constraint 13a: the terrain is the one bold thing on the page.
+
+    The findings card sits beside it, so the split is where 13a is now decided.
+    1.85 of two columns keeps the figure dominant; anything approaching parity
+    would make the page two things instead of one.
+    """
+    css = (FRONTEND / "patterns" / "patterns.css").read_text(encoding="utf-8")
+    stage = css[css.index(".nl-patterns__stage") :][:400]
+
+    assert "1.85fr" in stage, stage[:200]
+
+
+def test_the_prose_no_longer_stands_above_the_figure() -> None:
+    """The analyst notes moved into the aside, behind their own disclosure.
+
+    They are load-bearing — the closure-constraint caveat is constraint 12 — so
+    they stay in full. What changed is that a reader meets the landscape first.
+    """
+    body = patterns_source()
+    stage_at = body.index("nl-patterns__stage")
+    notes_at = body.index("<AnalystNotes")
+
+    assert notes_at > stage_at, "the analyst notes are above the figure again"
+    assert "nl-patterns__aside" in body[stage_at:notes_at], (
+        "the analyst notes are no longer inside the aside"
+    )
+
+
+def test_a_split_landscape_keeps_its_peaks_with_its_pictures() -> None:
+    """Two landscapes have two sets of peaks and no honest way to rank them.
+
+    The findings card ranks one set. A split view keeps the old row under each
+    panel, where each set stays with the picture it came from.
+    """
+    body = (FRONTEND / "patterns" / "Landscape.jsx").read_text(encoding="utf-8")
+
+    assert "showPeaks={split || panels.length !== 1}" in body
+    assert "if (view?.split_by || panels.length !== 1) return null;" in body
+
+
+def test_the_mode_is_only_emphasised_when_there_is_one() -> None:
+    """Emphasis marks a distinction; a tie has none to mark.
+
+    With every bar equal, emphasising "the largest" emphasises all of them,
+    which is more ink saying less than the plain chart did.
+    """
+    body = (FRONTEND / "patterns" / "Charts.jsx").read_text(encoding="utf-8")
+
+    assert "hasSingleMode" in body
+    assert "bar.count === largest && hasSingleMode" in body
+
+
+def test_the_charts_gained_a_track_but_no_gridline() -> None:
+    """§5b bans gridline decoration. A track behind a bar is not one.
+
+    A gridline is a repeated rule the eye must map back to an axis; a track is
+    the bar's own 100%, in the bar's own place, which is what lets the shares
+    be compared without a legend.
+    """
+    css = (FRONTEND / "patterns" / "patterns.css").read_text(encoding="utf-8")
+    charts = (FRONTEND / "patterns" / "Charts.jsx").read_text(encoding="utf-8")
+
+    assert ".nl-chart__track" in css
+    assert "nl-chart__track" in charts
+
+    # Scanned as code, not as prose. Charts.jsx opens by saying it draws no
+    # gridlines, and a word-search on the file finds that sentence and calls it
+    # a violation — the same false positive the translation guard hit when it
+    # scanned docstrings.
+    without_comments = re.sub(r"/\*.*?\*/", "", charts, flags=re.DOTALL)
+    without_comments = re.sub(r"//[^\n]*", "", without_comments)
+
+    assert "gridline" not in without_comments.lower()
+    assert "<legend" not in without_comments.lower()
