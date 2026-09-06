@@ -38,6 +38,47 @@ STORY_NAME_PROMPT = "If you gave this story a name, what would it be?"
 #: Rows in the facilitator reconciliation grid.
 RECONCILIATION_ROW_COUNT = 6
 
+#: The size ``.sheet-label`` is printed at, in CSS pixels. 16pt.
+SHEET_LABEL_PX = 16 * 4 / 3
+
+#: Line spacing for a wrapped corner name on a printed sheet.
+SHEET_LABEL_LINE = 26.0
+
+#: How wide one character is, as a share of the font size, for the print face.
+#:
+#: Measured against the rendered sheet rather than assumed: Georgia at 16pt puts
+#: "Doing it by the book" at 8.9px per character and "Speed" at 10.4, capitals
+#: and round letters being the wide ones. 0.5 sits above both, which is the side
+#: to be wrong on — a line wrapped early costs a little paper, a line wrapped
+#: late loses the end of a word off the edge of the sheet.
+SHEET_CHAR_WIDTH = 0.5
+
+
+def wrap_label(text: str, limit: float, char_width: float = SHEET_CHAR_WIDTH,
+               font_px: float = SHEET_LABEL_PX) -> list[str]:
+    """Break a corner name into lines that each fit ``limit`` pixels.
+
+    Greedy by word. A single word wider than the limit keeps its own line rather
+    than being broken mid-word, because a corner called "Interdepartmental"
+    reads better a little over the line than as "Interdepartme" and "ntal".
+    """
+    words = (text or "").split()
+    if not words:
+        return [""]
+
+    per_char = char_width * font_px
+    lines: list[str] = []
+    line = words[0]
+    for word in words[1:]:
+        candidate = f"{line} {word}"
+        if len(candidate) * per_char <= limit:
+            line = candidate
+        else:
+            lines.append(line)
+            line = word
+    lines.append(line)
+    return lines
+
 
 def _svg_triad(triad: Triad) -> str:
     """A large equilateral triangle with its three corners labelled.
@@ -57,15 +98,31 @@ def _svg_triad(triad: Triad) -> str:
     x1, y1 = place(CORNER_1)
     x2, y2 = place(CORNER_2)
 
-    labels = [
-        (x0 - 10, y0 + 34, "end", triad.corners[0]),
-        (x1 + 10, y1 + 34, "start", triad.corners[1]),
-        (x2, y2 - 22, "middle", triad.corners[2]),
-    ]
+    # Corner labels are anchored INWARD and wrapped, for the same reason the
+    # on-screen widget is (see frontend/src/widgets/Widgets.jsx). Anchored
+    # outward, a label grew into the 80px margin and SVG clipped the rest in
+    # silence: "Doing it by the book" lost 97 of its 177 pixels on a sheet that
+    # a facilitator then handed to a room. Each bottom label now has the half of
+    # the base it starts from, which is 260px, and wraps inside it.
+    half = x2 - x0 - SHEET_LABEL_LINE
+    lines_0 = wrap_label(triad.corners[0], half)
+    lines_1 = wrap_label(triad.corners[1], half)
+    lines_2 = wrap_label(triad.corners[2], (size + 2 * pad) - 2 * SHEET_LABEL_LINE)
+
+    placed: list[tuple[float, float, str, str]] = []
+    for index, line in enumerate(lines_0):
+        placed.append((x0, y0 + 34 + index * SHEET_LABEL_LINE, "start", line))
+    for index, line in enumerate(lines_1):
+        placed.append((x1, y1 + 34 + index * SHEET_LABEL_LINE, "end", line))
+    for index, line in enumerate(lines_2):
+        # The apex label grows upward, which is where this sheet has room.
+        offset = (len(lines_2) - 1 - index) * SHEET_LABEL_LINE
+        placed.append((x2, y2 - 22 - offset, "middle", line))
+
     label_markup = "\n".join(
         f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="{anchor}" class="sheet-label">'
         f"{escape(text)}</text>"
-        for x, y, anchor, text in labels
+        for x, y, anchor, text in placed
     )
 
     return f"""
