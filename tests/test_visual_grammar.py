@@ -342,3 +342,63 @@ def test_the_page_has_one_left_column() -> None:
     assert "createPortal" in patterns
     assert "STAGE_ASIDE_ID" in patterns
     assert "STAGE_ASIDE_ID" in app_source()
+
+
+def test_the_shell_does_not_reach_the_printer() -> None:
+    """The QR poster and the paper pack print from a page that still has a
+    shell around it. Neither is improved by a sidebar down its left edge.
+
+    This regressed once already: the print rule named ``.nl-nav``, the nav
+    became a spine, and for one commit a printed poster came out with the whole
+    sidebar on it. The rule now lives beside the thing it hides — a print rule
+    in some other component's stylesheet goes stale the moment a class is
+    renamed, and loses the specificity tie besides.
+    """
+    css = (FRONTEND / "app.css").read_text(encoding="utf-8")
+    printed = css[css.index("@media print") :]
+
+    for hidden in (".nl-shell", ".nl-topbar"):
+        assert hidden in printed, f"{hidden} is not hidden for print"
+
+    # And nothing else may keep its own copy of that rule.
+    for path in FRONTEND.rglob("*.css"):
+        if path.name == "app.css":
+            continue
+        body = path.read_text(encoding="utf-8")
+        assert ".nl-shell" not in body, (
+            f"{path.name} reaches across to style the shell; app.css owns it"
+        )
+
+
+def test_no_component_styles_a_class_that_no_longer_exists() -> None:
+    """A stylesheet is the one place a rename fails silently.
+
+    Nothing errors, nothing warns — the rule simply stops matching, and the
+    only symptom is a page that looks slightly wrong somewhere nobody is
+    looking. That is exactly how the print rule above broke.
+    """
+    # Comments stripped first. A rule is code; a comment explaining why a rule
+    # was renamed mentions the old name, and scanning prose as if it were code
+    # calls that a violation. This is the third guard in the suite to need the
+    # same treatment — the translation reachability check and the gridline
+    # check both hit it — which is why it is spelled out rather than assumed.
+    def rules(text: str) -> str:
+        return re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+
+    defined: dict[str, set[str]] = {}
+    for path in FRONTEND.rglob("*.css"):
+        body = rules(path.read_text(encoding="utf-8"))
+        for name in re.findall(r"\.(nl-[a-zA-Z0-9_-]+)", body):
+            defined.setdefault(name, set()).add(path.name)
+
+    used: set[str] = set()
+    for path in frontend_sources():
+        used |= set(re.findall(r"nl-[a-zA-Z0-9_-]+", path.read_text(encoding="utf-8")))
+    for path in (Path(__file__).resolve().parent.parent / "backend").rglob("*.py"):
+        used |= set(re.findall(r"nl-[a-zA-Z0-9_-]+", path.read_text(encoding="utf-8")))
+
+    orphans = {name: files for name, files in defined.items() if name not in used}
+
+    assert not orphans, "CSS rules matching nothing: " + "; ".join(
+        f"{name} ({', '.join(sorted(files))})" for name, files in sorted(orphans.items())
+    )

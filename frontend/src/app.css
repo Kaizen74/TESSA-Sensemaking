@@ -201,21 +201,6 @@
   color: var(--nl-grey);
 }
 
-.nl-topbar__chip {
-  padding: 2px var(--nl-space-2);
-  border: 1px solid var(--nl-grey-line);
-  border-radius: var(--nl-radius);
-  background: var(--nl-surface);
-  font-size: var(--nl-text-xs);
-  white-space: nowrap;
-}
-
-.nl-topbar__chip-value {
-  font-family: var(--nl-font-mono);
-  font-variant-numeric: tabular-nums;
-  color: var(--nl-grey);
-}
-
 .nl-topbar__spacer {
   flex: 1;
 }
@@ -275,5 +260,26 @@
 
   .nl-spine__detail {
     display: none;
+  }
+}
+
+/*
+ * Nothing of the app's own furniture reaches the printer.
+ *
+ * The QR poster and the paper pack are both printed from a page that still has
+ * the shell around it, and neither is improved by a sidebar down its left edge.
+ * This lives here, beside the shell it hides, rather than in the stylesheet of
+ * whichever component happens to be printing — that version named .nl-nav, went
+ * stale the moment the nav became a spine, and lost the specificity tie besides.
+ */
+@media print {
+  .nl-shell,
+  .nl-topbar,
+  .nl-app__skip {
+    display: none;
+  }
+
+  .nl-app {
+    display: block;
   }
 }

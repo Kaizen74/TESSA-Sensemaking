@@ -3,15 +3,42 @@
 **Updated:** 2026-09-06
 **Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; the
 meaningfulness delta complete — all six phases A–F, and checked end to end
-**Status:** green (1378 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+**Status:** green (1386 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+
+---
+
+## The four tabs are now four stages of one job
+
+Down the left you now have **Design → Collect → Validate → Read**, in the order
+you actually work, each carrying its own live count: which version you are on
+and how many questions it asks, how many stories and how many links are open,
+what is waiting for you, what there is to read. You can see the state of the
+whole study from wherever you happen to be standing, and every stage is still
+one click from every other — this is a progress indicator, not a wizard.
+
+Across the top, one line of context per stage: the sentence that is true here
+and easy to forget. On Validate it is *"Nothing the AI proposes enters your data
+on its own — not at high confidence, not at low."*
+
+Beside it, **as of 11:17 AM** — when *you* last looked, which is the question you
+are actually asking. Nothing polls. If stories arrive while a link is open, the
+Collect stage says *"3 new · fold in"* and waits for you to click. A number that
+changes under you while you are reasoning about it destroys the reasoning.
+
+The filter rail moved into that same left column rather than sitting beside it,
+so the Patterns page has one left edge instead of two.
+
+**One thing in the handoff I did not build.** It wanted the filters turned into
+chips that open on click. Its reason was that this "removes the Patterns-only
+filter column from every other screen" — but that column only ever appeared on
+Patterns, so there was nothing to remove. And hiding the Storyteller /
+Expert-validated / Both control behind a click is precisely what the
+self-signification rule argues against: whose reading you are looking at should
+be visible without opening anything.
 
 ---
 
 ## The landscape looks like a landscape now
-
-Three phases of the design handoff are in. The fourth — turning the four tabs
-into a Design → Collect → Validate → Read spine — is left for after you have
-looked at these.
 
 **The terrain reads as terrain.** It was a flat stained triangle, and the reason
 was subtle: the colour scale runs monotonically from dark to bright, so a slope

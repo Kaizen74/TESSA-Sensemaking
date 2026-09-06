@@ -234,8 +234,7 @@
 /* Print grammar (§5b): black on white, QR as large as the page allows, and
    nothing on the sheet that is not the offer itself. */
 @media print {
-  .nl-poster-bar,
-  .nl-nav {
+  .nl-poster-bar {
     display: none;
   }
 

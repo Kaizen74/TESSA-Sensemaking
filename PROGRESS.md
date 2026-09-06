@@ -429,7 +429,12 @@ deferred pending a look at 1–3 in use.**
   floor grid, drop lines, depth-scaled dots.
 - [x] **Phase 3 — Patterns layout and charts.** Findings card beside the figure,
   prose behind disclosure in the aside, chart cards, bar tracks, mode emphasis.
-- [ ] **Phase 4 — workflow shell.** Deferred by the operator.
+- [x] **Phase 4 — workflow shell.** The four tabs become four stages with live
+  counts, a contextual bar, and §8 freshness. §7.4 (filters → chips) is the one
+  part not built: its stated reason is false — the rail only ever rendered on
+  Patterns — and hiding the three-way provenance control behind a click is what
+  constraint 14 argues against. The rail keeps its form; it moves into the
+  shell's sidebar through a portal so the page has one left column.
 
 ### What the handoff got wrong
 
@@ -464,7 +469,38 @@ Recorded because the same package will be read again.
      happens on the default camera, measured. Pins now shorten rather than
      grow when there is no room above, and hang below only as a last resort.
 151. **Emphasising "the largest bar" emphasises all of them on a tie.** Found
-     by screenshotting a fixture that happened to tie three ways. Emphasis
+     by screenshotting a fixture that happened to tie three ways.
+152. **§7.2's rationale is false.** "This is the change that removes the
+     Patterns-only filter column from every other screen" — the filter column
+     only ever rendered on Patterns. There was nothing to remove from anywhere
+     else, so §7.4 buys nothing and costs the provenance control its visibility.
+153. **BAR.read's note is fixture data presented as verbatim copy.** "188 marks
+     were placed by the storytellers themselves. 26 more…" is given in `CODE.md`
+     §4 as a string to reproduce exactly. Those are numbers from the prototype's
+     synthesised dataset. Replaced with a sentence true of any dataset; the real
+     numbers are on the provenance label, which computes them.
+
+### Found by the review that followed phase 4
+
+154. **The shell would have printed onto the QR poster.** `link-manager.css`
+     hid `.nl-nav` for print. The stage spine replaced `.nl-nav`, so for one
+     commit a printed poster came out with the sidebar and the contextual bar
+     on it. Caught by a scan for CSS rules matching nothing, then confirmed by
+     rendering the page under `@media print`.
+
+     The rule now lives in `app.css`, beside the shell it hides, for two
+     reasons: a print rule in another component's stylesheet goes stale the
+     moment a class is renamed, and it also lost the specificity tie, so moving
+     it there and leaving it there would have looked fixed and not been.
+155. **A stray brace silently dropped every style on the page.** Left when
+     replacing the nav CSS. The build compiled it happily and the page rendered
+     in Times New Roman. Caught by screenshot; nothing else would have.
+156. **Three orphaned CSS rules, and the scan that finds them needs its
+     comments stripped.** `test_no_component_styles_a_class_that_no_longer_
+     exists` flagged `.nl-nav` inside the comment explaining why `.nl-nav` had
+     gone. That is the third guard in the suite to need comment-stripping — the
+     translation reachability check and the gridline check both hit it — so the
+     reason is written into the test rather than rediscovered a fourth time. Emphasis
      marks a distinction; a tie has none, so it now gets none.
 
 ---

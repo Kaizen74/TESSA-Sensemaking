@@ -33,7 +33,6 @@ const STAGES = [
   {
     id: "studio",
     label: "Design",
-    tab: "Studio",
     detail: (s) =>
       s.frameworks === null
         ? "…"
@@ -47,7 +46,6 @@ const STAGES = [
   {
     id: "capture",
     label: "Collect",
-    tab: "Capture & Links",
     detail: (s) =>
       s.frameworks === null
         ? "…"
@@ -59,7 +57,6 @@ const STAGES = [
   {
     id: "import",
     label: "Validate",
-    tab: "Import & Validate",
     detail: (s) => (s.pending === null ? "…" : `${s.pending} waiting for you`),
     // The one stage whose marker is a number rather than a tick: work waiting
     // is the thing an operator most needs to see from somewhere else.
@@ -70,7 +67,6 @@ const STAGES = [
   {
     id: "patterns",
     label: "Read",
-    tab: "Patterns",
     detail: (s) =>
       s.frameworks === null
         ? "…"
