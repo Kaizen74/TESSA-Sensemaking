@@ -411,6 +411,64 @@ own regression list.
 
 ---
 
+## The design handoff (6 September 2026)
+
+`design_handoff_narrative_lens/` — a visual and navigational redesign in four
+phases. Scoped by the operator to **phases 1–3; the workflow shell (phase 4) is
+deferred pending a look at 1–3 in use.**
+
+- [x] **Phase 1 — corner labels.** Real defect, in two places rather than the
+  one the handoff found. Measured: "Doing it by the book" lost 80 of 122px on
+  screen and 97 of 177px on the printed sheet. The handoff's headline example
+  ("Speed" renders as "peed") is wrong — Speed fits with 4.4px to spare. Its fix
+  is also incomplete: anchoring both base labels inward makes them grow toward
+  each other, trading a clip for an overlap. Both call sites now anchor inward
+  *and* wrap into the half of the base they start from.
+- [x] **Phase 2 — depth cues.** Diffuse shading from a fixed light, base plate,
+  isolines draped at their own height, peak pins, ink figure ground. Explorer:
+  floor grid, drop lines, depth-scaled dots.
+- [x] **Phase 3 — Patterns layout and charts.** Findings card beside the figure,
+  prose behind disclosure in the aside, chart cards, bar tracks, mode emphasis.
+- [ ] **Phase 4 — workflow shell.** Deferred by the operator.
+
+### What the handoff got wrong
+
+Recorded because the same package will be read again.
+
+146. **`API-ALIGNMENT.md` names four fields the API does not have.**
+     `is_published` (really `is_live`), `signified_by_counts` (really
+     `counts_by_signified_by`), `closed_at` (really `revoked_at`) and
+     `anecdote_count` on a capture link (really `story_count`). Its
+     *conclusion* — that no backend change is needed — is correct, and every
+     one has an existing equivalent. But JS renders `undefined` as blank, so
+     coding to the document would have produced empty counts with nothing
+     raised.
+147. **Two of its "binding constraints" are not in the PRD.** "No dark mode"
+     appears nowhere in §5b — the handoff argues its way around a rule that
+     does not exist. Nor does "labels sit under the picture": PRD acceptance
+     criterion 9 explicitly requires **directly-labelled peaks**. So its
+     OPEN-QUESTIONS §4, asking permission for peak pins as an exception, is a
+     non-question — the pins are what the PRD asks for.
+148. **The palette breach is real, and half the size the handoff thought.**
+     §5b's "4–6 named colors" is genuinely exceeded by adding tints, and that
+     needed the operator's sign-off. But one of the two requested tints,
+     `--nl-grey-faintest #eeece7`, already exists here as `--nl-grey-faint`;
+     the handoff's token names do not match the repo's. Only
+     `--nl-grey-hairline #f4f2ed` was actually new.
+149. **Its cluster colours would have taken the palette to ten.** Four raw RGB
+     triples for the Explorer's clusters on the darker ground. The existing
+     tokens lifted toward the paper solve the same visibility problem with the
+     same hues, so the palette is unchanged.
+150. **Its pin collision loop pushes pins off the canvas.** The loop only ever
+     lengthens stems, so a peak that projects high leaves the frame — which
+     happens on the default camera, measured. Pins now shorten rather than
+     grow when there is no room above, and hang below only as a last resort.
+151. **Emphasising "the largest bar" emphasises all of them on a tie.** Found
+     by screenshotting a fixture that happened to tie three ways. Emphasis
+     marks a distinction; a tie has none, so it now gets none.
+
+---
+
 ## Regression list
 
 Green in every phase from introduction onward:

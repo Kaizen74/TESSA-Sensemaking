@@ -1,9 +1,63 @@
 # Narrative Lens — Latest
 
-**Updated:** 2026-09-04
+**Updated:** 2026-09-06
 **Phase:** 9 of 9 complete, plus a completeness pass against PRD §1; the
 meaningfulness delta complete — all six phases A–F, and checked end to end
-**Status:** green (1359 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+**Status:** green (1378 tests passing · ruff clean · eslint 0 · builds · smoke test end-to-end)
+
+---
+
+## The landscape looks like a landscape now
+
+Three phases of the design handoff are in. The fourth — turning the four tabs
+into a Design → Collect → Validate → Read spine — is left for after you have
+looked at these.
+
+**The terrain reads as terrain.** It was a flat stained triangle, and the reason
+was subtle: the colour scale runs monotonically from dark to bright, so a slope
+and a plateau at the same height came out the same colour and there was nothing
+to tell them apart. It now has a light falling on it from the upper left, so
+slopes facing the light brighten and slopes facing away darken; contour rings
+draped on the surface, so height can be counted rather than only seen; and a
+count pinned to each summit, readable from the back of a room.
+
+**It sits on an ink ground, and that is a fix rather than a style.** The colour
+scale runs dark-blue to yellow, so on white paper the emptiest region carried
+the heaviest ink — the flat plain advanced toward you and the peaks fell back,
+the picture reading exactly backwards. On ink it reads the right way round: dark
+is empty, bright is dense. The rest of the app is still paper, and the contour
+twin — the one you print, photograph and export — is still black on white.
+
+**The 3D Explorer was an unreadable cloud** and now has a floor, a line from
+every story down to it, and near dots drawn larger. Two dots an inch apart used
+to be either neighbours or a whole axis apart with no way to tell.
+
+**The three peaks stopped being buttons.** They were a row of small controls
+under the picture reading "33 near Speed". They are the finding the whole page
+exists to deliver, so they are now a panel beside the landscape: the count, what
+it is near, its share, and "Read these 33 stories". "How to read a landscape"
+keeps every word — including the caveat about triangles that constraint 12
+requires — and moves in beside them, behind a disclosure, so nothing stands
+between you and the picture any more.
+
+**And the corner labels were being cut off.** This is the one that mattered.
+A corner called "Doing it by the book" lost two-thirds of itself on screen and
+more than half on the printed sheet — silently, because SVG clips without
+complaint. A facilitator has been handing out triangles whose third corner reads
+"Doing it b". Fixed in both places, and the printed sheet was the one the
+handoff missed entirely.
+
+### Three things the handoff got wrong, worth knowing
+
+- Its headline example was wrong. "Speed" fits with 4.4px to spare; it takes a
+  longer name to break.
+- Its API document names four fields that do not exist in this app. Its
+  conclusion — no backend change needed — is right, and every one has a real
+  equivalent, but coding to the document would have produced blank counts.
+- Two of the "binding constraints" it argues around are not in the PRD at all.
+  One of them, "labels sit under the picture", is the opposite of what the PRD
+  says: it explicitly asks for directly-labelled peaks. So the question the
+  handoff raised about whether peak pins are allowed had already been answered.
 
 ---
 
