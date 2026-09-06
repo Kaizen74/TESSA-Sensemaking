@@ -115,15 +115,16 @@
 /* ---- The filter rail (§5b: slim, roughly a tenth of the width) ---- */
 
 .nl-rail {
-  flex: 0 1 15rem;
-  min-width: 13rem;
+  /* Inside the shell's sidebar now: it takes the width it is given rather than
+     asking for one, and drops its own card, because a card inside a card is a
+     box drawn twice. A rule separates it from the spine above. */
+  width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--nl-space-4);
-  padding: var(--nl-space-4);
-  border: var(--nl-border);
-  border-radius: var(--nl-radius);
-  background: var(--nl-surface);
+  padding-top: var(--nl-space-4);
+  border-top: 1px solid var(--nl-grey-line);
 }
 
 .nl-rail__label {
@@ -210,7 +211,13 @@
 .nl-provenance__option {
   flex: 1;
   min-height: var(--nl-tap-target);
-  padding: 0 var(--nl-space-2);
+  /* The rail now lives in a 15rem sidebar, where three labels on one row put
+     "Both" through the edge as "Bo" — the corner-label clipping again, in a
+     different place. The fix is to give the text the room it needs, not to
+     shrink it below the 12px floor §5b sets. */
+  padding: var(--nl-space-1);
+  white-space: normal;
+  line-height: 1.15;
   background: var(--nl-paper);
   border: 0;
   border-right: 1px solid var(--nl-grey-line);

@@ -15,7 +15,9 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { api, ApiError } from "../api.js";
+import { STAGE_ASIDE_ID } from "../App.jsx";
 import { BarChart, DyadChart, StonesChart } from "./Charts.jsx";
 import { ExplorerView } from "./Explorer.jsx";
 import { StoryBrowser } from "./StoryBrowser.jsx";
@@ -28,6 +30,24 @@ import {
   snapshotFilename,
 } from "./snapshot.js";
 import "./patterns.css";
+
+/**
+ * Render this stage's own controls into the shell's slot.
+ *
+ * Falls back to rendering in place when there is no shell — the public capture
+ * page has no sidebar, and a component that only works inside one would be a
+ * component with a hidden dependency.
+ */
+function StageAside({ children }) {
+  const [slot, setSlot] = useState(null);
+
+  useEffect(() => {
+    setSlot(document.getElementById(STAGE_ASIDE_ID));
+  }, []);
+
+  if (!slot) return null;
+  return createPortal(children, slot);
+}
 
 const VIEW_LANDSCAPE = "landscape";
 const VIEW_CHARTS = "charts";
@@ -357,19 +377,32 @@ export function PatternsTab() {
     <div className="nl-patterns">
       <header className="nl-patterns__head">
         <h2 className="nl-patterns__title">Patterns</h2>
-        {/* True of the default, and only of the default. Under another reading
-            the marks below were interpreted by AI and confirmed by a person,
-            which is a different sentence and has to be said differently. */}
-        <p className="nl-patterns__sub">
-          {signifiedBy === SIGNIFIED_BY_DEFAULT
-            ? "Every figure below is counted from stories you validated. Nothing here was written or interpreted by AI."
-            : "Every figure below is counted from stories you validated, and nothing here was written by AI. Some of the marks behind them were proposed by AI and confirmed by you."}
-        </p>
+        {/* Only when it has something the shell's note does not already say.
+            The bar above carries the general sentence; this one appears when
+            the reading is not the default, because then the general sentence
+            is no longer the whole truth. */}
+        {signifiedBy !== SIGNIFIED_BY_DEFAULT && (
+          <p className="nl-patterns__sub">
+            Every figure below is counted from stories you validated, and nothing
+            here was written by AI. Some of the marks behind them were proposed by
+            AI and confirmed by you.
+          </p>
+        )}
       </header>
 
       {error && <ErrorNote error={error} />}
 
       <div className="nl-patterns__body">
+        {/*
+          * The rail renders into the shell's stage slot, not here.
+          *
+          * The shell has a left column of its own now, and a page with two of
+          * them is a page with no hierarchy. A portal keeps every piece of the
+          * rail's state in this component, where it is used, while putting the
+          * markup where it belongs — and the DOM the rail produces is
+          * unchanged, so anything that reads it still finds it.
+          */}
+        <StageAside>
         <aside className="nl-rail" aria-label="Filters">
           <label className="nl-rail__field">
             <span className="nl-rail__label">Question set</span>
@@ -503,6 +536,7 @@ export function PatternsTab() {
             )}
           </div>
         </aside>
+        </StageAside>
 
         <div className="nl-patterns__main">
           <nav className="nl-patterns__views" aria-label="Ways of looking">

@@ -1,68 +1,279 @@
+/*
+ * The shell: a stage spine on the left, a contextual bar across the top, and
+ * the stage's own page under it.
+ *
+ * The four tabs were four peers. They are four steps of one job, so they are
+ * drawn as one — and because the spine carries counts, the state of the study
+ * is readable from whichever stage the operator happens to be standing on.
+ */
 .nl-app {
   min-height: 100vh;
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  align-items: start;
 }
 
-.nl-nav {
-  display: flex;
-  align-items: center;
-  gap: var(--nl-space-8);
-  padding: var(--nl-space-4) var(--nl-space-8);
-  border-bottom: 1px solid var(--nl-grey-line);
+/* Keyboard first. The spine is a lot of links to tab through before reaching
+   the page, so there is a way past it. */
+.nl-app__skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 20;
+  padding: var(--nl-space-2) var(--nl-space-3);
   background: var(--nl-surface);
+  border: var(--nl-border);
+}
+
+.nl-app__skip:focus {
+  left: var(--nl-space-3);
+  top: var(--nl-space-3);
+}
+
+.nl-app__body {
+  min-width: 0;
+}
+
+.nl-shell {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
+  overflow-y: auto;
+  padding: var(--nl-space-4);
+  border-right: 1px solid var(--nl-grey-line);
+  background: var(--nl-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nl-space-5);
 }
 
 /* The one h1 on the page. Sized as a brand mark rather than as a heading:
-   the tabs below it are the h2s, and constraint 13a keeps the landscape the
-   only thing on screen allowed to be loud. */
-.nl-nav__brand {
+   constraint 13a keeps the landscape the only thing allowed to be loud. */
+.nl-shell__brand {
   margin: 0;
   font-weight: var(--nl-weight-bold);
   font-size: var(--nl-text-base);
 }
 
-.nl-nav__list {
-  display: flex;
-  /* Wraps rather than overflowing: constraint 10 requires a clean 375px, and
-     four tab labels do not fit on one line at that width. */
-  flex-wrap: wrap;
-  gap: var(--nl-space-2) var(--nl-space-6);
+.nl-shell__aside:empty {
+  display: none;
+}
+
+/* ---- the spine ---- */
+
+.nl-spine {
   list-style: none;
   margin: 0;
   padding: 0;
-  min-width: 0;
+  position: relative;
 }
 
-.nl-nav__tab {
-  display: inline-flex;
-  align-items: center;
+/* A hairline running behind the markers, so four stages read as one sequence
+   rather than four unrelated buttons. Behind the markers, not through them. */
+.nl-spine::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 18px;
+  bottom: 18px;
+  width: 1px;
+  background: var(--nl-grey-faint);
+}
+
+.nl-spine__item {
+  position: relative;
+}
+
+.nl-spine__stage {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nl-space-3);
+  width: 100%;
   min-height: var(--nl-tap-target);
-  padding: 0;
+  padding: var(--nl-space-2) 0;
   background: none;
   border: 0;
   font-family: inherit;
-  font-size: var(--nl-text-sm);
-  color: var(--nl-grey);
+  text-align: left;
+  color: inherit;
   cursor: pointer;
 }
 
-.nl-nav__tab[aria-disabled="true"] {
-  cursor: default;
+.nl-spine__mark {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nl-surface);
+  border: 1px solid var(--nl-grey-line);
+  font-family: var(--nl-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nl-text-xs);
+  line-height: 1;
+  color: var(--nl-grey);
 }
 
-.nl-nav__tab--current {
+.nl-spine__mark--done {
+  border-color: var(--nl-grey-line);
+  color: var(--nl-ink);
+}
+
+/* Work waiting. The accent is the one colour §5b reserves for a state that
+   wants the operator, and this is the only place in the shell it appears. */
+.nl-spine__mark--urgent {
+  border-color: var(--nl-accent);
+  color: var(--nl-ink);
+  font-weight: var(--nl-weight-bold);
+}
+
+.nl-spine__mark--current {
+  background: var(--nl-data);
+  border-color: var(--nl-data);
+  color: var(--nl-paper);
+}
+
+.nl-spine__text {
+  min-width: 0;
+}
+
+.nl-spine__label {
+  display: block;
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+}
+
+.nl-spine__stage--current .nl-spine__label {
   color: var(--nl-ink);
   font-weight: var(--nl-weight-medium);
-  box-shadow: inset 0 -2px 0 var(--nl-accent);
 }
 
-@media (max-width: 48rem) {
-  .nl-nav {
-    flex-wrap: wrap;
-    gap: var(--nl-space-3);
-    padding: var(--nl-space-3) var(--nl-space-4);
+.nl-spine__detail {
+  display: block;
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+  line-height: 1.4;
+}
+
+/* Stories that arrived while the operator was reading. Announced, never folded
+   in on its own: a figure that changes under somebody mid-analysis destroys
+   the analysis. */
+.nl-spine__arrivals {
+  margin: 0 0 var(--nl-space-2) 35px;
+  min-height: 32px;
+  padding: 0 var(--nl-space-2);
+  background: var(--nl-paper);
+  border: 1px solid var(--nl-accent);
+  border-radius: var(--nl-radius);
+  font-family: inherit;
+  font-size: var(--nl-text-xs);
+  color: var(--nl-ink);
+  cursor: pointer;
+}
+
+/* ---- the contextual bar ---- */
+
+.nl-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: var(--nl-space-3) var(--nl-space-6);
+  border-bottom: 1px solid var(--nl-grey-line);
+  background: var(--nl-paper);
+}
+
+.nl-topbar__line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--nl-space-3);
+  flex-wrap: wrap;
+}
+
+.nl-topbar__label {
+  font-size: var(--nl-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--nl-grey);
+}
+
+.nl-topbar__chip {
+  padding: 2px var(--nl-space-2);
+  border: 1px solid var(--nl-grey-line);
+  border-radius: var(--nl-radius);
+  background: var(--nl-surface);
+  font-size: var(--nl-text-xs);
+  white-space: nowrap;
+}
+
+.nl-topbar__chip-value {
+  font-family: var(--nl-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--nl-grey);
+}
+
+.nl-topbar__spacer {
+  flex: 1;
+}
+
+.nl-topbar__figure {
+  font-size: var(--nl-text-sm);
+  color: var(--nl-grey);
+}
+
+.nl-topbar__figure strong {
+  font-family: var(--nl-font-data);
+  font-size: var(--nl-text-lg);
+  color: var(--nl-ink);
+}
+
+/* When the operator last looked, not when a server last thought about it —
+   which is the question they are actually asking, and costs no request. */
+.nl-topbar__stamp {
+  font-family: var(--nl-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+}
+
+.nl-topbar__note {
+  margin: var(--nl-space-2) 0 0;
+  max-width: 72ch;
+  font-size: var(--nl-text-xs);
+  color: var(--nl-grey);
+  line-height: var(--nl-leading-body);
+}
+
+/* On a phone the spine stops being a column and becomes a strip above the
+   page. Constraint 10 requires a clean 375px, and 15rem of sidebar plus a
+   page does not fit in one. */
+@media (max-width: 60rem) {
+  .nl-app {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .nl-nav__list {
-    gap: var(--nl-space-4);
+  .nl-shell {
+    position: static;
+    max-height: none;
+    border-right: 0;
+    border-bottom: 1px solid var(--nl-grey-line);
+  }
+
+  .nl-spine {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--nl-space-2) var(--nl-space-4);
+  }
+
+  .nl-spine::before {
+    display: none;
+  }
+
+  .nl-spine__detail {
+    display: none;
   }
 }

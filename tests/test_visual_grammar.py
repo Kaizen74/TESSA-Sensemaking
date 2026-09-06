@@ -256,3 +256,89 @@ def test_the_charts_gained_a_track_but_no_gridline() -> None:
 
     assert "gridline" not in without_comments.lower()
     assert "<legend" not in without_comments.lower()
+
+
+# --------------------------------------------------------------------------
+# The workflow shell (design handoff §7, §8)
+# --------------------------------------------------------------------------
+
+
+def app_source() -> str:
+    return (FRONTEND / "App.jsx").read_text(encoding="utf-8")
+
+
+def test_the_four_stages_are_the_operators_own_order() -> None:
+    """Design → Collect → Validate → Read, not four alphabetical peers."""
+    body = app_source()
+    order = re.findall(r'label: "(Design|Collect|Validate|Read)"', body)
+
+    assert order == ["Design", "Collect", "Validate", "Read"], order
+
+
+def test_every_stage_stays_clickable() -> None:
+    """A progress indicator, not a wizard.
+
+    Somebody returning to a finished study has to reach any stage at once, so
+    no stage may be disabled by how far along the work is.
+    """
+    body = app_source()
+    spine = body[body.index("<ol className=\"nl-spine\">") : body.index("</ol>")]
+
+    assert "disabled" not in spine
+    assert "aria-disabled" not in spine
+
+
+def test_the_shell_never_polls() -> None:
+    """§8: freshness is stamped, never polled.
+
+    A timer here would break the offline guarantee's spirit and burn a laptop
+    battery in a workshop. Counts refresh on load and when the operator changes
+    stage — the moment they were going to look anyway.
+    """
+    body = app_source()
+
+    for scheduler in ("setInterval", "setTimeout", "requestAnimationFrame", "WebSocket",
+                      "EventSource"):
+        assert scheduler not in body, f"the shell schedules work with {scheduler}"
+
+
+def test_arrivals_are_announced_rather_than_folded_in() -> None:
+    """A figure that moves under somebody mid-analysis destroys the analysis.
+
+    Stories are the one count that changes without the operator, while a link
+    is open. The scope only widens when they click.
+    """
+    body = app_source()
+
+    assert "acknowledged" in body
+    assert "nl-spine__arrivals" in body
+    assert "setAcknowledged(stories)" in body
+
+
+def test_the_bar_never_claims_a_scope_the_page_owns() -> None:
+    """It did, on the first build: "Hangar v1" over a page reading "Uneven — v1".
+
+    Every stage has a chooser of its own and the queue is not scoped to a
+    question set at all, so the shell cannot name what is being worked on
+    without either repeating the page or contradicting it.
+    """
+    body = app_source()
+    bar = body[body.index("<header className=\"nl-topbar\">") : body.index("</header>")]
+
+    assert "nl-topbar__chip" not in bar
+    # And the figure it does show says which population it is counting.
+    assert "in the study" in bar
+
+
+def test_the_page_has_one_left_column() -> None:
+    """The rail moved into the shell's slot rather than sitting beside it.
+
+    A sidebar and a filter rail side by side is two left columns and no
+    hierarchy. The rail renders through a portal, so its state stays in the
+    component that uses it and its DOM is unchanged for anything reading it.
+    """
+    patterns = patterns_source()
+
+    assert "createPortal" in patterns
+    assert "STAGE_ASIDE_ID" in patterns
+    assert "STAGE_ASIDE_ID" in app_source()
